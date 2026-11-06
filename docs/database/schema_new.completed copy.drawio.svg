@@ -131,7 +131,7 @@
         <mxCell id="game_runs-r2-c0" value="REF" style="shape=partialRectangle;html=0;whiteSpace=wrap;fillColor=#f8fafc;strokeColor=#94a3b8;fontColor=#111827;fontSize=12;align=center;spacingLeft=8;top=0;bottom=0;left=0;right=1;" parent="game_runs-r2" vertex="1">
           <mxGeometry width="48" height="29" as="geometry" />
         </mxCell>
-        <mxCell id="game_runs-r2-c1" value="rulesetId (string)" style="shape=partialRectangle;html=0;whiteSpace=wrap;fillColor=#f8fafc;strokeColor=#94a3b8;fontColor=#111827;fontSize=12;align=left;spacingLeft=8;top=0;bottom=0;left=0;right=0;" parent="game_runs-r2" vertex="1">
+        <mxCell id="game_runs-r2-c1" value="gameRulesetId (string)" style="shape=partialRectangle;html=0;whiteSpace=wrap;fillColor=#f8fafc;strokeColor=#94a3b8;fontColor=#111827;fontSize=12;align=left;spacingLeft=8;top=0;bottom=0;left=0;right=0;" parent="game_runs-r2" vertex="1">
           <mxGeometry x="48" width="332" height="29" as="geometry" />
         </mxCell>
         <mxCell id="game_runs-r3" value="" style="shape=tableRow;horizontal=0;startSize=0;fillColor=#f8fafc;strokeColor=none;collapsible=0;dropTarget=0;portConstraint=eastwest;" parent="game_runs" vertex="1">
@@ -188,7 +188,7 @@
         <mxCell id="game_actions-r1-c0" value="REF" style="shape=partialRectangle;html=0;whiteSpace=wrap;fillColor=#f8fafc;strokeColor=#94a3b8;fontColor=#111827;fontSize=12;align=center;spacingLeft=8;top=0;bottom=0;left=0;right=1;" parent="game_actions-r1" vertex="1">
           <mxGeometry width="48" height="29" as="geometry" />
         </mxCell>
-        <mxCell id="game_actions-r1-c1" value="runId (string)" style="shape=partialRectangle;html=0;whiteSpace=wrap;fillColor=#f8fafc;strokeColor=#94a3b8;fontColor=#111827;fontSize=12;align=left;spacingLeft=8;top=0;bottom=0;left=0;right=0;" parent="game_actions-r1" vertex="1">
+        <mxCell id="game_actions-r1-c1" value="gameRunId (string)" style="shape=partialRectangle;html=0;whiteSpace=wrap;fillColor=#f8fafc;strokeColor=#94a3b8;fontColor=#111827;fontSize=12;align=left;spacingLeft=8;top=0;bottom=0;left=0;right=0;" parent="game_actions-r1" vertex="1">
           <mxGeometry x="48" width="332" height="29" as="geometry" />
         </mxCell>
         <mxCell id="game_actions-r2" value="" style="shape=tableRow;horizontal=0;startSize=0;fillColor=#f8fafc;strokeColor=none;collapsible=0;dropTarget=0;portConstraint=eastwest;" parent="game_actions" vertex="1">
@@ -263,7 +263,7 @@
         <mxCell id="game_properties-r1-c0" value="REF" style="shape=partialRectangle;html=0;whiteSpace=wrap;fillColor=#f8fafc;strokeColor=#94a3b8;fontColor=#111827;fontSize=12;align=center;spacingLeft=8;top=0;bottom=0;left=0;right=1;" parent="game_properties-r1" vertex="1">
           <mxGeometry width="48" height="29" as="geometry" />
         </mxCell>
-        <mxCell id="game_properties-r1-c1" value="runId (string)" style="shape=partialRectangle;html=0;whiteSpace=wrap;fillColor=#f8fafc;strokeColor=#94a3b8;fontColor=#111827;fontSize=12;align=left;spacingLeft=8;top=0;bottom=0;left=0;right=0;" parent="game_properties-r1" vertex="1">
+        <mxCell id="game_properties-r1-c1" value="gameRunId (string)" style="shape=partialRectangle;html=0;whiteSpace=wrap;fillColor=#f8fafc;strokeColor=#94a3b8;fontColor=#111827;fontSize=12;align=left;spacingLeft=8;top=0;bottom=0;left=0;right=0;" parent="game_properties-r1" vertex="1">
           <mxGeometry x="48" width="332" height="29" as="geometry" />
         </mxCell>
         <mxCell id="game_properties-r2" value="" style="shape=tableRow;horizontal=0;startSize=0;fillColor=#f8fafc;strokeColor=none;collapsible=0;dropTarget=0;portConstraint=eastwest;" parent="game_properties" vertex="1">
@@ -329,7 +329,7 @@
         <mxCell id="runs_event-r1-c0" value="REF" style="shape=partialRectangle;html=0;whiteSpace=wrap;fillColor=#f8fafc;strokeColor=#94a3b8;fontColor=#111827;fontSize=12;align=center;spacingLeft=8;top=0;bottom=0;left=0;right=1;" parent="runs_event-r1" vertex="1">
           <mxGeometry width="48" height="29" as="geometry" />
         </mxCell>
-        <mxCell id="runs_event-r1-c1" value="runId (string)" style="shape=partialRectangle;html=0;whiteSpace=wrap;fillColor=#f8fafc;strokeColor=#94a3b8;fontColor=#111827;fontSize=12;align=left;spacingLeft=8;top=0;bottom=0;left=0;right=0;" parent="runs_event-r1" vertex="1">
+        <mxCell id="runs_event-r1-c1" value="gameRunId (string)" style="shape=partialRectangle;html=0;whiteSpace=wrap;fillColor=#f8fafc;strokeColor=#94a3b8;fontColor=#111827;fontSize=12;align=left;spacingLeft=8;top=0;bottom=0;left=0;right=0;" parent="runs_event-r1" vertex="1">
           <mxGeometry x="48" width="332" height="29" as="geometry" />
         </mxCell>
         <mxCell id="runs_event-r2" value="" style="shape=tableRow;horizontal=0;startSize=0;fillColor=#f8fafc;strokeColor=none;collapsible=0;dropTarget=0;portConstraint=eastwest;" parent="runs_event" vertex="1">
@@ -431,7 +431,7 @@
         <mxCell id="event_data-r1-c0" value="REF" style="shape=partialRectangle;html=0;whiteSpace=wrap;fillColor=#f8fafc;strokeColor=#94a3b8;fontColor=#111827;fontSize=12;align=center;spacingLeft=8;top=0;bottom=0;left=0;right=1;" parent="event_data-r1" vertex="1">
           <mxGeometry width="48" height="29" as="geometry" />
         </mxCell>
-        <mxCell id="event_data-r1-c1" value="rulesetId (string)" style="shape=partialRectangle;html=0;whiteSpace=wrap;fillColor=#f8fafc;strokeColor=#94a3b8;fontColor=#111827;fontSize=12;align=left;spacingLeft=8;top=0;bottom=0;left=0;right=0;" parent="event_data-r1" vertex="1">
+        <mxCell id="event_data-r1-c1" value="gameRulesetId (string)" style="shape=partialRectangle;html=0;whiteSpace=wrap;fillColor=#f8fafc;strokeColor=#94a3b8;fontColor=#111827;fontSize=12;align=left;spacingLeft=8;top=0;bottom=0;left=0;right=0;" parent="event_data-r1" vertex="1">
           <mxGeometry x="48" width="332" height="29" as="geometry" />
         </mxCell>
         <mxCell id="event_data-r2" value="" style="shape=tableRow;horizontal=0;startSize=0;fillColor=#f8fafc;strokeColor=none;collapsible=0;dropTarget=0;portConstraint=eastwest;" parent="event_data" vertex="1">
@@ -506,7 +506,7 @@
         <mxCell id="game_report-r1-c0" value="REF" style="shape=partialRectangle;html=0;whiteSpace=wrap;fillColor=#f8fafc;strokeColor=#94a3b8;fontColor=#111827;fontSize=12;align=center;spacingLeft=8;top=0;bottom=0;left=0;right=1;" parent="game_report-r1" vertex="1">
           <mxGeometry width="48" height="29" as="geometry" />
         </mxCell>
-        <mxCell id="game_report-r1-c1" value="runId (string)" style="shape=partialRectangle;html=0;whiteSpace=wrap;fillColor=#f8fafc;strokeColor=#94a3b8;fontColor=#111827;fontSize=12;align=left;spacingLeft=8;top=0;bottom=0;left=0;right=0;" parent="game_report-r1" vertex="1">
+        <mxCell id="game_report-r1-c1" value="gameRunId (string)" style="shape=partialRectangle;html=0;whiteSpace=wrap;fillColor=#f8fafc;strokeColor=#94a3b8;fontColor=#111827;fontSize=12;align=left;spacingLeft=8;top=0;bottom=0;left=0;right=0;" parent="game_report-r1" vertex="1">
           <mxGeometry x="48" width="332" height="29" as="geometry" />
         </mxCell>
         <mxCell id="game_report-r2" value="" style="shape=tableRow;horizontal=0;startSize=0;fillColor=#f8fafc;strokeColor=none;collapsible=0;dropTarget=0;portConstraint=eastwest;" parent="game_report" vertex="1">

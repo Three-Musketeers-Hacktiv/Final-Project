@@ -5,9 +5,10 @@ Baca dulu: [DEV1_CONTRACT.md](./DEV1_CONTRACT.md)
 ## Yang BE kerjakan
 
 - Persist `GameState` (JSON-serializable, `version: 3`)
-- Auth: hash password dengan `bcrypt`, terbitkan/verifikasi JWT dengan `jsonwebtoken`; run ownership / Mongo collections
-- Endpoint aksi: load state → panggil fungsi engine → commit state baru
+- Auth: `bcrypt` untuk password, JWT via `jsonwebtoken`; run ownership / Mongo collections
+- Endpoint aksi: load state → panggil fungsi engine → commit state baru; simpan `actionId` client untuk dedupe
 - Narasi event AI: hanya label/teks; efek tetap dari paket terpercaya di `src/game/config.ts`
+- `game_report` ditulis saat battle sukses (`gameRunId` + `wave` + `actionId` client); event outcome bukan `game_report`
 
 ## Yang jangan dikerjakan BE
 
