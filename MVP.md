@@ -1,77 +1,73 @@
-# MVP — Fantasy City Defense: Portfolio Edition
+# MVP — Fantasy City Defense
 
-Versi 1.0 · Deadline 13 November 2026 · Tim: tiga junior developer
+Versi 2.1 · Deadline 13 November 2026 · Tim: Engine · Backend · Frontend
+
+Dokumen ini menggantikan lingkup MVP yang masih menyebut rekrutmen unit atau upgrade tunggal ATK+DEF. Acuan aturan mesin: [AGENTS.md](./AGENTS.md), [docs/DEV1_CONTRACT.md](./docs/DEV1_CONTRACT.md). Acuan state & DB: [docs/database/Database_proposal.md](./docs/database/Database_proposal.md). Modul engine: [plans/game-engine-modules.md](./plans/game-engine-modules.md). Prioritas minggu ini: [plans/feature-freeze-playtest.md](./plans/feature-freeze-playtest.md).
 
 ## Tujuan
 
-Menghasilkan prototipe web strategi pertahanan kota yang selesai dimainkan, stabil, dan dapat dijelaskan setiap anggota tim saat kelulusan bootcamp. Fokus engineering: aturan TypeScript terpisah dari UI, state yang konsisten, autosave, validasi konten AI, pengujian, dan kolaborasi melalui review kode.
+Prototipe web single-player: lord mempertahankan kota fantasy selama **20 hari** dan **2 wave**. Bisa dimainkan end-to-end, state konsisten, aturan TypeScript terpisah dari UI dan penyimpanan.
 
-Target wajib adalah **20 hari dan dua wave**, bukan kampanye 100 hari. MVP produk jangka berikutnya adalah 100 hari dan sepuluh wave setelah prototipe lolos evaluasi. Jadwal mengasumsikan pekerjaan penuh waktu sampai deadline.
+Inspirasi alur event: pilihan terjadwal yang mengubah trajectory kota (mirip jeda pilihan di [1in8b](https://1in8b.life/en/)), bukan micro-management unit.
 
-## Lingkup wajib
+## Status role (November 2026)
+
+| Role | Status prototipe |
+|---|---|
+| **Engine** | Siap integrasi: `src/game` murni, state `version: 3`, tiga jalur upgrade, tes 20 hari |
+| **Backend** | **Lanjutkan** auth, Mongo, API aksi → panggil engine → commit |
+| **Frontend** | **Lanjutkan** UI produk + wire API; Auto lanjut hari (timer UI) |
+
+## Lingkup wajib produk
 
 | Bagian | Prototipe |
 |---|---|
-| Platform | Browser, single-player, desktop prioritas |
-| Kalender | Hari persiapan 1–9 dan 11–19; wave hari 10 dan 20 |
-| Ekonomi | Satu currency gold, pemasukan harian, maksimal satu aksi utama per hari |
-| Kota | HP, attack, defense, upgrade tembok, perbaikan |
-| Pasukan | Pemanah menambah attack; penjaga menambah defense |
-| Pertempuran | Satu HP bar kota versus satu HP bar monster; serangan bersamaan |
-| Informasi | Stat wave berikutnya terlihat selama persiapan |
-| Event | Empat event tetap; dibuat AI sebelum rilis, diperiksa tim |
-| Reward | Pilih satu dari tiga hadiah setelah wave pertama |
-| Persistensi | Satu autosave browser, lanjutkan dan mulai baru |
-| Akhir | Kalah ketika HP kota nol; menang setelah wave kedua |
-| Presentasi | Dashboard jelas, indikator HP, ringkasan battle, hasil akhir |
+| Platform | Browser, single-player, Next.js, desktop prioritas |
+| Kalender | Persiapan 1–9 & 11–19; battle hari 10 & 20 |
+| Ekonomi | Gold; income harian (playtest **25** + bonus kota); max 1 aksi ekonomi sukses/hari |
+| Kota | HP/MaxHP; `wallLevel` / `troopLevel` / `cityLevel`; ATK/DEF/income turunan; perbaikan HP |
+| Upgrade | Tembok (DEF), pasukan (ATK kota), kota (MaxHP + income) — satu slot bersama repair |
+| Pertempuran | 1 HP bar kota vs 1 HP bar monster; damage simultan |
+| Event | Hari 3, 7, 13, 17; dua pilihan; efek dari paket terpercaya |
+| Reward | Satu dari tiga setelah wave 1 |
+| Persistensi | MongoDB (`game_runs` + related); login username/password |
+| Akhir | Game over jika HP kota 0; menang setelah wave 2 |
 
-Tidak ada mana, sihir, formasi 3×2, targeting antarskuad, skuad terluka, cadangan, equipment, API AI runtime, akun, backend, atau database. Kebutuhan backend/autentikasi belum dikonfirmasi terhadap rubrik bootcamp; tim harus memeriksanya hari pertama.
+**Tidak masuk MVP:** mana, sihir, formasi, HP pasukan individual, rekrut unit, build-time, item, difficulty, achievement, leaderboard, day-picker, kampanye 50/100 hari sebelum playtest 20 lulus.
 
-## Keputusan penyederhanaan
+## Keputusan penyederhanaan (wajib diikuti semua role)
 
-- Pasukan adalah jumlah permanen, tanpa HP individual atau korban. Tidak ada pemulihan pasukan.
-- Upgrade kota hanya meningkatkan defense tembok; tidak sekaligus menaikkan semua stat.
-- Penjaga dan tembok sama-sama memberi defense, tetapi tembok lebih mahal, lebih besar peningkatannya, dan terbatas dua tingkat. Angka harus diuji.
-- Event dijadwalkan, bukan acak. AI menghasilkan tulisan dari paket efek yang ditentukan tim.
-- Interval serangan hanya penyajian; hasil dihitung sekali saat wave dimulai.
-- Tiga reward merupakan pilihan ekonomi; tidak ada bonus gold tambahan otomatis.
+- Tiga jalur upgrade terpisah; **bukan** satu `upgradeLevel` yang naik ATK+DEF sekaligus.
+- `troopLevel` = track attack kota saja; **bukan** rekrutmen unit.
+- Diskon event/reward = **diskon biaya ketiga jalur upgrade**, bukan diskon rekrut.
+- Upgrade kota menaikkan MaxHP dan current HP sebesar bonus (bukan heal penuh); repair tetap terpisah dan tidak kena diskon.
+- ATK/DEF/income efektif dihitung engine; jangan disimpan sebagai total tetap di state (kecuali snapshot di laporan battle / `game_properties`).
+- Hasil battle dihitung sekali; refresh tidak menghitung ulang damage.
+- AI hanya menulis narasi/label; angka efek dari paket engine/config.
+
+## Pembagian kerja
+
+| Role | Wajib MVP | Jangan |
+|---|---|---|
+| **Engine** | Aturan murni di `src/game`, tipe `GameState` v3, unit + integration test 20 hari, kontrak untuk BE/FE; bugfix saja sampai playtest | Mongo, auth, halaman produk, API AI, timer/auto di engine |
+| **Backend** | Auth user, API Mulai/Lanjut/Aksi, commit Mongo sesuai schema, katalog/fallback event, panggil engine lalu persist | Menghitung biaya/damage sendiri; mengubah rumus di luar engine |
+| **Frontend** | Login/register UI, dashboard tiga jalur, panel aksi, event, battle playback, reward, layar akhir; kirim aksi ke API; Auto lanjut hari (opsional tapi disarankan) | Menghitung gold cost / damage / transisi fase di komponen |
+
+Detail tugas & todos: [README.md](./README.md). Kontrak engine: [docs/DEV1_CONTRACT.md](./docs/DEV1_CONTRACT.md).
 
 ## Kriteria selesai
 
-- Alur hari 1–20 dapat dimainkan tanpa intervensi developer.
-- Setiap aksi, event, reward, pemasukan, dan damage hanya diterapkan sekali.
-- Biaya tidak menghasilkan gold negatif; HP selalu valid.
-- Battle kedua pihak bersamaan dan kondisi sama-sama tumbang mengikuti PRD.
-- Refresh dapat melanjutkan dari event, laporan, reward, dan akhir permainan.
-- Empat event lolos validator dan review manusia; runtime tanpa AI.
-- Typecheck, lint, pengujian aturan, dan build produksi lulus.
-- URL demo, README aktual, catatan playtest, dan kontribusi ketiga developer tersedia.
+- Alur hari 1–20 bisa dimainkan lewat UI produk (atau harness/try UI + backend nyata) tanpa intervensi developer.
+- Setiap aksi, income, event, reward, damage hanya diterapkan sekali; klik ganda / refresh aman.
+- Gold tidak negatif; HP selalu 0…max.
+- Battle simultan dan kasus keduanya tumbang sesuai PRD.
+- Empat event punya narasi (AI/mock/fallback) dengan efek paket yang sama.
+- Typecheck, lint, test engine, dan build Next.js lulus.
+- Demo URL / README aktual / catatan kontribusi tersedia.
+- Minimal satu playtest eksternal sampai menang atau kalah, dengan catatan keluhan (lihat feature freeze).
 
-## Target playtest
+## Di luar MVP (setelah prototipe oke)
 
-Uji lima orang di luar tim bila tersedia; catat jumlah sebenarnya. Target empat memahami alur tanpa dibimbing dan dapat menjelaskan penyebab kehilangan HP. Uji fokus pemanah, penjaga/tembok, dan campuran. Periksa apakah perbaikan diperlukan, apakah satu hadiah selalu unggul, dan apakah pemain masih bisa pulih setelah wave pertama.
+Setelah kriteria selesai & playtest 20 hari lulus, produksi memakai kampanye **50 hari / 5 wave** (ruleset terpisah). Rincian: [PRD.md](./PRD.md) §12.
 
-## Tim dan milestone
-
-| Pemilik | Fokus |
-|---|---|
-| A | Aturan kalender, ekonomi, efek, battle, dan unit test |
-| B | Dashboard, aksi, event, battle, reward, hasil akhir |
-| C | Konfigurasi, konten AI, validator, autosave, build, dokumentasi |
-
-| Tanggal | Hasil wajib |
-|---|---|
-| 3 November | Rubrik, kontrak data, setup dan pembagian file |
-| 4–5 November | Dashboard, ekonomi, pasukan, upgrade, pergantian hari |
-| 6 November | Hari 1–10 sampai laporan battle |
-| 7–8 November | Empat event, reward, dan alur 20 hari |
-| 9 November | Autosave lengkap dan build terintegrasi |
-| 10 November | Playtest; hentikan fitur baru |
-| 11–12 November | Perbaikan, balancing, deploy, latihan demo |
-| 13 November | Pemeriksaan dan penyerahan |
-
-Jika terlambat, potong animasi dan pemolesan visual terlebih dahulu. Pertahankan kebenaran aturan, save, dan akhir permainan. Kampanye 100 hari tidak menggantikan waktu perbaikan.
-
-## Tahap setelah deadline
-
-Perluas konfigurasi menjadi sepuluh wave dan 20 event, lalu uji ekonomi sepanjang 100 hari. Formasi dan backend bukan perluasan otomatis; evaluasi berdasarkan tujuan produk atau rubrik.
+Belum masuk fase itu: day-picker bebas, 100 hari default, animasi berat, balancing final tanpa config, fitur spekulatif di luar keluhan playtest.

@@ -135,7 +135,7 @@ Pola: `(state, action) → { state } | { error }` atau Result type; naikkan `rev
 
 ## Todos diskusi
 
-- [x] PRD/MVP/README v2 ditulis untuk FE/BE (tanpa rekrutmen; schema upgradeLevel)
+- [x] PRD/MVP/README v2.1 ditulis untuk FE/BE (tiga jalur upgrade; state version 3; tanpa rekrut unit)
 - [ ] Diskusi detail shape GameState (effects, activeEvent, battleResult)
 - [ ] Diskusi daftar GameAction types + error codes untuk BE/FE
 - [ ] Samakan nama fase battle vs battleReady di engine/schema/UI
