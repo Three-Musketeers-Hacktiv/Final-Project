@@ -23,7 +23,7 @@ flowchart TD
     VALID -->|Ya| CATALOG[Simpan konten AI tervalidasi ke event_data]
     CATALOG --> READY
     VALID -->|Gagal atau timeout| FALLBACK[Gunakan narasi cadangan dari paket yang sama]
-    READY --> I[Transaksi: buat game_runs, enam properties awal, empat runs_event dan pointer save User]
+    READY --> I[Transaksi: buat game_runs version 3, delapan properties awal, empat runs_event dan pointer save User]
     FALLBACK --> CATALOG_F[Simpan atau gunakan fallback terpercaya di event_data]
     CATALOG_F --> READY
     I --> J{Commit berhasil?}
@@ -39,7 +39,7 @@ flowchart TD
     S --> L
 ```
 
-Enam properties awal memiliki revision 0 dan gameActionId null. Pembuatan run bukan aksi gameplay yang menambah revisi. User.saveGame hanya menunjuk run dan revisi; state lengkap tetap di game_runs.
+Delapan properties awal memiliki revision 0 dan gameActionId null. Pembuatan run bukan aksi gameplay yang menambah revisi. User.saveGame hanya menunjuk run dan revisi; state lengkap tetap di game_runs.
 
 Saat lanjut permainan, backend tidak menjalankan ulang pemasukan, pertempuran, efek kejadian atau reward. Kalender otomatis milik frontend juga tidak boleh langsung berjalan setelah load.
 
@@ -47,8 +47,8 @@ Saat lanjut permainan, backend tidak menjalankan ulang pemasukan, pertempuran, e
 
 ```mermaid
 flowchart TD
-    A[Pemain memilih tindakan: upgrade, repair, lanjut hari, pilihan event atau battle] --> B[Kirim runId, actionId, expectedRevision dan rincian pilihan]
-    B --> C[Backend memeriksa sesi dan hak akses]
+    A[Pemain memilih tindakan: upgrade, repair, lanjut hari, pilihan event atau battle] --> B[Kirim gameRunId, actionId, expectedRevision dan rincian pilihan]
+    B --> C[Backend memeriksa JWT dan hak akses]
     C --> D{Akses sah?}
     D -->|Tidak| E[Tolak tanpa mengubah data]
     D -->|Ya| F[Mulai transaksi; baca game_runs dan log actionId pada run tersebut]
@@ -60,14 +60,14 @@ flowchart TD
     K --> L{Aksi sah dan mengubah state?}
     L -->|Gagal atau tanpa perubahan| M[Tidak menambah log atau revisi; batalkan transaksi dan kirim hasil]
     L -->|Ya| N[Tulis game_runs.state dengan filter revisi lama; tambah satu game_actions]
-    N --> O[Tambah enam game_properties yang merujuk log tersebut dan revisi hasilnya]
+    N --> O[Tambah delapan game_properties yang merujuk log tersebut dan revisi hasilnya]
     O --> P[Perbarui data terkait: runs_event, game_report dan penunjuk save atau history User]
     P --> Q{Seluruh penulisan dan commit berhasil?}
     Q -->|Tidak| R[Batalkan seluruh transaksi; jangan tampilkan sukses]
     Q -->|Ya| S[Kirim state tersimpan ke antarmuka]
 ```
 
-Pada setiap aksi yang berhasil mengubah state, mesin menaikkan revision tepat satu kali. Backend tidak menambahkan revisi kedua. game_properties berisi enam nilai: gold, cityHp, cityMaxHp, upgradeLevel, attack, dan defense. Semuanya berasal dari hasil mesin dan selector pada revisi yang sama.
+Pada setiap aksi yang berhasil mengubah state, mesin menaikkan revision tepat satu kali. Backend tidak menambahkan revisi kedua. game_properties berisi delapan nilai: gold, cityHp, cityMaxHp, wallLevel, troopLevel, cityLevel, attack, dan defense. Semuanya berasal dari hasil mesin dan selector pada revisi yang sama.
 
 MongoDB memerlukan replica set atau deployment yang mendukung transaksi beberapa dokumen untuk alur ini. Konflik penulisan dapat mengharuskan transaksi dicoba ulang, tetapi expectedRevision dan actionId asal tetap diperiksa. Backend tidak boleh mengubah permintaan lama menjadi aksi baru secara otomatis.
 
@@ -85,7 +85,7 @@ flowchart TD
     H -->|Tidak| I[Tolak; emas dan statistik tetap]
     H -->|Ya| J[Mesin menerapkan biaya dan efek ke state baru]
     J --> K[Perbarui game_runs.state; tambahkan game_actions]
-    K --> L[Tambah enam game_properties dengan gameActionId log tadi]
+    K --> L[Tambah delapan game_properties dengan gameActionId log tadi]
     L --> M[Isi chosenChoiceId dan resolvedAt pada runs_event; perbarui save User]
     M --> N{HP kota nol?}
     N -->|Ya| O[State gameOver; tambahkan history sekali dan bersihkan save run terkait]
@@ -94,7 +94,7 @@ flowchart TD
     P --> Q
 ```
 
-Hubungan runs_event tetap ke game_runs melalui runId. Untuk mengetahui perubahan stat akibat pilihan, ikuti game_actions bertipe chooseEventOption, kemudian game_properties melalui gameActionId. Tidak diperlukan referensi langsung dari runs_event ke setiap baris properties.
+Hubungan runs_event tetap ke game_runs melalui gameRunId. Untuk mengetahui perubahan stat akibat pilihan, ikuti game_actions bertipe chooseEventOption, kemudian game_properties melalui gameActionId. Tidak diperlukan referensi langsung dari runs_event ke setiap baris properties.
 
 Narasi yang dibuat saat Mulai Game belum menerapkan efek. Pemasangan narasi yang mengubah state tetap memakai pemeriksaan revisi dan dicatat sebagai aksi attachActiveEvent beserta snapshot statistik. Respons terlambat harus diabaikan jika run sudah berganti, event selesai atau narasi cadangan sudah dipilih. Jika commit gagal pada langkah mana pun, seluruh perubahan terkait dibatalkan.
 
@@ -107,7 +107,7 @@ flowchart TD
     A[Hari 10 atau 20; fase battleReady] --> B[Pemain menekan Mulai battle]
     B --> C[Jalur transaksi startBattle memeriksa aksi dan progres wave]
     C --> D[Mesin menghitung semua ronde sekali dengan damage bersamaan]
-    D --> E[Simpan state, satu log aksi dan enam properties]
+    D --> E[Simpan state, satu log aksi dan delapan properties]
     E --> F[Buat game_report berisi battleResult dan postAttack]
     F --> G{Kota masih hidup dan monster kalah?}
     G -->|Tidak| H[Fase gameOver; history sekali; kosongkan save jika menunjuk run ini]
@@ -125,13 +125,13 @@ flowchart TD
 
 Setiap aksi setelah laporan juga mengikuti transaksi pada alur nomor 2. game_report tetap menjadi catatan saat battle selesai; reward dan progres berikutnya tidak menimpa postAttack.
 
-Kota HP nol selalu kalah, termasuk ketika monster juga nol pada ronde yang sama. Indeks unik runId dan wave mencegah laporan wave yang sama ditulis dua kali, tetapi backend tetap memeriksa log dan revisi. Membaca laporan setelah refresh tidak menerapkan damage lagi.
+Kota HP nol selalu kalah, termasuk ketika monster juga nol pada ronde yang sama. Indeks unik `gameRunId` dan `wave` mencegah laporan wave yang sama ditulis dua kali, tanpa membatasi jumlah wave di sepanjang run (schema siap ~100 hari). Backend tetap memeriksa log dan revisi. Membaca laporan setelah refresh tidak menerapkan damage lagi. Outcome event tidak memakai `game_report` — dicatat di `runs_event` plus `game_actions`/`game_properties`.
 
 ## 5. Koneksi terputus atau pengguna keluar akun
 
 | Keadaan | Yang dilakukan aplikasi |
 |---|---|
-| Pengguna keluar akun setelah save berhasil | Tutup sesi; simpan tetap ada di database |
+| Pengguna keluar akun setelah save berhasil | Client buang JWT; simpan tetap ada di database |
 | Koneksi terputus sebelum transaksi selesai | Jangan menganggap aksi berhasil; periksa hasil server ketika tersambung |
 | Transaksi sudah commit tetapi respons tidak sampai | Muat state terbaru atau periksa actionId yang sama; jangan memotong biaya lagi |
 | Permintaan dicoba ulang dan actionId sudah tercatat | Tanggapi sebagai duplikat; jangan menjalankan aksi dua kali |
@@ -144,7 +144,7 @@ Selesainya request jaringan di sisi browser tidak selalu membuktikan transaksi s
 
 ```mermaid
 flowchart TD
-    A[User menekan Mulai Game] --> B[Periksa sesi dan startRequestId]
+    A[User menekan Mulai Game] --> B[Periksa JWT dan startRequestId]
     B --> C{Run permintaan yang sama sudah tersimpan?}
     C -->|Ya| D[Kembalikan run dan referensi event yang sama]
     C -->|Tidak| E[Cari event_data sesuai ruleset, paket dan hari]
@@ -158,7 +158,7 @@ flowchart TD
     K --> L
     L --> G
     G --> M[Periksa lagi permintaan dan konteks penggantian save]
-    M --> N[Transaksi: game_runs, enam properties awal, empat runs_event dan save User]
+    M --> N[Transaksi: game_runs version 3, delapan properties awal, empat runs_event dan save User]
     N --> O{Commit berhasil?}
     O -->|Tidak| P[Batalkan perubahan run; katalog valid boleh tetap tersedia]
     O -->|Ya| Q[Mulai hari 1; event dipakai sesuai hari terjadwal]
@@ -169,7 +169,7 @@ flowchart TD
 | Koleksi | Isi dan pemilik data |
 |---|---|
 | event_data | Cerita, label pilihan, biaya/efek terpercaya, paket, hari dan asal konten. Katalog bersama yang dapat digunakan banyak pemain |
-| runs_event | Hubungan antara runId dan eventDataId, salinan narasi saat dipilih, pilihan pengguna dan waktu penyelesaian. Bersifat per sesi permainan |
+| runs_event | Hubungan antara gameRunId dan eventDataId, salinan narasi saat dipilih, pilihan pengguna dan waktu penyelesaian. Bersifat per sesi permainan |
 
 Satu dokumen event_data dapat dirujuk banyak runs_event. Mengambil pilihan hanya mengubah progres pemain terkait; tidak mengubah katalog bersama. Efek tidak diterapkan saat AI selesai menulis atau saat event disimpan.
 
@@ -178,14 +178,14 @@ Satu dokumen event_data dapat dirujuk banyak runs_event. Mengambil pilihan hanya
 1. Baca paket biaya/efek yang dipercaya dari konfigurasi engine dan cari katalog yang sesuai. Katalog bukan sumber angka AI arbitrer.
 2. Jika konten kurang, minta AI membuat narasi, validasi struktur/ID/teks, gabungkan dengan paket terpercaya, lalu simpan ke event_data. Jangan memegang transaksi run selama request AI.
 3. Pilih empat event katalog, satu untuk setiap jadwal hari 3, 7, 13, 17. AI tidak harus dipanggil pada setiap permainan jika katalog sudah cukup; generasi baru dapat memperbanyak variasi yang dapat dipakai ulang.
-4. Dalam transaksi awal, buat game_runs revision 0, enam properties awal dan empat runs_event yang merujuk eventDataId terpilih, lalu perbarui User.saveGame. Setiap runs_event awal memiliki chosenChoiceId/resolvedAt null. activeEvent hari pertama tetap null.
+4. Dalam transaksi awal, buat game_runs (`version: 3`) revision 0, delapan properties awal dan empat runs_event yang merujuk eventDataId terpilih, lalu perbarui User.saveGame. Setiap runs_event awal memiliki chosenChoiceId/resolvedAt null. activeEvent hari pertama tetap null.
 5. Jika transaksi awal gagal, save lama tetap utuh. Katalog valid yang sudah tersimpan boleh tetap ada untuk permainan lain. Jika permintaan Mulai Game diulang setelah sukses, kembalikan run/event yang sama.
 
 ### Validasi, indeks dan reuse
 
 Narasi bersama harus umum, tanpa data pribadi atau klaim keadaan spesifik pemain. Cocokkan ruleset, packageId dan day sebelum dipakai. source bernilai ai/mock/fallback; reuse konten AI tetap source ai. Salinan narrative pada runs_event membekukan yang benar-benar diterima pemain; jangan menimpanya dengan generasi baru.
 
-Satu paket dapat memiliki banyak variasi: gunakan _id event_data yang unik per cerita. packageId boleh berulang pada beberapa dokumen katalog, sehingga indeks rulesetId + packageId + day adalah indeks pencarian, bukan unique. Unique runId + eventId tetap dibutuhkan pada runs_event. Unique userId + startRequestId diperlukan untuk permintaan Mulai Game.
+Satu paket dapat memiliki banyak variasi: gunakan _id event_data yang unik per cerita. packageId boleh berulang pada beberapa dokumen katalog, sehingga indeks gameRulesetId + packageId + day adalah indeks pencarian, bukan unique. Unique gameRunId + eventId tetap dibutuhkan pada runs_event. Unique userId + startRequestId diperlukan untuk permintaan Mulai Game.
 
 ID pilihan, batas panjang teks dan efek diverifikasi backend. Respons terlambat setelah fallback atau pergantian run harus diabaikan untuk run tersebut. Refresh/load hanya membaca narasi yang sudah ditautkan. Pilihan efek tetap dijalankan melalui chooseEventOption dan transaksi aksi pada diagram sebelumnya.
 
@@ -200,23 +200,23 @@ flowchart TD
     C --> D[Backend validasi formulir; normalisasi username]
     D --> E{Input valid dan konfirmasi cocok?}
     E -->|Tidak| F[Tampilkan kesalahan; jangan membuat akun]
-    E -->|Ya| G[Hash password dengan Argon2id melalui pustaka]
+    E -->|Ya| G[Hash password dengan bcrypt]
     G --> H[Insert User dengan username unique, passwordHash, history kosong dan save null]
     H --> I{Akun berhasil disimpan?}
     I -->|Nama duplikat atau gagal| J[Tampilkan kesalahan; jangan menimpa akun lama]
     I -->|Ya| K[Buka halaman login]
     B -->|Sudah| K
     K --> L[Isi username dan password]
-    L --> M[Normalisasi username; cari User; verify passwordHash]
+    L --> M[Normalisasi username; cari User; bcrypt.compare passwordHash]
     M --> N{Kredensial cocok?}
-    N -->|Tidak| O[Pesan umum username atau password tidak sesuai; tanpa sesi]
-    N -->|Ya| P[Buat sesi aman; perbarui lastLoginAt dan updatedAt]
+    N -->|Tidak| O[Pesan umum username atau password tidak sesuai; tanpa JWT]
+    N -->|Ya| P[Terbitkan JWT via jsonwebtoken; perbarui lastLoginAt dan updatedAt]
     P --> Q[Tampilkan username dan pilihan Mulai Game atau Lanjutkan]
     Q --> R{Pengguna memilih logout?}
-    R -->|Ya| S[Akhiri sesi dan hapus cookie; data User dan save tetap ada]
+    R -->|Ya| S[Client buang JWT; data User dan save tetap ada]
     S --> K
 ```
 
-Nama pengguna adalah identitas masuk sekaligus nama tampilan. Email, authSubject dan displayName tidak digunakan pada rancangan login ini. Backend menyimpan username yang sudah dinormalisasi dan memberi indeks unik. Password asli maupun konfirmasi password tidak masuk database, log aksi, properties, narasi AI atau respons API.
+Nama pengguna adalah identitas masuk sekaligus nama tampilan. Email, authSubject dan displayName tidak digunakan. Backend menyimpan username yang sudah dinormalisasi dan memberi indeks unik. Password asli tidak masuk database atau log.
 
-Akun belum pernah login memiliki lastLoginAt null. Sesi memuat referensi User._id; setiap endpoint game tetap memeriksa kepemilikan run. Login tidak mengubah revision permainan atau membuat event AI ulang. Penyimpanan sesi dan kebijakan kedaluwarsa memerlukan implementasi autentikasi tersendiri; bagian ini bukan klaim fitur login sudah berfungsi.
+Akun belum pernah login memiliki `lastLoginAt` null. JWT memuat `User._id`; setiap endpoint game memeriksa kepemilikan run. Login tidak mengubah revision permainan. Secret JWT dan masa berlaku diatur saat implementasi; bagian ini bukan klaim fitur login sudah berfungsi.

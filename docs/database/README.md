@@ -16,10 +16,14 @@ Penjelasan setiap koleksi dan alur penyimpanannya ada di [Database_proposal.md](
 
 Pembersihan file tidak mengubah struktur koleksi pada diagram dan tidak menghapus data di server database. Integrasi backend serta pengujian database nyata belum dilakukan.
 
-Pembahasan penghapusan game_ruleset dan penyederhanaan packageId belum diterapkan pada diagram. Keduanya masih mengikuti rancangan terakhir yang tersimpan.
+Pembahasan penghapusan game_ruleset dan penyederhanaan packageId belum diterapkan pada diagram. Ringkasan keputusan terkunci ada di bagian atas [Database_proposal.md](Database_proposal.md).
 
-Alur proses penyimpanan ada di [FLOW_DATABASE.md](FLOW_DATABASE.md), dengan versi diagram yang dapat diedit di [database_flow.drawio](database_flow.drawio).
+Inti schema:
+- `GameState version: 3` (wall / troops / city)
+- Kampanye panjang (~100 hari): banyak `runs_event` dan banyak `game_report`
+- `game_report.gameRunId` → `game_runs`; di diagram hanya disandingkan visual dengan `runs_event`
+- Auth: `bcrypt` + JWT (`jsonwebtoken`); `actionId` dibuat client untuk dedupe
 
-Alur terbaru: Mulai Game → cari katalog event_data → AI membuat konten yang belum tersedia → validasi dan simpan ke event_data untuk dipakai ulang → runs_event menghubungkan empat event terpilih dengan run pemain. Event ditampilkan sesuai kalender dan efek baru diterapkan setelah pilihan pemain. Diagram menambahkan startRequestId pada game_runs; integrasi AI/database belum diimplementasikan.
+Alur proses: [FLOW_DATABASE.md](FLOW_DATABASE.md) dan [database_flow.drawio](database_flow.drawio).
 
-Autentikasi terbaru memakai username dan password: User menyimpan username unik dan passwordHash, tanpa email/authSubject/displayName. Penjelasan register/login ada di Database_proposal.md; flowchart ada pada halaman 6 database_flow.drawio dan bagian 7 FLOW_DATABASE.md. Ini masih rancangan, belum endpoint login/register yang berjalan.
+Alur Mulai Game: katalog `event_data` → AI jika perlu → tautkan lewat `runs_event`. Efek pilihan masuk `game_runs.state`, bukan `game_report`.
