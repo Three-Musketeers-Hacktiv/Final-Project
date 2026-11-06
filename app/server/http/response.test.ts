@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
 
+import { ApiError } from "./api-error";
 import { handleRouteError } from "./response";
 
 describe("handleRouteError", () => {
@@ -25,5 +26,15 @@ describe("handleRouteError", () => {
     expect(response.status).toBe(400);
     expect(body.error.code).toBe("VALIDATION_ERROR");
     expect(body.error.fields.username).toBeDefined();
+  });
+
+  it("preserves safe headers from an API error", () => {
+    const response = handleRouteError(
+      new ApiError(429, "RATE_LIMITED", "Try again later", undefined, { "Retry-After": "60" }),
+      "request-3",
+    );
+
+    expect(response.status).toBe(429);
+    expect(response.headers.get("retry-after")).toBe("60");
   });
 });

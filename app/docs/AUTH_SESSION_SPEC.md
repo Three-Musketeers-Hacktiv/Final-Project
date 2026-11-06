@@ -19,8 +19,8 @@ Terakhir diperbarui: 2026-11-06
 
 Aturan username awal:
 
-- panjang 3-32 karakter;
-- karakter yang diizinkan: huruf, angka, underscore, titik, dan tanda minus;
+- panjang 3-30 karakter;
+- karakter yang diizinkan: huruf lowercase, angka, dan underscore;
 - disimpan dalam bentuk tampilan dan bentuk canonical lowercase untuk pengecekan unik;
 - perbandingan login tidak membedakan kapitalisasi.
 

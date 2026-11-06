@@ -4,6 +4,7 @@ export class ApiError extends Error {
     public readonly code: string,
     message: string,
     public readonly fields?: Record<string, string>,
+    public readonly headers?: HeadersInit,
   ) {
     super(message);
     this.name = "ApiError";

@@ -21,6 +21,7 @@ export function apiFailure(
   message: string,
   requestId: string,
   fields?: Record<string, string>,
+  headers?: HeadersInit,
 ): Response {
   return Response.json(
     {
@@ -28,7 +29,7 @@ export function apiFailure(
       error: { code, message, ...(fields ? { fields } : {}) },
       meta: requestMeta(requestId),
     },
-    { status },
+    { status, headers },
   );
 }
 
@@ -40,7 +41,7 @@ function zodFields(error: ZodError): Record<string, string> {
 
 export function handleRouteError(error: unknown, requestId: string): Response {
   if (error instanceof ApiError) {
-    return apiFailure(error.status, error.code, error.message, requestId, error.fields);
+    return apiFailure(error.status, error.code, error.message, requestId, error.fields, error.headers);
   }
 
   if (error instanceof ZodError) {

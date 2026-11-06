@@ -50,6 +50,16 @@ const indexDefinitions: IndexDefinition[] = [
     keys: { rulesetId: 1, packageId: 1, day: 1 },
     options: { name: "events_ruleset_package_day" },
   },
+  {
+    collection: "auth_rate_limits",
+    keys: { key: 1, windowStart: 1 },
+    options: { name: "auth_rate_limit_window_unique", unique: true },
+  },
+  {
+    collection: "auth_rate_limits",
+    keys: { expiresAt: 1 },
+    options: { name: "auth_rate_limit_expiry_ttl", expireAfterSeconds: 0 },
+  },
 ];
 
 export async function ensureDatabaseIndexes(database: Db): Promise<void> {

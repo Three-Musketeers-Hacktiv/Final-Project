@@ -316,3 +316,45 @@ Commit:
 Catatan/risiko:
 - Readiness memerlukan environment dan Atlas yang valid saat dipanggil, tetapi tidak memblokir build.
 - Dependency development memiliki advisory transitif dari toolchain test; dependency production telah diaudit bersih.
+
+## 2026-11-06 — Autentikasi bcrypt dan JWT
+
+Tujuan:
+- Mengimplementasikan register, login, logout, dan pemeriksaan current user sesuai kontrak frontend.
+
+Tindakan:
+- Menambahkan schema Zod register/login dengan normalisasi username dan perlindungan unknown field.
+- Menambahkan hashing dan verifikasi password menggunakan bcryptjs dengan cost dari environment.
+- Menambahkan signing/verifikasi JWT `HS256` dengan `sub`, `jti`, issuer, audience, issued-at, dan expiry tujuh hari.
+- Menyimpan JWT hanya pada cookie `HttpOnly`, `SameSite=Lax`, `Secure` di Preview/Production.
+- Menambahkan transaksi penggantian session agar satu user hanya memiliki satu `jti` aktif.
+- Menambahkan `/api/auth/register`, `/api/auth/login`, `/api/auth/logout`, dan `/api/auth/me`.
+- Menambahkan origin validation untuk mutation request.
+- Menambahkan rate limit register/login berbasis HMAC IP dan username dengan TTL serta `Retry-After`.
+- Menambahkan index `auth_rate_limits`.
+
+File terdampak:
+- `app/server/auth/**` dibuat.
+- `app/app/api/auth/**` dibuat.
+- `app/server/db/indexes.ts`, primitive HTTP, test, dan dokumentasi backend diperbarui.
+
+Validasi:
+- `npm.cmd run lint`: lulus.
+- `npm.cmd run typecheck`: lulus.
+- `npm.cmd run test`: lulus, 5 file dan 13 test.
+- `npm.cmd run build`: lulus; empat auth route terdeteksi dynamic.
+- Unit test mencakup normalisasi/validasi input, bcrypt, fixed JWT expiry, signature salah, dan algoritma JWT tidak diizinkan.
+- Integration test MongoDB Atlas belum dijalankan karena URI database test belum tersedia.
+- Root `src/**`, root `docs/**`, dan file frontend tidak diubah.
+
+Commit sebelumnya:
+- `05e664f chore(backend): establish engine adapter and health route`
+- `78e05f4 chore(backend): establish server and database foundation`
+
+Commit:
+- Status: dibuat setelah pemeriksaan staged diff.
+- Push: tidak dilakukan.
+
+Catatan/risiko:
+- Validasi transaksi session dan unique index harus diulang terhadap Atlas test sebelum deployment.
+- Cost bcrypt 12 harus di-benchmark pada Vercel Preview.
