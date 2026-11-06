@@ -611,3 +611,19 @@ Commit sebelumnya:
 Commit:
 - Status: dibuat setelah validasi final dan pemeriksaan staged diff.
 - Push: tidak dilakukan.
+
+## 2026-11-06 — Panduan simulasi untuk developer frontend
+
+Tujuan:
+- Menyediakan satu dokumen handoff agar developer frontend dapat menjalankan backend dari Git Bash, mencoba smoke flow melalui Postman, dan memverifikasi campaign hari 1–20.
+
+Tindakan:
+- Menambahkan `app/docs/FRONTEND_POSTMAN_SIMULATION_GUIDE.md`.
+- Mendokumentasikan prasyarat Atlas, pembuatan `.env` lokal, setup index, health/readiness, dan cara menjalankan server.
+- Mendokumentasikan impor collection/environment Postman dan urutan smoke test.
+- Mendokumentasikan runner campaign Bash serta seluruh urutan action manual hari 1–20 di Postman.
+- Menambahkan panduan cookie, revision, expected response, troubleshooting, dan data diagnostik yang aman dibagikan.
+
+Batas scope:
+- Tidak mengubah source game engine, endpoint backend, atau artefak Postman.
+- Root `src/**` dan root `docs/**` tidak diubah.
