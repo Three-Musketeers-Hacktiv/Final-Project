@@ -18,11 +18,17 @@ Dokumen terkait:
 - `_id` dan referensi antar-document menggunakan `ObjectId`.
 - API mengubah `ObjectId` menjadi hex string.
 - `GameState.runId` menyimpan hex string dari `_id` document `game_runs`.
+- Nama field REF mengikuti collection tujuan: `userId`, `gameRunId`, `gameRulesetId`, `eventDataId`, dan `gameActionId`.
+- `runId` pada `GameState`/API dan `rulesetId` pada metadata ruleset bukan nama field REF MongoDB.
 - `actionId` dan `startRequestId` tetap UUID/string idempotency dari frontend.
 - Timestamp disimpan sebagai BSON `Date` dalam UTC.
 - Semua document yang berubah memiliki `createdAt`; document mutable juga memiliki `updatedAt`.
 - Password plaintext, JWT lengkap, JWT signing secret, dan OpenAI API key tidak pernah disimpan.
 - State lama dengan `version !== 3` ditolak; tidak dimigrasikan diam-diam.
+
+### Catatan penerapan perubahan nama REF
+
+Jika index versi lama sudah pernah dibuat di Atlas pada field `runId`/`rulesetId`, jangan langsung menjalankan setup index dengan data lama. Migrasikan field dokumen ke `gameRunId`/`gameRulesetId`, verifikasi hasilnya, lalu hapus index lama secara manual sebelum menjalankan `npm.cmd run db:indexes`. Script tidak menghapus atau mengubah data/index lama secara otomatis.
 
 ## 2. Daftar collection
 
@@ -47,12 +53,12 @@ type UserDocument = {
   username: string;
   passwordHash: string;
   saveGame: null | {
-    runId: ObjectId;
+    gameRunId: ObjectId;
     savedRevision: number;
     savedAt: Date;
   };
   gameHistory: Array<{
-    runId: ObjectId;
+    gameRunId: ObjectId;
     result: "victory" | "gameOver";
     endedAt: Date;
   }>;
@@ -140,7 +146,7 @@ unique { rulesetId: 1 }
 type GameRunDocument = {
   _id: ObjectId;
   userId: ObjectId;
-  rulesetId: ObjectId;
+  gameRulesetId: ObjectId;
   startRequestId: string;
   startRequestPayloadHash: string;
   state: GameState;
@@ -180,9 +186,21 @@ Optimistic update filter:
 ## 7. `game_actions`
 
 ```ts
+type GameActionType =
+  | "upgradeWall"
+  | "upgradeTroops"
+  | "upgradeCity"
+  | "repairCity"
+  | "endPreparationDay"
+  | "chooseEventOption"
+  | "startBattle"
+  | "continueFromReport"
+  | "chooseReward"
+  | "attachActiveEvent";
+
 type GameActionDocument = {
   _id: ObjectId;
-  runId: ObjectId;
+  gameRunId: ObjectId;
   userId: ObjectId;
   actionId: string;
   type: GameActionType;
@@ -201,13 +219,14 @@ Aturan:
 - Action gagal/no-op tidak membuat log sukses.
 - `payload` hanya field command aman; tidak menyimpan cookie, password, atau secret.
 - `payloadHash` mendeteksi reuse actionId dengan payload berbeda.
+- `attachActiveEvent` adalah helper internal backend/engine dan tidak diterima endpoint action publik.
 
 Indeks:
 
 ```text
-unique { runId: 1, actionId: 1 }
-unique { runId: 1, revisionAfter: 1 }
-index  { runId: 1, createdAt: 1 }
+unique { gameRunId: 1, actionId: 1 }
+unique { gameRunId: 1, revisionAfter: 1 }
+index  { gameRunId: 1, createdAt: 1 }
 ```
 
 ## 8. `game_properties`
@@ -227,7 +246,7 @@ type GamePropertyKey =
 
 type GamePropertyDocument = {
   _id: ObjectId;
-  runId: ObjectId;
+  gameRunId: ObjectId;
   gameActionId: ObjectId | null;
   revision: number;
   statKey: GamePropertyKey;
@@ -246,7 +265,7 @@ Aturan:
 Indeks:
 
 ```text
-unique { runId: 1, revision: 1, statKey: 1 }
+unique { gameRunId: 1, revision: 1, statKey: 1 }
 index  { gameActionId: 1 }
 ```
 
@@ -255,7 +274,7 @@ index  { gameActionId: 1 }
 ```ts
 type EventDataDocument = {
   _id: ObjectId;
-  rulesetId: ObjectId;
+  gameRulesetId: ObjectId;
   packageId: string;
   day: 3 | 7 | 13 | 17;
   narrative: {
@@ -286,7 +305,7 @@ Aturan:
 Indeks:
 
 ```text
-index { rulesetId: 1, packageId: 1, day: 1, createdAt: -1 }
+index { gameRulesetId: 1, packageId: 1, day: 1, createdAt: -1 }
 ```
 
 Indeks ini tidak unique karena satu package dapat memiliki banyak variasi narasi.
@@ -296,7 +315,7 @@ Indeks ini tidak unique karena satu package dapat memiliki banyak variasi narasi
 ```ts
 type RunEventDocument = {
   _id: ObjectId;
-  runId: ObjectId;
+  gameRunId: ObjectId;
   eventDataId: ObjectId;
   eventId: string;
   packageId: string;
@@ -325,8 +344,8 @@ Aturan:
 Indeks:
 
 ```text
-unique { runId: 1, eventId: 1 }
-index  { runId: 1, day: 1 }
+unique { gameRunId: 1, eventId: 1 }
+index  { gameRunId: 1, day: 1 }
 ```
 
 ## 11. `game_reports`
@@ -334,7 +353,7 @@ index  { runId: 1, day: 1 }
 ```ts
 type GameReportDocument = {
   _id: ObjectId;
-  runId: ObjectId;
+  gameRunId: ObjectId;
   userId: ObjectId;
   wave: 1 | 2;
   day: 10 | 20;
@@ -366,8 +385,8 @@ Aturan:
 Indeks:
 
 ```text
-unique { runId: 1, wave: 1 }
-unique { runId: 1, actionId: 1 }
+unique { gameRunId: 1, wave: 1 }
+unique { gameRunId: 1, actionId: 1 }
 ```
 
 ## 12. `auth_rate_limits` (opsional)

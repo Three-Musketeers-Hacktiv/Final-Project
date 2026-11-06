@@ -17,7 +17,7 @@ export type GameRulesetDocument = {
 export type GameRunDocument = {
   _id: ObjectId;
   userId: ObjectId;
-  rulesetId: ObjectId;
+  gameRulesetId: ObjectId;
   startRequestId: string;
   startRequestPayloadHash: string;
   state: GameState;
@@ -35,11 +35,12 @@ export type GameActionType =
   | "chooseEventOption"
   | "startBattle"
   | "continueFromReport"
-  | "chooseReward";
+  | "chooseReward"
+  | "attachActiveEvent";
 
 export type GameActionDocument = {
   _id: ObjectId;
-  runId: ObjectId;
+  gameRunId: ObjectId;
   userId: ObjectId;
   actionId: string;
   type: GameActionType;
@@ -62,7 +63,7 @@ export type GamePropertyKey =
 
 export type GamePropertyDocument = {
   _id: ObjectId;
-  runId: ObjectId;
+  gameRunId: ObjectId;
   gameActionId: ObjectId | null;
   revision: number;
   statKey: GamePropertyKey;
@@ -72,7 +73,7 @@ export type GamePropertyDocument = {
 
 export type GameReportDocument = {
   _id: ObjectId;
-  runId: ObjectId;
+  gameRunId: ObjectId;
   userId: ObjectId;
   wave: 1 | 2;
   day: number;
@@ -95,7 +96,7 @@ export type GameReportDocument = {
 
 export type EventDataDocument = {
   _id: ObjectId;
-  rulesetId: ObjectId;
+  gameRulesetId: ObjectId;
   packageId: string;
   day: number;
   narrative: {
@@ -113,7 +114,7 @@ export type EventDataDocument = {
 
 export type RunEventDocument = {
   _id: ObjectId;
-  runId: ObjectId;
+  gameRunId: ObjectId;
   eventDataId: ObjectId;
   eventId: string;
   packageId: string;

@@ -1,7 +1,7 @@
 import type { ObjectId } from "mongodb";
 
 export type SaveGamePointer = {
-  runId: ObjectId;
+  gameRunId: ObjectId;
   savedRevision: number;
   savedAt: Date;
 };
@@ -12,7 +12,7 @@ export type UserDocument = {
   passwordHash: string;
   saveGame: SaveGamePointer | null;
   gameHistory: Array<{
-    runId: ObjectId;
+    gameRunId: ObjectId;
     result: "victory" | "gameOver";
     endedAt: Date;
   }>;

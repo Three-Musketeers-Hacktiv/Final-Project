@@ -529,3 +529,36 @@ Commit sebelumnya:
 Commit:
 - Status: dibuat setelah pemeriksaan staged diff.
 - Push: tidak dilakukan.
+
+## 2026-11-06 â€” Penyelarasan kontrak database dengan game engine
+
+Tujuan:
+- Memperbaiki mismatch tipe action dan penamaan REF MongoDB berdasarkan keputusan terkunci pada dokumen database tim.
+
+Tindakan:
+- Menambahkan `attachActiveEvent` ke persisted `GameActionType` sebagai helper internal backend/engine.
+- Mempertahankan validator endpoint publik hanya untuk sembilan action frontend; request `attachActiveEvent` dari frontend ditolak.
+- Menyeragamkan REF MongoDB menjadi `gameRunId` dan `gameRulesetId`, termasuk pointer save/history user, query repository, document event/report/action/property, serta index.
+- Mempertahankan `runId` pada URL/API dan `GameState`, serta `rulesetId` string pada metadata `game_rulesets`, karena field tersebut bukan REF MongoDB.
+- Menambahkan peringatan migrasi untuk Atlas yang mungkin sudah mempunyai field/index lama; tidak ada data atau index database yang dihapus otomatis.
+- Mengabaikan mismatch `source` event sesuai arahan pemilik proyek.
+
+File terdampak:
+- `app/server/auth/types.ts`.
+- `app/server/db/indexes.ts`.
+- `app/server/game/**` yang terkait persistensi, view, dan validator test.
+- `app/docs/DATABASE_SCHEMA_V3.md` dan `app/docs/BACKEND_IMPLEMENTATION_PLAN.md`.
+- Root `src/**`, root `docs/**`, dan file game engine tidak diubah.
+
+Validasi:
+- `npm.cmd run lint`: lulus.
+- `npm.cmd run typecheck`: lulus.
+- `npm.cmd run test`: lulus, 10 file dan 29 test.
+- `npm.cmd run build`: lulus, termasuk kompilasi route API dinamis.
+
+Commit sebelumnya:
+- `dfefe3a chore(test): upgrade vitest security patch`
+
+Commit:
+- Status: dibuat setelah validasi final dan pemeriksaan staged diff.
+- Push: tidak dilakukan.

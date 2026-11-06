@@ -263,6 +263,8 @@ type SubmitActionRequest = {
 };
 ```
 
+Tipe action yang dapat dicatat pada `game_actions` adalah `upgradeWall`, `upgradeTroops`, `upgradeCity`, `repairCity`, `endPreparationDay`, `chooseEventOption`, `startBattle`, `continueFromReport`, `chooseReward`, dan helper internal `attachActiveEvent`.
+
 Action publik dari frontend:
 
 | Type | Payload | Fungsi engine |
@@ -284,7 +286,7 @@ Aturan `actionId`:
 - Dibuat satu kali untuk satu klik/intent pengguna.
 - Retry request yang sama memakai `actionId` yang sama.
 - Klik baru memakai `actionId` baru.
-- Unik dalam satu `runId`.
+- Unik dalam satu `gameRunId` pada penyimpanan MongoDB.
 
 Aturan `expectedRevision`:
 
@@ -392,7 +394,7 @@ Total attack dan defense tidak ditulis kembali ke `GameState`.
 
 Engine saat ini memakai config dari source code. Karena itu untuk MVP:
 
-- `rulesetId` mencatat ruleset yang dipakai run, misalnya `prototype-v3`.
+- `gameRulesetId` pada `game_runs` adalah REF ke metadata ruleset; `rulesetId` tetap menjadi identifier string pada document `game_rulesets`, misalnya `prototype-v3`.
 - Backend tidak mengubah rumus engine berdasarkan dokumen MongoDB.
 - Dokumen ruleset berfungsi sebagai metadata/snapshot audit immutable.
 - Dynamic ruleset baru dikerjakan jika engine menyediakan kontrak resminya.
@@ -404,11 +406,11 @@ Engine saat ini memakai config dari source code. Karena itu untuk MVP:
 | `users` | unique `username` |
 | `sessions` | unique `userId`; unique `jti`; TTL `expiresAt` |
 | `game_runs` | unique `_id`; unique `(userId, startRequestId)` |
-| `game_actions` | unique `(runId, actionId)`; unique `(runId, revisionAfter)` |
-| `game_properties` | unique `(runId, revision, statKey)` |
-| `runs_event` | unique `(runId, eventId)` |
-| `game_reports` | unique `(runId, wave)` |
-| `event_data` | non-unique `(rulesetId, packageId, day)` |
+| `game_actions` | unique `(gameRunId, actionId)`; unique `(gameRunId, revisionAfter)` |
+| `game_properties` | unique `(gameRunId, revision, statKey)` |
+| `runs_event` | unique `(gameRunId, eventId)` |
+| `game_reports` | unique `(gameRunId, wave)` |
+| `event_data` | non-unique `(gameRulesetId, packageId, day)` |
 
 ## 12. Mulai game dan lanjutkan save
 
@@ -480,7 +482,7 @@ Untuk development lokal, setiap developer boleh memakai project API key miliknya
 
 - `startBattle` dipanggil satu kali melalui action controller.
 - `battleResult` dari state hasil engine disimpan dalam `game_reports` pada transaksi yang sama.
-- Indeks `(runId, wave)` mencegah report ganda.
+- Indeks `(gameRunId, wave)` mencegah report ganda.
 - Frontend melakukan playback dari report tersimpan.
 - Percepatan animasi atau “lihat hasil” tidak memanggil engine lagi.
 - Refresh pada `battleReport` membaca state/report, bukan menjalankan `startBattle`.

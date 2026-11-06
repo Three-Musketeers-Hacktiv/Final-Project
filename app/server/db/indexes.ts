@@ -25,37 +25,37 @@ const indexDefinitions: IndexDefinition[] = [
   { collection: "game_runs", keys: { userId: 1, endedAt: 1 }, options: { name: "runs_user_ended" } },
   {
     collection: "game_actions",
-    keys: { runId: 1, actionId: 1 },
+    keys: { gameRunId: 1, actionId: 1 },
     options: { name: "actions_idempotency_unique", unique: true },
   },
   {
     collection: "game_actions",
-    keys: { runId: 1, revisionAfter: 1 },
+    keys: { gameRunId: 1, revisionAfter: 1 },
     options: { name: "actions_revision_unique", unique: true },
   },
   {
     collection: "game_properties",
-    keys: { runId: 1, revision: 1, statKey: 1 },
+    keys: { gameRunId: 1, revision: 1, statKey: 1 },
     options: { name: "properties_revision_stat_unique", unique: true },
   },
   {
     collection: "runs_event",
-    keys: { runId: 1, eventId: 1 },
+    keys: { gameRunId: 1, eventId: 1 },
     options: { name: "run_events_unique", unique: true },
   },
   {
     collection: "game_reports",
-    keys: { runId: 1, wave: 1 },
+    keys: { gameRunId: 1, wave: 1 },
     options: { name: "reports_wave_unique", unique: true },
   },
   {
     collection: "game_reports",
-    keys: { runId: 1, actionId: 1 },
+    keys: { gameRunId: 1, actionId: 1 },
     options: { name: "reports_action_unique", unique: true },
   },
   {
     collection: "event_data",
-    keys: { rulesetId: 1, packageId: 1, day: 1 },
+    keys: { gameRulesetId: 1, packageId: 1, day: 1 },
     options: { name: "events_ruleset_package_day" },
   },
   {

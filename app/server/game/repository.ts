@@ -63,7 +63,7 @@ export async function createRunTransaction(
   const run: GameRunDocument = {
     _id: runId,
     userId: user._id,
-    rulesetId: ruleset._id,
+    gameRulesetId: ruleset._id,
     startRequestId,
     startRequestPayloadHash: payloadHash,
     state,
@@ -83,7 +83,7 @@ export async function createRunTransaction(
         replaceActiveSave ? { _id: user._id } : { _id: user._id, saveGame: null },
         {
           $set: {
-            saveGame: { runId, savedRevision: state.revision, savedAt: now },
+            saveGame: { gameRunId: runId, savedRevision: state.revision, savedAt: now },
             updatedAt: now,
           },
         },
@@ -114,18 +114,18 @@ export async function findCurrentRun(userId: ObjectId): Promise<GameRunDocument 
   const database = await getDatabase();
   const user = await database.collection<UserDocument>("users").findOne({ _id: userId });
   if (!user?.saveGame) return null;
-  return findRunForUser(user.saveGame.runId, userId);
+  return findRunForUser(user.saveGame.gameRunId, userId);
 }
 
 export async function findAction(runId: ObjectId, actionId: string): Promise<GameActionDocument | null> {
   const database = await getDatabase();
-  return database.collection<GameActionDocument>("game_actions").findOne({ runId, actionId });
+  return database.collection<GameActionDocument>("game_actions").findOne({ gameRunId: runId, actionId });
 }
 
 export async function findLatestReport(runId: ObjectId): Promise<GameReportDocument | null> {
   const database = await getDatabase();
   return database.collection<GameReportDocument>("game_reports").findOne(
-    { runId },
+    { gameRunId: runId },
     { sort: { createdAt: -1 } },
   );
 }
@@ -168,7 +168,7 @@ export async function commitGameAction(input: {
       }
       if (resolvedEvent) {
         await database.collection<RunEventDocument>("runs_event").updateOne(
-          { runId: currentRun._id, eventId: resolvedEvent.eventId },
+          { gameRunId: currentRun._id, eventId: resolvedEvent.eventId },
           { $set: { chosenChoiceId: resolvedEvent.choiceId, resolvedAt: nextRun.updatedAt } },
           { session },
         );
@@ -177,7 +177,7 @@ export async function commitGameAction(input: {
       const userUpdate: Record<string, unknown> = {
         $set: {
           saveGame: {
-            runId: currentRun._id,
+            gameRunId: currentRun._id,
             savedRevision: nextRun.state.revision,
             savedAt: nextRun.updatedAt,
           },
@@ -187,7 +187,7 @@ export async function commitGameAction(input: {
       if (nextRun.endedAt && !currentRun.endedAt) {
         userUpdate.$push = {
           gameHistory: {
-            runId: currentRun._id,
+            gameRunId: currentRun._id,
             result: nextRun.state.phase === "victory" ? "victory" : "gameOver",
             endedAt: nextRun.endedAt,
           },
@@ -217,7 +217,7 @@ export function createReportDocument(
   if (action.type !== "startBattle" || !result) return null;
   return {
     _id: new ObjectId(),
-    runId: run._id,
+    gameRunId: run._id,
     userId: run.userId,
     wave: result.wave,
     day: result.day,

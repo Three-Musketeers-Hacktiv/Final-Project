@@ -37,4 +37,13 @@ describe("game request schemas", () => {
       payload: {},
     })).toThrow();
   });
+
+  it("rejects the internal attachActiveEvent action from frontend requests", () => {
+    expect(() => submitActionSchema.parse({
+      actionId,
+      expectedRevision: 0,
+      type: "attachActiveEvent",
+      payload: {},
+    })).toThrow();
+  });
 });

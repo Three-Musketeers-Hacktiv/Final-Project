@@ -10,7 +10,7 @@ export function toGameView(run: GameRunDocument, report: GameReportDocument | nu
     report: report
       ? {
           id: report._id.toHexString(),
-          runId: report.runId.toHexString(),
+          runId: report.gameRunId.toHexString(),
           wave: report.wave,
           day: report.day,
           sourceRevision: report.sourceRevision,

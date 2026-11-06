@@ -4,7 +4,7 @@ import { readEffectiveStats, type GameState } from "@/server/game-engine/adapter
 import type { GamePropertyDocument, GamePropertyKey } from "@/server/game/types";
 
 export function createPropertyDocuments(
-  runId: ObjectId,
+  gameRunId: ObjectId,
   state: GameState,
   gameActionId: ObjectId | null,
   createdAt: Date,
@@ -23,7 +23,7 @@ export function createPropertyDocuments(
 
   return Object.entries(values).map(([statKey, statValue]) => ({
     _id: new ObjectId(),
-    runId,
+    gameRunId,
     gameActionId,
     revision: state.revision,
     statKey: statKey as GamePropertyKey,

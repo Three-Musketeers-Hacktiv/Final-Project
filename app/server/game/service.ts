@@ -123,7 +123,7 @@ export async function submitGameAction(
     const narrative = narrativeResult.narrative;
     const eventData: EventDataDocument = {
       _id: eventDataId,
-      rulesetId: currentRun.rulesetId,
+      gameRulesetId: currentRun.gameRulesetId,
       packageId: result.state.activeEvent.packageId,
       day: result.state.activeEvent.day,
       narrative,
@@ -138,7 +138,7 @@ export async function submitGameAction(
       eventData,
       runEvent: {
         _id: new ObjectId(),
-        runId,
+        gameRunId: runId,
         eventDataId,
         eventId: result.state.activeEvent.eventId,
         packageId: result.state.activeEvent.packageId,
@@ -153,7 +153,7 @@ export async function submitGameAction(
   const payloadHash = hashPayload({ type: input.type, payload: input.payload });
   const action: GameActionDocument = {
     _id: new ObjectId(),
-    runId,
+    gameRunId: runId,
     userId,
     actionId: input.actionId,
     type: input.type,
