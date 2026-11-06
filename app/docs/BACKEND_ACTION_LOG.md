@@ -277,3 +277,42 @@ Validasi:
 Commit:
 - Status: dibuat setelah validasi fitur lulus.
 - Push: tidak dilakukan.
+
+## 2026-11-06 — Fondasi server, environment, dan MongoDB
+
+Tujuan:
+- Menyediakan primitive backend yang dipakai seluruh fitur berikutnya dan dapat diverifikasi tanpa credential production.
+
+Tindakan:
+- Menambahkan Zod, MongoDB driver, bcryptjs, Jose, OpenAI SDK, dan Vitest.
+- Memilih `bcryptjs` sebagai implementasi algoritma bcrypt karena native install script paket `bcrypt` diblokir kebijakan npm; cost factor tetap 12.
+- Memilih Vitest 3 agar kompatibel dengan tipe Node 20 milik project.
+- Menambahkan validasi environment lazy agar build tidak membutuhkan secret runtime.
+- Menambahkan cached MongoDB client untuk serverless dan retry setelah connection failure.
+- Menambahkan daftar index MongoDB idempotent sesuai schema v3.
+- Menambahkan response envelope, request ID, error mapping, JSON parser, liveness, dan readiness route.
+- Menambahkan `.env.example` tanpa nilai secret dan membuka pengecualian aman pada `.gitignore`.
+
+File terdampak:
+- `app/package.json` dan `app/package-lock.json` diperbarui hanya untuk dependency/script backend.
+- `app/.gitignore` dan `app/.env.example` diperbarui/dibuat.
+- `app/server/config/**`, `app/server/db/**`, dan `app/server/http/**` dibuat.
+- `app/app/api/health/readiness/route.ts` dibuat.
+- `app/vitest.config.ts` dibuat.
+- Dokumentasi backend diperbarui.
+
+Validasi:
+- `npm.cmd run lint`: lulus.
+- `npm.cmd run typecheck`: lulus.
+- `npm.cmd run test`: lulus, 2 file dan 5 test.
+- `npm.cmd run build`: lulus; readiness route terdeteksi dynamic.
+- `npm.cmd audit --omit=dev`: 0 vulnerability pada dependency production.
+- Root `src/**`, root `docs/**`, halaman, component, styling, dan asset frontend tidak diubah.
+
+Commit:
+- Status: dibuat setelah pemeriksaan staged diff.
+- Push: tidak dilakukan.
+
+Catatan/risiko:
+- Readiness memerlukan environment dan Atlas yang valid saat dipanggil, tetapi tidak memblokir build.
+- Dependency development memiliki advisory transitif dari toolchain test; dependency production telah diaudit bersih.

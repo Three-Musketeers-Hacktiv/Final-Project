@@ -51,6 +51,7 @@ Aturan:
 - Validasi seluruh environment variable saat startup/build memakai Zod.
 - Production harus gagal cepat bila konfigurasi database, auth, origin, atau AI wajib tidak lengkap.
 - Mode fallback AI tanpa key hanya diperbolehkan secara eksplisit pada local/test; Preview/Production mencatat preflight failure bila AI runtime diwajibkan.
+- Implementasi bcrypt memakai `bcryptjs` untuk menghindari native install script pada Windows/Vercel; format hash tetap bcrypt dan cost factor awal tetap 12.
 
 ## 4. MongoDB Atlas
 
