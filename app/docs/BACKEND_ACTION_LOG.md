@@ -232,3 +232,48 @@ Commit:
 Catatan/risiko:
 - JWT tidak dibuat stateless penuh karena kebutuhan logout langsung dan satu perangkat aktif memerlukan pemeriksaan session `jti` di MongoDB.
 - Cost bcrypt 12 perlu diukur agar latency login sesuai batas runtime Vercel.
+
+## 2026-11-06 — Baseline dokumentasi di-commit
+
+Tujuan:
+- Mengunci kontrak perencanaan sebelum perubahan kode backend dimulai.
+
+Tindakan:
+- Men-stage hanya `app/docs/**`.
+- Membuat commit dengan identitas Git developer yang aktif.
+
+Commit:
+- `1208009 docs(backend): define implementation contracts`
+- Push: tidak dilakukan.
+
+## 2026-11-06 — Technical spike integrasi game engine
+
+Tujuan:
+- Membuktikan backend Next.js dapat memakai public API game engine tanpa mengubah file engine.
+
+Tindakan:
+- Membaca dokumentasi lokal Next.js 16 untuk Route Handlers, Backend-for-Frontend, Node runtime, Turbopack root, dan output tracing.
+- Mengarahkan Turbopack dan output tracing ke root repository agar source engine dapat di-resolve dari project `app`.
+- Menambahkan adapter tunggal backend ke `src/game/index.ts`.
+- Menambahkan health endpoint Node.js yang memverifikasi kompatibilitas engine state versi 3.
+- Mengikuti batas Next.js 16 `cacheComponents`: route tidak mengekspor segment config `runtime`; Node.js tetap menjadi runtime default.
+
+File terdampak:
+- `app/next.config.ts` diperbarui.
+- `app/server/game-engine/adapter.ts` dibuat.
+- `app/app/api/health/route.ts` dibuat.
+- `app/docs/BACKEND_ACTION_LOG.md` diperbarui.
+
+Scope:
+- Tidak ada file pada root `src/**` atau root `docs/**` yang diubah.
+- Tidak ada file halaman, component, styling, atau asset frontend yang diubah.
+
+Validasi:
+- `npm.cmd run lint`: lulus.
+- `npm.cmd run build`: lulus; `/api/health` terdeteksi dan engine di-compile dari root repository.
+- Build pertama mengungkap incompatibility segment config `runtime` dengan `cacheComponents`; deklarasi dihapus karena Node.js adalah default.
+- Build membutuhkan akses jaringan untuk Google Fonts yang sudah digunakan frontend; tidak ada file frontend yang diubah.
+
+Commit:
+- Status: dibuat setelah validasi fitur lulus.
+- Push: tidak dilakukan.
