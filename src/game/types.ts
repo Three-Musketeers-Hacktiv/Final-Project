@@ -7,16 +7,15 @@ export type GamePhase =
   | "gameOver"
   | "victory";
 
-export type WaveId = 1 | 2;
-
 export type GameErrorCode =
   | "INVALID_PHASE"
+  | "INVALID_TRANSITION"
+  | "EVENT_REQUIRED"
   | "NO_ACTION_LEFT"
   | "INSUFFICIENT_GOLD"
   | "MAX_UPGRADE"
   | "HP_FULL"
   | "INVALID_CHOICE"
-  | "EVENT_REQUIRED"
   | "EVENT_ALREADY_RESOLVED"
   | "REWARD_ALREADY_CHOSEN"
   | "BATTLE_INVALID"
@@ -28,17 +27,17 @@ export type GameError = {
   message: string;
 };
 
-export type ActionResult<T> =
-  | { ok: true; state: T }
+export type ActionResult =
+  | { ok: true; state: GameState }
   | { ok: false; error: GameError };
 
 export type Effect =
-  | { type: "gold_gain"; amount: number }
-  | { type: "city_hp_loss"; amount: number }
-  | { type: "defense_bonus"; amount: number; wave: WaveId }
-  | { type: "upgrade_discount"; rate: number; untilWave: WaveId };
+  | { type: "grantGold"; amount: number }
+  | { type: "damageCity"; amount: number }
+  | { type: "nextWaveDefense"; amount: number; wave: 1 | 2 }
+  | { type: "upgradeDiscount"; rate: number; untilWave: 1 | 2 };
 
-export type EventChoicePackage = {
+export type EventChoice = {
   id: string;
   label: string;
   goldCost: number;
@@ -46,50 +45,33 @@ export type EventChoicePackage = {
 };
 
 export type EventPackage = {
-  id: string;
+  packageId: string;
+  eventId: string;
   day: number;
   title: string;
   description: string;
-  choices: [EventChoicePackage, EventChoicePackage];
+  choices: [EventChoice, EventChoice];
 };
 
 export type ActiveEvent = {
+  eventId: string;
   packageId: string;
   day: number;
   title: string;
   description: string;
-  choiceIds: [string, string];
-  source: "mock" | "fallback";
-};
-
-export type RewardOption = {
-  id: string;
-  label: string;
-  kind: "gold" | "income_bonus" | "upgrade_discount";
-  amount: number;
+  choices: [EventChoice, EventChoice];
+  source: "local" | "mock" | "fallback" | "ai";
 };
 
 export type ActiveEffects = {
-  defenseBonuses: Array<{ amount: number; wave: WaveId; sourceId: string }>;
-  upgradeDiscounts: Array<{
-    rate: number;
-    untilWave: WaveId;
-    sourceId: string;
-  }>;
-  incomeBonus: number;
-  incomeBonusSourceId: string | null;
-};
-
-export type MonsterSnapshot = {
-  name: string;
-  hp: number;
-  attack: number;
-};
-
-export type CityBattleSnapshot = {
-  hp: number;
-  attack: number;
-  defense: number;
+  /** Additive defense bonus keyed by wave number. */
+  defenseByWave: { 1?: number; 2?: number };
+  /** Highest active upgrade discount rate in [0, 1]. */
+  upgradeDiscountRate: number;
+  /** Clears after this wave resolves; null when no discount. */
+  upgradeDiscountUntilWave: 1 | 2 | null;
+  /** Extra gold on preparation days 11–19 while run is mid/late. */
+  prepIncomeBonus: number;
 };
 
 export type BattleRoundLog = {
@@ -101,7 +83,8 @@ export type BattleRoundLog = {
 };
 
 export type BattleResult = {
-  wave: WaveId;
+  wave: 1 | 2;
+  day: number;
   won: boolean;
   rounds: BattleRoundLog[];
   cityHpBefore: number;
@@ -111,19 +94,33 @@ export type BattleResult = {
   cityAttack: number;
   cityDefense: number;
   monsterAttack: number;
+  cityHpLost: number;
+  monsterHpLost: number;
 };
 
+export type RewardOption = {
+  id: string;
+  label: string;
+  kind: "grantGold" | "prepIncomeBonus" | "upgradeDiscount";
+  amount: number;
+};
+
+export type UpgradeTrack = "wall" | "troops" | "city";
+
 export type GameState = {
-  version: 1;
+  version: 3;
+  revision: number;
   runId: string;
   day: number;
   phase: GamePhase;
   gold: number;
   cityHp: number;
   cityMaxHp: number;
-  upgradeLevel: number;
+  wallLevel: number;
+  troopLevel: number;
+  cityLevel: number;
   actionUsedToday: boolean;
-  incomeGrantedForDay: number | null;
+  incomeGrantedDays: number[];
   completedEventIds: string[];
   activeEvent: ActiveEvent | null;
   effects: ActiveEffects;
@@ -135,7 +132,10 @@ export type GameState = {
 export type EffectiveStats = {
   attack: number;
   defense: number;
-  upgradeCost: number;
+  wallCost: number;
+  troopCost: number;
+  cityCost: number;
   repairCost: number;
-  upgradeDiscountRate: number;
+  /** Gold granted when this calendar day is a preparation day. */
+  dailyIncome: number;
 };

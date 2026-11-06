@@ -1,53 +1,57 @@
-import { GAME_CONFIG, nextWaveId } from "./config";
-import type { EffectiveStats, GameState, WaveId } from "./types";
+import { gameConfig } from "./config";
+import { incomeAmountForDay } from "./calendar";
+import { upcomingWave, defenseBonusForWave, discountedUpgradeCost } from "./effects";
+import type { EffectiveStats, GameState, UpgradeTrack } from "./types";
 
-export function baseAttack(state: GameState): number {
+export function trackLevel(state: GameState, track: UpgradeTrack): number {
+  if (track === "wall") return state.wallLevel;
+  if (track === "troops") return state.troopLevel;
+  return state.cityLevel;
+}
+
+export function getEffectiveAttack(state: GameState): number {
+  return gameConfig.baseAttack + state.troopLevel * gameConfig.troopAttackBonus;
+}
+
+export function getEffectiveDefense(state: GameState, wave: 1 | 2 = upcomingWave(state)): number {
   return (
-    GAME_CONFIG.baseAttack +
-    state.upgradeLevel * GAME_CONFIG.upgradeAttackBonus
+    gameConfig.baseDefense +
+    state.wallLevel * gameConfig.wallDefenseBonus +
+    defenseBonusForWave(state.effects, wave)
   );
 }
 
-export function baseDefense(state: GameState): number {
-  return (
-    GAME_CONFIG.baseDefense +
-    state.upgradeLevel * GAME_CONFIG.upgradeDefenseBonus
-  );
+export function getUpgradeCost(state: GameState, track: UpgradeTrack): number {
+  return discountedUpgradeCost(trackLevel(state, track), state.effects);
 }
 
-export function defenseBonusForWave(state: GameState, wave: WaveId): number {
-  return state.effects.defenseBonuses
-    .filter((b) => b.wave === wave)
-    .reduce((sum, b) => sum + b.amount, 0);
-}
-
-/** Max discount rate among discounts still valid for the upcoming wave. */
-export function activeUpgradeDiscountRate(state: GameState): number {
-  const upcoming = nextWaveId(state.wavesCleared);
-  let max = 0;
-  for (const d of state.effects.upgradeDiscounts) {
-    if (d.untilWave >= upcoming && d.rate > max) max = d.rate;
-  }
-  return max;
-}
-
-export function rawUpgradeCost(level: number): number {
-  return GAME_CONFIG.firstUpgradeCost + level * GAME_CONFIG.upgradeCostStep;
-}
-
-export function discountedCost(raw: number, rate: number): number {
-  if (rate <= 0) return raw;
-  return Math.ceil(raw * (1 - rate));
+export function getRepairCost(): number {
+  return gameConfig.repairCost;
 }
 
 export function getEffectiveStats(state: GameState): EffectiveStats {
-  const wave = nextWaveId(state.wavesCleared);
-  const discount = activeUpgradeDiscountRate(state);
   return {
-    attack: baseAttack(state),
-    defense: baseDefense(state) + defenseBonusForWave(state, wave),
-    upgradeCost: discountedCost(rawUpgradeCost(state.upgradeLevel), discount),
-    repairCost: GAME_CONFIG.repairCost,
-    upgradeDiscountRate: discount,
+    attack: getEffectiveAttack(state),
+    defense: getEffectiveDefense(state),
+    wallCost: getUpgradeCost(state, "wall"),
+    troopCost: getUpgradeCost(state, "troops"),
+    cityCost: getUpgradeCost(state, "city"),
+    repairCost: getRepairCost(),
+    dailyIncome: incomeAmountForDay(state, state.day),
+  };
+}
+
+export function getWavePreview(state: GameState) {
+  const wave = upcomingWave(state);
+  const monster = gameConfig.waves.find((entry) => entry.wave === wave);
+  if (!monster) return null;
+  return {
+    wave: monster.wave,
+    day: monster.day,
+    name: monster.name,
+    hp: monster.hp,
+    attack: monster.attack,
+    cityAttack: getEffectiveAttack(state),
+    cityDefense: getEffectiveDefense(state, monster.wave),
   };
 }
