@@ -1,20 +1,24 @@
-import { GAME_CONFIG } from "./config";
+import { gameConfig } from "./config";
+import { incomeAmountForDay } from "./calendar";
 import { emptyEffects } from "./effects";
-import { createRunId, enterDay } from "./transitions";
 import type { GameState } from "./types";
 
-function blankState(runId: string): GameState {
-  return {
-    version: GAME_CONFIG.stateVersion,
-    runId,
-    day: 0,
+export function createInitialState(options?: { runId?: string }): GameState {
+  const day = gameConfig.startingDay;
+  const shell: GameState = {
+    version: 3,
+    revision: 0,
+    runId: options?.runId ?? "run-1",
+    day,
     phase: "preparation",
-    gold: GAME_CONFIG.goldBeforeDay1Income,
-    cityHp: GAME_CONFIG.cityMaxHp,
-    cityMaxHp: GAME_CONFIG.cityMaxHp,
-    upgradeLevel: 0,
+    gold: gameConfig.startingGold,
+    cityHp: gameConfig.cityMaxHp,
+    cityMaxHp: gameConfig.cityMaxHp,
+    wallLevel: 0,
+    troopLevel: 0,
+    cityLevel: 0,
     actionUsedToday: false,
-    incomeGrantedForDay: null,
+    incomeGrantedDays: [],
     completedEventIds: [],
     activeEvent: null,
     effects: emptyEffects(),
@@ -22,13 +26,9 @@ function blankState(runId: string): GameState {
     battleResult: null,
     rewardChosenId: null,
   };
-}
-
-/** New run with day-1 income applied exactly once. */
-export function createInitialState(runId = createRunId()): GameState {
-  const entered = enterDay(blankState(runId), GAME_CONFIG.startingDay);
-  if (!entered.ok) {
-    throw new Error(entered.error.message);
-  }
-  return entered.state;
+  return {
+    ...shell,
+    gold: shell.gold + incomeAmountForDay(shell, day),
+    incomeGrantedDays: [day],
+  };
 }

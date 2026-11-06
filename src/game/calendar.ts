@@ -1,29 +1,23 @@
-import { GAME_CONFIG, eventPackageForDay, waveForDay } from "./config";
-import type { GamePhase } from "./types";
+import { eventPackageForDay, gameConfig } from "./config";
+import type { GameState } from "./types";
 
 export function isPreparationDay(day: number): boolean {
-  return (
-    (day >= 1 && day <= 9) || (day >= 11 && day <= 19)
-  );
+  return (day >= 1 && day <= 9) || (day >= 11 && day <= 19);
 }
 
 export function isBattleDay(day: number): boolean {
-  return waveForDay(day) !== null;
+  return (gameConfig.battleDays as readonly number[]).includes(day);
 }
 
-export function isEventDay(day: number): boolean {
-  return (GAME_CONFIG.eventDays as readonly number[]).includes(day);
+export function incomeAmountForDay(state: GameState, day: number): number {
+  const rewardBonus = day >= 11 && day <= 19 ? state.effects.prepIncomeBonus : 0;
+  return gameConfig.dailyIncome + state.cityLevel * gameConfig.cityIncomeBonus + rewardBonus;
 }
 
-export function phaseForEnteringDay(
-  day: number,
-  eventAlreadyDone: boolean,
-): GamePhase {
-  if (isBattleDay(day)) return "battleReady";
-  if (isEventDay(day) && !eventAlreadyDone) return "event";
-  return "preparation";
-}
-
-export function expectedEventPackageId(day: number): string | null {
-  return eventPackageForDay(day)?.id ?? null;
+/** Scheduled event for today is not finished, or an active event is still open. */
+export function hasUnresolvedEvent(state: GameState): boolean {
+  const scheduled = eventPackageForDay(state.day);
+  if (scheduled && !state.completedEventIds.includes(scheduled.eventId)) return true;
+  if (state.activeEvent && !state.completedEventIds.includes(state.activeEvent.eventId)) return true;
+  return false;
 }

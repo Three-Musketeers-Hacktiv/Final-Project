@@ -16,10 +16,10 @@ Dokumen ini merupakan instruksi untuk coding agent yang membantu Developer 1. Ke
 
 ## Keputusan terbaru yang berlaku
 
-- Kota memiliki HP, attack, defense, gold, dan level upgrade.
-- **Upgrade kota meningkatkan attack dan defense sekaligus.** Aturan ini menggantikan rancangan terdahulu yang hanya meningkatkan defense tembok.
-- Upgrade tidak memulihkan HP atau menambah maksimum HP pada prototipe. Perbaikan HP merupakan aksi terpisah.
-- Tugas ini tidak mencakup rekrutmen pasukan. Jika sistem pasukan sudah tersedia, pertahankan dan integrasikan kontribusinya tanpa menambah kompleksitas baru.
+- Kota memiliki HP, attack, defense, gold, serta tiga level: tembok, pasukan, dan kota.
+- **Upgrade terpisah:** tembok menaikkan defense, pasukan menaikkan attack, kota menaikkan MaxHP dan pemasukan harian. Ini menggantikan upgrade tunggal yang menaikkan attack dan defense sekaligus.
+- Upgrade kota menaikkan `cityMaxHp` dan mengisi `cityHp` sebesar bonus itu (bukan heal penuh). Perbaikan HP tetap aksi terpisah dan tidak menaikkan maksimum.
+- Tidak ada rekrutmen unit, HP pasukan individual, atau formasi. "Pasukan" di sini hanya level attack kota.
 - Tidak ada mana, sihir, formasi 3×2, targeting skuad, atau HP pasukan individual.
 - Battle menggunakan satu HP bar kota melawan satu HP bar monster.
 - Developer 3 menangani pembuatan narasi event oleh AI. Sistem game hanya menerima pilihan dan efek yang sudah tervalidasi.
@@ -51,7 +51,7 @@ Gunakan fase yang jelas, menyesuaikan nama yang sudah ada di repository:
 - Hari battle: 10 dan 20.
 - Pemasukan hanya diberikan ketika memasuki hari persiapan, tepat sekali per hari, termasuk hari 1.
 - Event terjadwal pada hari 3, 7, 13, dan 17. Pilihan event harus selesai sebelum aksi atau lanjut hari.
-- Maksimal satu aksi ekonomi berhasil per hari: upgrade atau perbaikan. Aksi gagal tidak menghabiskan jatah.
+- Maksimal satu aksi ekonomi berhasil per hari: salah satu dari upgrade tembok, pasukan, kota, atau perbaikan. Aksi gagal tidak menghabiskan jatah.
 - Pemain boleh lanjut tanpa memakai aksi. Jatah tidak terakumulasi.
 - Tidak ada pemasukan atau aksi ekonomi pada hari battle.
 - Setelah battle pertama berhasil, pemain melihat laporan lalu wajib memilih satu reward sebelum memasuki hari 11.
@@ -73,8 +73,8 @@ Gunakan nilai repository jika sudah disepakati tim. Jika belum ada, gunakan nila
 | Base defense | 2 |
 | Biaya upgrade pertama | 50 |
 | Kenaikan biaya tiap upgrade berikutnya | 20 |
-| Bonus setiap upgrade | Attack +5 dan defense +2 |
-| Maksimal upgrade | 5 kali; mulai dari level 0 |
+| Bonus tembok / pasukan / kota | Defense +2 / attack +5 / MaxHP +20 dan income +8 |
+| Maksimal tiap jalur | 5 kali; mulai dari level 0 |
 | Biaya perbaikan | 30 |
 | Pemulihan per perbaikan | Sampai 30 HP |
 | Wave 1, hari 10 | Goblin: HP 150, attack 22 |
@@ -328,4 +328,18 @@ Sertakan petunjuk alamat halaman harness, port backend, proxy, cara memilih fail
 - Tidak ada fitur di luar lingkup atau modifikasi tidak terkait.
 - Typecheck, test dan lint yang tersedia dijalankan; build dijalankan jika perubahan memengaruhi aplikasi terintegrasi.
 - Laporkan file yang berubah, kontrak integrasi, hasil pemeriksaan aktual, dan kendala yang tersisa.
-- Catat default baru: upgrade menaikkan attack/defense, tanpa rekrutmen baru, dan diskon untuk upgrade. Jangan menyatakan seluruh PRD lama sudah sinkron jika dokumennya belum diperbarui.
+- Catat default baru: tiga jalur upgrade (tembok/pasukan/kota), tanpa rekrutmen unit, dan diskon berlaku ke ketiga biaya upgrade. Jangan menyatakan seluruh PRD lama sudah sinkron jika dokumennya belum diperbarui.
+
+## Agent skills
+
+### Issue tracker
+
+Spesifikasi dan tiket disimpan sebagai Markdown lokal di `.scratch/`. Lihat `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Gunakan lima status bawaan. Lihat `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Gunakan satu konteks proyek. Lihat `docs/agents/domain.md`.

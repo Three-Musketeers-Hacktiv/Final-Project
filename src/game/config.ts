@@ -1,153 +1,126 @@
-import type { EventPackage, RewardOption, WaveId } from "./types";
+import type { EventPackage, RewardOption } from "./types";
 
-export const GAME_CONFIG = {
+/** Playtest income is 25 (AGENTS table listed 15). One source of truth. */
+export const gameConfig = {
   startingDay: 1,
-  goldBeforeDay1Income: 100,
-  // playtest: AGENTS table used 15; 25 is required for a fair lv5 + repair path to wave 2
+  startingGold: 100,
   dailyIncome: 25,
   cityMaxHp: 150,
   baseAttack: 10,
   baseDefense: 2,
-  firstUpgradeCost: 50,
+  upgradeBaseCost: 50,
   upgradeCostStep: 20,
-  upgradeAttackBonus: 5,
-  upgradeDefenseBonus: 2,
-  maxUpgradeLevel: 5,
+  maxTrackLevel: 5,
+  wallDefenseBonus: 2,
+  troopAttackBonus: 5,
+  cityMaxHpBonus: 20,
+  /** +3 could not fund separate ATK and DEF tracks through wave 2. */
+  cityIncomeBonus: 8,
   repairCost: 30,
-  repairAmount: 30,
-  totalDays: 20,
+  repairHeal: 30,
+  lastDay: 20,
   battleDays: [10, 20] as const,
-  eventDays: [3, 7, 13, 17] as const,
-  stateVersion: 1 as const,
-} as const;
-
-export const WAVES: Record<
-  WaveId,
-  { day: number; name: string; hp: number; attack: number }
-> = {
-  1: { day: 10, name: "Gerombolan Goblin", hp: 150, attack: 22 },
-  2: { day: 20, name: "Pasukan Orc", hp: 260, attack: 34 },
+  waves: [
+    { wave: 1 as const, day: 10, name: "Gerombolan Goblin", hp: 150, attack: 22 },
+    { wave: 2 as const, day: 20, name: "Pasukan Orc", hp: 260, attack: 34 },
+  ],
+  rewards: [
+    { id: "reward-gold", label: "Bantuan kerajaan", kind: "grantGold", amount: 40 },
+    { id: "reward-income", label: "Jalur perdagangan", kind: "prepIncomeBonus", amount: 6 },
+    { id: "reward-discount", label: "Logistik kota", kind: "upgradeDiscount", amount: 0.25 },
+  ] satisfies RewardOption[],
+  events: [
+    {
+      packageId: "event-day-3",
+      eventId: "event-day-3",
+      day: 3,
+      title: "Pengintai di gerbang",
+      description: "Bayar untuk memperkuat pertahanan wave pertama, atau biarkan lewat.",
+      choices: [
+        {
+          id: "day3-pay",
+          label: "Bayar 20 gold, defense +4 wave pertama",
+          goldCost: 20,
+          effects: [{ type: "nextWaveDefense", amount: 4, wave: 1 }],
+        },
+        {
+          id: "day3-skip",
+          label: "Lewati tanpa efek",
+          goldCost: 0,
+          effects: [],
+        },
+      ],
+    },
+    {
+      packageId: "event-day-7",
+      eventId: "event-day-7",
+      day: 7,
+      title: "Dilema perbekalan",
+      description: "Bayar untuk menghindari kerusakan, atau terima luka pada kota.",
+      choices: [
+        {
+          id: "day7-pay",
+          label: "Bayar 15 gold",
+          goldCost: 15,
+          effects: [],
+        },
+        {
+          id: "day7-hurt",
+          label: "Gratis, HP kota -10",
+          goldCost: 0,
+          effects: [{ type: "damageCity", amount: 10 }],
+        },
+      ],
+    },
+    {
+      packageId: "event-day-13",
+      eventId: "event-day-13",
+      day: 13,
+      title: "Kesempatan dagang",
+      description: "Terima emas atau diskon upgrade sampai wave kedua.",
+      choices: [
+        {
+          id: "day13-gold",
+          label: "Gratis, gold +20",
+          goldCost: 0,
+          effects: [{ type: "grantGold", amount: 20 }],
+        },
+        {
+          id: "day13-discount",
+          label: "Gratis, diskon upgrade 25% sampai wave kedua",
+          goldCost: 0,
+          effects: [{ type: "upgradeDiscount", rate: 0.25, untilWave: 2 }],
+        },
+      ],
+    },
+    {
+      packageId: "event-day-17",
+      eventId: "event-day-17",
+      day: 17,
+      title: "Barikade terakhir",
+      description: "Bayar untuk defense wave kedua, atau lewatkan.",
+      choices: [
+        {
+          id: "day17-pay",
+          label: "Bayar 20 gold, defense +4 wave kedua",
+          goldCost: 20,
+          effects: [{ type: "nextWaveDefense", amount: 4, wave: 2 }],
+        },
+        {
+          id: "day17-skip",
+          label: "Lewati tanpa efek",
+          goldCost: 0,
+          effects: [],
+        },
+      ],
+    },
+  ] satisfies EventPackage[],
 };
 
-/** Trusted event effect packages — AI / mock only supplies narrative labels. */
-export const EVENT_PACKAGES: EventPackage[] = [
-  {
-    id: "event-day-3",
-    day: 3,
-    title: "Scout Report",
-    description: "Scouts return with a costly defense tip.",
-    choices: [
-      {
-        id: "event-day-3-a",
-        label: "Pay for fortifications",
-        goldCost: 20,
-        effects: [{ type: "defense_bonus", amount: 4, wave: 1 }],
-      },
-      {
-        id: "event-day-3-b",
-        label: "Ignore the tip",
-        goldCost: 0,
-        effects: [],
-      },
-    ],
-  },
-  {
-    id: "event-day-7",
-    day: 7,
-    title: "Supply Shortage",
-    description: "A merchant demands payment or the city suffers.",
-    choices: [
-      {
-        id: "event-day-7-a",
-        label: "Pay the merchant",
-        goldCost: 15,
-        effects: [],
-      },
-      {
-        id: "event-day-7-b",
-        label: "Refuse and endure",
-        goldCost: 0,
-        effects: [{ type: "city_hp_loss", amount: 10 }],
-      },
-    ],
-  },
-  {
-    id: "event-day-13",
-    day: 13,
-    title: "Trade Caravan",
-    description: "A caravan offers aid after the first wave.",
-    choices: [
-      {
-        id: "event-day-13-a",
-        label: "Accept a gold gift",
-        goldCost: 0,
-        effects: [{ type: "gold_gain", amount: 20 }],
-      },
-      {
-        id: "event-day-13-b",
-        label: "Accept builder discount",
-        goldCost: 0,
-        effects: [{ type: "upgrade_discount", rate: 0.25, untilWave: 2 }],
-      },
-    ],
-  },
-  {
-    id: "event-day-17",
-    day: 17,
-    title: "Wall Reinforcement Offer",
-    description: "Engineers propose a last-minute defense boost.",
-    choices: [
-      {
-        id: "event-day-17-a",
-        label: "Hire the engineers",
-        goldCost: 20,
-        effects: [{ type: "defense_bonus", amount: 4, wave: 2 }],
-      },
-      {
-        id: "event-day-17-b",
-        label: "Save the gold",
-        goldCost: 0,
-        effects: [],
-      },
-    ],
-  },
-];
-
-export const REWARD_OPTIONS: RewardOption[] = [
-  {
-    id: "reward-gold",
-    label: "Gold +40",
-    kind: "gold",
-    amount: 40,
-  },
-  {
-    id: "reward-income",
-    label: "Income +6 on days 11–19",
-    kind: "income_bonus",
-    amount: 6,
-  },
-  {
-    id: "reward-discount",
-    label: "Upgrade discount 25% on days 11–19",
-    kind: "upgrade_discount",
-    amount: 0.25,
-  },
-];
-
-export function eventPackageById(id: string): EventPackage | undefined {
-  return EVENT_PACKAGES.find((p) => p.id === id);
-}
-
 export function eventPackageForDay(day: number): EventPackage | undefined {
-  return EVENT_PACKAGES.find((p) => p.day === day);
+  return gameConfig.events.find((event) => event.day === day);
 }
 
-export function waveForDay(day: number): WaveId | null {
-  if (day === 10) return 1;
-  if (day === 20) return 2;
-  return null;
-}
-
-export function nextWaveId(stateWavesCleared: number): WaveId {
-  return stateWavesCleared >= 1 ? 2 : 1;
+export function rewardById(id: string): RewardOption | undefined {
+  return gameConfig.rewards.find((reward) => reward.id === id);
 }
