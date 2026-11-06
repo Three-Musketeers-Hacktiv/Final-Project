@@ -4,16 +4,14 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
+    "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "typecheck": "tsc --noEmit --pretty false",
-    "lint": "tsc --noEmit --pretty false"
+    "play": "vite"
   },
   "devDependencies": {
-    "typescript": "~5.9.2",
+    "typescript": "^5.9.3",
+    "vite": "^7.3.7",
     "vitest": "^3.2.4"
-  },
-  "allowScripts": {
-    "esbuild@0.28.2": true
   }
 }
