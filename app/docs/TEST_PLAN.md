@@ -118,6 +118,8 @@ Postman CLI yang tersedia dapat digunakan untuk menjalankan collection pada loca
 
 Artefak smoke test tersedia di `postman/backend-api.postman_collection.json` dan `postman/backend-api.postman_environment.json`. Collection mencakup register, login, `/auth/me`, create run, satu action, current run, dan logout. Jalankan hanya setelah server dan Atlas test siap.
 
+Runner `scripts/run-campaign.ts` menguji campaign API hari 1–20 terhadap server yang sedang berjalan. Runner membuat user/run unik, memakai cookie session, menjalankan seluruh event/battle/reward sampai victory, membaca ulang run dari MongoDB, memastikan save aktif sudah dibersihkan, lalu logout. Data test dipertahankan untuk audit dan tidak dihapus otomatis.
+
 ## 7. Pengujian keamanan minimum
 
 - IDOR: user tidak dapat membaca atau mengubah run user lain.
@@ -138,32 +140,31 @@ Test concurrency menjalankan minimal dua request action pada `runId` dan version
 - tidak ada action log ganda untuk `actionId` yang sama;
 - version state bertambah secara monoton;
 - event/report terkait konsisten dengan state;
-- request yang kalah mendapat `409 STATE_CONFLICT` dan dapat mengambil state terbaru.
+- request yang kalah mendapat `409 STALE_REVISION` dan dapat mengambil state terbaru.
 
 Test transaksi juga menyuntikkan kegagalan di tengah write untuk memastikan tidak ada partial save.
 
 ## 9. OpenAI test policy
 
-- Unit dan CI memakai `MockEventNarrativeGenerator`.
-- Mock menyediakan kasus sukses, timeout, refusal, invalid schema, dan provider error.
+- Unit test memakai generator substitusi untuk kasus sukses dan choice ID tidak tepercaya.
+- Mode tanpa API key memakai fallback lokal dan tercakup dalam campaign API.
 - Real API smoke test hanya berjalan bila flag eksplisit dan `OPENAI_API_KEY` tersedia.
 - Real smoke test menggunakan jumlah request dan output token kecil.
 - Hasil smoke test tidak menjadi assertion narasi kata-per-kata; yang diuji schema, latency budget, dan fallback behavior.
 
 ## 10. Perintah verifikasi
 
-Nama script final ditetapkan ketika scaffold backend dibuat. Target minimal:
+Perintah yang tersedia:
 
 ```text
 npm run lint
 npm run typecheck
 npm run test
-npm run test:integration
 npm run build
-npm run test:api
+npm run test:campaign
 ```
 
-`test:api` direncanakan menjalankan Postman CLI atau runner kontrak ekuivalen. Perintah yang belum tersedia tidak boleh didokumentasikan sebagai sudah lulus.
+`npm run test:campaign` memerlukan server lokal aktif pada `http://localhost:3000` dan MongoDB Atlas development/test yang mendukung transaction. Base URL lain dapat diberikan melalui `CAMPAIGN_BASE_URL`; bila `APP_ORIGIN` berbeda dari base URL runner, berikan origin yang diizinkan melalui `CAMPAIGN_ORIGIN`. Runner tidak memerlukan OpenAI key karena fallback lokal adalah jalur yang valid.
 
 ## 11. Urutan CI/deployment gate
 

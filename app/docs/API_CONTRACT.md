@@ -141,7 +141,8 @@ Sukses: `201 Created`
   "data": {
     "user": {
       "id": "672abc...",
-      "username": "player_01"
+      "username": "player_01",
+      "hasActiveSave": false
     }
   }
 }
@@ -247,7 +248,8 @@ Aturan:
 - Retry intent yang sama harus memakai ID yang sama.
 - Jika save aktif ada dan `replaceActiveSave` false, server menolak.
 - Jika true, pointer save berpindah ke run baru; run lama tetap tersimpan dan tidak dianggap selesai.
-- AI event disiapkan sebelum transaksi; fallback digunakan ketika AI gagal.
+- Create run hanya menyimpan state awal, delapan properties revision 0, metadata ruleset, dan pointer save.
+- Narasi event baru dibuat ketika action engine pertama kali memasuki hari event (3, 7, 13, atau 17). Jika AI tidak tersedia/gagal, fallback lokal digunakan pada action yang sama.
 
 Sukses run baru: `201 Created`. Retry run yang sudah sukses: `200 OK` dengan run yang sama.
 
@@ -255,11 +257,9 @@ Sukses run baru: `201 Created`. Retry run yang sudah sukses: `200 OK` dengan run
 {
   "ok": true,
   "data": {
-    "run": {
-      "id": "672def...",
-      "created": true,
-      "game": {}
-    }
+    "runId": "672def...",
+    "game": {},
+    "replayed": false
   }
 }
 ```
@@ -271,17 +271,18 @@ Error utama:
 - `UNAUTHENTICATED` — 401
 - `ACTIVE_SAVE_EXISTS` — 409
 - `START_REQUEST_CONFLICT` — 409 jika ID sama membawa payload berbeda
-- `AI_UNAVAILABLE_FALLBACK_FAILED` — 503 hanya jika AI dan fallback sama-sama gagal
 
 ### `GET /api/runs/current`
 
 Mengambil save aktif milik user.
 
-Sukses: `200 OK` dengan `GameView`.
+Sukses: `200 OK` dengan `{ runId, game: GameView }`.
 
 Tidak ada save: `404 NO_ACTIVE_SAVE`.
 
 Load tidak memanggil action engine, tidak menambah income, dan tidak menghitung battle ulang.
+
+Ketika run mencapai `victory` atau `gameOver`, response action terakhir tetap membawa final `GameView`, tetapi pointer save aktif dihapus. Frontend menyimpan `runId` dari sesi tersebut dan memakai `GET /api/runs/:runId` bila perlu membaca kembali hasil akhirnya.
 
 ### `GET /api/runs/:runId`
 
@@ -370,13 +371,13 @@ Frontend tidak dapat mengirim `attachActiveEvent`, `ensureLocalEvent`, state bar
 Frontend mengirim ulang request yang identik dengan `actionId` yang sama. Backend mencari action log dan mengembalikan:
 
 - `409 DUPLICATE_ACTION`; dan
-- state server terbaru pada `data.currentGame` bila aman disediakan.
+- revision server terbaru pada `error.fields.currentRevision`.
 
-Frontend kemudian mengganti local view dengan state server.
+Frontend kemudian memanggil `GET /api/runs/:runId` atau `GET /api/runs/current` untuk mengambil state server terbaru.
 
 ### Dua klik berbeda dari revision sama
 
-Request pertama yang commit menang. Request kedua menghasilkan `409 STALE_REVISION` dengan current revision. Frontend reload current game dan tidak mengubah ID request lama menjadi intent baru otomatis.
+Request pertama yang commit menang. Request kedua menghasilkan `409 STALE_REVISION` dengan `error.fields.currentRevision`. Frontend reload current game dan tidak mengubah ID request lama menjadi intent baru otomatis.
 
 ### Action ditolak engine
 

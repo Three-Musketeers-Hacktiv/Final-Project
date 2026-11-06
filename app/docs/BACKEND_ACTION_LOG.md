@@ -562,3 +562,52 @@ Commit sebelumnya:
 Commit:
 - Status: dibuat setelah validasi final dan pemeriksaan staged diff.
 - Push: tidak dilakukan.
+
+## 2026-11-06 — Final handoff frontend dan campaign API 20 hari
+
+Tujuan:
+- Menyamakan dokumentasi frontend dengan respons/timing backend aktual dan membuktikan campaign engine dapat diselesaikan melalui API serta MongoDB Atlas.
+
+Tindakan:
+- Memperbaiki contoh register dan create-run agar sesuai response aktual `{ runId, game, replayed }`.
+- Mendokumentasikan `currentRevision` pada `error.fields` untuk duplicate/stale action dan kewajiban frontend mengambil ulang state.
+- Menyelaraskan spesifikasi AI: create run tidak memanggil provider; narasi dibuat ketika action memasuki hari event, lalu disimpan bersama action setelah AI/fallback selesai.
+- Menghapus klaim empat `runs_event` dibuat saat create run dan klaim reuse katalog yang belum diimplementasikan.
+- Menambahkan runner `scripts/run-campaign.ts` serta command `npm run test:campaign` untuk campaign API hari 1–20.
+- Mengubah penyelesaian `victory/gameOver` agar pointer `users.saveGame` menjadi `null` dalam transaksi yang sama dengan history dan endedAt.
+- Mempertahankan `.env.example` dengan nilai kosong sesuai keputusan pemilik proyek; file secret `.env` tetap tidak dilacak Git.
+- Percobaan campaign pertama ditolak aman dengan `403 ORIGIN_NOT_ALLOWED` sebelum penulisan user karena origin runner berbeda dari `APP_ORIGIN` lokal.
+- Menambahkan opsi `CAMPAIGN_ORIGIN`, lalu menjalankan ulang dengan origin yang sesuai tanpa mengubah `.env` milik pengguna.
+- Memverifikasi dan menghentikan proses Next.js sandbox lama pada port 3000 sebelum server campaign dengan akses Atlas dijalankan.
+
+Hasil campaign Atlas:
+- Register, login, cookie session, `/auth/me`, dan create run berhasil.
+- Seluruh event hari 3, 7, 13, dan 17 diselesaikan melalui endpoint action.
+- Battle hari 10, report, dan reward berhasil.
+- Battle hari 20 berakhir pada `phase: victory`, revision 42.
+- Run victory berhasil dibaca ulang dari MongoDB.
+- `GET /api/runs/current` setelah victory menghasilkan `404 NO_ACTIVE_SAVE`.
+- Logout berhasil dan `/api/auth/me` sesudahnya menghasilkan `401 UNAUTHENTICATED`.
+- Data akun/run test unik dipertahankan pada database development untuk audit; tidak ada data lama yang dihapus.
+
+File terdampak:
+- `app/.env.example`.
+- `app/package.json`.
+- `app/scripts/run-campaign.ts`.
+- `app/server/game/repository.ts`.
+- `app/docs/API_CONTRACT.md`, `AI_EVENT_RUNTIME.md`, `BACKEND_IMPLEMENTATION_PLAN.md`, `DATABASE_SCHEMA_V3.md`, dan `TEST_PLAN.md`.
+- Root `src/**`, root `docs/**`, serta source game engine tidak diubah.
+
+Validasi:
+- `npm.cmd run lint`: lulus.
+- `npm.cmd run typecheck`: lulus.
+- `npm.cmd run test`: lulus, 10 file dan 29 test.
+- `npm.cmd run test:campaign`: lulus sampai victory pada revision 42.
+- `npm.cmd run build`: lulus.
+
+Commit sebelumnya:
+- `2cfec77 fix(database): align action types and reference names`
+
+Commit:
+- Status: dibuat setelah validasi final dan pemeriksaan staged diff.
+- Push: tidak dilakukan.

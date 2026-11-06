@@ -9,6 +9,7 @@
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
+    "test:campaign": "tsx scripts/run-campaign.ts",
     "db:indexes": "tsx scripts/setup-indexes.ts"
   },
   "dependencies": {

@@ -431,10 +431,9 @@ Jangan menyimpan IP mentah jika hash/fingerprint cukup untuk kebutuhan rate limi
 
 - Insert `game_runs` revision 0.
 - Insert delapan properties revision 0.
-- Insert empat `runs_event`.
 - Update `users.saveGame`.
 
-AI/katalog lookup dilakukan sebelum transaction.
+Create run tidak membuat `event_data` atau `runs_event`. Keduanya dibuat kemudian dalam transaksi action yang pertama kali memasuki hari event, setelah generasi AI/fallback selesai di luar transaction.
 
 ### Gameplay action
 
@@ -443,8 +442,8 @@ AI/katalog lookup dilakukan sebelum transaction.
 - Insert delapan `game_properties`.
 - Update `runs_event` jika event choice.
 - Insert `game_reports` jika battle.
-- Update `users.saveGame`.
-- Update history/endedAt jika game selesai.
+- Update `users.saveGame` ke revision terbaru selama run masih aktif.
+- Jika game selesai, set `users.saveGame` menjadi `null` serta update history/endedAt.
 
 Semua operasi terkait harus commit atau rollback bersama.
 

@@ -420,13 +420,12 @@ Request membawa `startRequestId`. Alur:
 
 1. Verifikasi user dan konfirmasi penggantian save aktif dari frontend.
 2. Periksa apakah `(userId, startRequestId)` sudah pernah sukses.
-3. Siapkan empat event dari katalog atau fallback terpercaya.
-4. Buat `runId` di backend.
-5. Panggil `createInitialState({ runId })`.
-6. Simpan run revision 0, delapan properties awal, empat `runs_event`, dan pointer save user dalam transaksi.
-7. Kembalikan run yang sama jika request identik diulang.
+3. Buat `runId` di backend.
+4. Panggil `createInitialState({ runId })`.
+5. Simpan run revision 0, delapan properties awal, metadata ruleset, dan pointer save user dalam transaksi.
+6. Kembalikan run yang sama jika request identik diulang.
 
-Request ke provider AI tidak dilakukan saat transaksi MongoDB sedang terbuka.
+Create run tidak memanggil provider AI. Narasi dibuat ketika action engine memasuki hari event dan panggilan provider selesai sebelum transaksi action MongoDB dibuka.
 
 ### Lanjutkan
 
@@ -455,11 +454,7 @@ AI, mock, atau fallback hanya boleh menyediakan:
 
 Ketika action engine menghasilkan event aktif, backend boleh melakukan dekorasi narasi dalam transaksi yang sama setelah memvalidasi `eventId`, `packageId`, hari, dan choice IDs. Backend tidak boleh mengganti cost/effects dari engine.
 
-Prioritas konten:
-
-1. Katalog tervalidasi yang sudah tersedia.
-2. Narasi AI yang lolos validator.
-3. Fallback lokal terpercaya.
+Implementasi saat ini membuat satu dokumen `event_data` ketika event pertama kali aktif pada run. Narasi AI yang lolos validator dipakai bila provider terkonfigurasi; selain itu backend memakai fallback lokal terpercaya. Reuse katalog lintas-run belum diterapkan.
 
 Untuk vertical slice awal, fallback harus bekerja tanpa provider AI. Integrasi AI tidak boleh menjadi blocker happy path 20 hari.
 
@@ -472,7 +467,7 @@ Untuk vertical slice awal, fallback harus bekerja tanpa provider AI. Integrasi A
 - Gunakan Zod sebagai sumber schema output dan parser runtime.
 - Output AI hanya berisi title, description, dan label pilihan yang terikat pada choice ID terpercaya.
 - Jangan mengirim username, password, session, save lengkap, atau data pribadi pemain ke OpenAI.
-- Batasi timeout, jumlah retry, panjang output, dan jumlah generasi per pembuatan run.
+- Batasi timeout, jumlah retry, panjang output, dan satu generasi ketika masing-masing event memasuki state aktif.
 - Jika API gagal, timeout, menolak, atau menghasilkan output invalid, gunakan fallback terpercaya.
 - Jangan membuka MongoDB transaction saat menunggu respons OpenAI.
 

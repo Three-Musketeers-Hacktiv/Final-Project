@@ -185,6 +185,7 @@ export async function commitGameAction(input: {
         },
       };
       if (nextRun.endedAt && !currentRun.endedAt) {
+        (userUpdate.$set as Record<string, unknown>).saveGame = null;
         userUpdate.$push = {
           gameHistory: {
             gameRunId: currentRun._id,
