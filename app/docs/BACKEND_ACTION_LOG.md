@@ -504,3 +504,28 @@ Commit sebelumnya:
 Commit:
 - Status: dibuat setelah pemeriksaan staged diff.
 - Push: tidak dilakukan.
+
+## 2026-11-06 — Upgrade test runner security patch
+
+Tujuan:
+- Menghapus advisory critical pada dependency test tanpa force-fix atau downgrade konfigurasi Next.js.
+
+Tindakan:
+- Meng-upgrade Vitest dari 3.2.4 ke patched 4.1.12 yang kompatibel dengan Node 20 types proyek.
+- Mengganti config menjadi `vitest.config.mts` agar pemuatan ESM eksplisit dan tanpa warning.
+- Tidak menjalankan `npm audit fix --force` karena rekomendasinya menurunkan `eslint-config-next` ke versi mayor yang tidak sesuai Next.js 16.
+
+Validasi:
+- `npm.cmd run lint`: lulus setelah perubahan config final.
+- `npm.cmd run typecheck`: lulus setelah perubahan config final.
+- `npm.cmd run test`: lulus, 10 file dan 28 test pada Vitest 4.1.12 tanpa warning config.
+- `npm.cmd run build`: lulus.
+- `npm.cmd audit --omit=dev`: 0 vulnerability production.
+- Full audit tersisa 8 advisory moderate pada toolchain eslint/minimatch development; tidak masuk production runtime.
+
+Commit sebelumnya:
+- `589e654 fix(backend): harden session and run concurrency`
+
+Commit:
+- Status: dibuat setelah pemeriksaan staged diff.
+- Push: tidak dilakukan.
