@@ -5,7 +5,7 @@ Baca dulu: [DEV1_CONTRACT.md](./DEV1_CONTRACT.md)
 ## Yang BE kerjakan
 
 - Persist `GameState` (JSON-serializable, `version: 3`)
-- Auth / run ownership / Mongo collections
+- Auth: hash password dengan `bcrypt`, terbitkan/verifikasi JWT dengan `jsonwebtoken`; run ownership / Mongo collections
 - Endpoint aksi: load state → panggil fungsi engine → commit state baru
 - Narasi event AI: hanya label/teks; efek tetap dari paket terpercaya di `src/game/config.ts`
 

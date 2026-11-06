@@ -48,7 +48,7 @@ Saat lanjut permainan, backend tidak menjalankan ulang pemasukan, pertempuran, e
 ```mermaid
 flowchart TD
     A[Pemain memilih tindakan: upgrade, repair, lanjut hari, pilihan event atau battle] --> B[Kirim runId, actionId, expectedRevision dan rincian pilihan]
-    B --> C[Backend memeriksa sesi dan hak akses]
+    B --> C[Backend memeriksa JWT dan hak akses]
     C --> D{Akses sah?}
     D -->|Tidak| E[Tolak tanpa mengubah data]
     D -->|Ya| F[Mulai transaksi; baca game_runs dan log actionId pada run tersebut]
@@ -131,7 +131,7 @@ Kota HP nol selalu kalah, termasuk ketika monster juga nol pada ronde yang sama.
 
 | Keadaan | Yang dilakukan aplikasi |
 |---|---|
-| Pengguna keluar akun setelah save berhasil | Tutup sesi; simpan tetap ada di database |
+| Pengguna keluar akun setelah save berhasil | Client buang JWT; simpan tetap ada di database |
 | Koneksi terputus sebelum transaksi selesai | Jangan menganggap aksi berhasil; periksa hasil server ketika tersambung |
 | Transaksi sudah commit tetapi respons tidak sampai | Muat state terbaru atau periksa actionId yang sama; jangan memotong biaya lagi |
 | Permintaan dicoba ulang dan actionId sudah tercatat | Tanggapi sebagai duplikat; jangan menjalankan aksi dua kali |
@@ -144,7 +144,7 @@ Selesainya request jaringan di sisi browser tidak selalu membuktikan transaksi s
 
 ```mermaid
 flowchart TD
-    A[User menekan Mulai Game] --> B[Periksa sesi dan startRequestId]
+    A[User menekan Mulai Game] --> B[Periksa JWT dan startRequestId]
     B --> C{Run permintaan yang sama sudah tersimpan?}
     C -->|Ya| D[Kembalikan run dan referensi event yang sama]
     C -->|Tidak| E[Cari event_data sesuai ruleset, paket dan hari]
@@ -200,23 +200,23 @@ flowchart TD
     C --> D[Backend validasi formulir; normalisasi username]
     D --> E{Input valid dan konfirmasi cocok?}
     E -->|Tidak| F[Tampilkan kesalahan; jangan membuat akun]
-    E -->|Ya| G[Hash password dengan Argon2id melalui pustaka]
+    E -->|Ya| G[Hash password dengan bcrypt]
     G --> H[Insert User dengan username unique, passwordHash, history kosong dan save null]
     H --> I{Akun berhasil disimpan?}
     I -->|Nama duplikat atau gagal| J[Tampilkan kesalahan; jangan menimpa akun lama]
     I -->|Ya| K[Buka halaman login]
     B -->|Sudah| K
     K --> L[Isi username dan password]
-    L --> M[Normalisasi username; cari User; verify passwordHash]
+    L --> M[Normalisasi username; cari User; bcrypt.compare passwordHash]
     M --> N{Kredensial cocok?}
-    N -->|Tidak| O[Pesan umum username atau password tidak sesuai; tanpa sesi]
-    N -->|Ya| P[Buat sesi aman; perbarui lastLoginAt dan updatedAt]
+    N -->|Tidak| O[Pesan umum username atau password tidak sesuai; tanpa JWT]
+    N -->|Ya| P[Terbitkan JWT via jsonwebtoken; perbarui lastLoginAt dan updatedAt]
     P --> Q[Tampilkan username dan pilihan Mulai Game atau Lanjutkan]
     Q --> R{Pengguna memilih logout?}
-    R -->|Ya| S[Akhiri sesi dan hapus cookie; data User dan save tetap ada]
+    R -->|Ya| S[Client buang JWT; data User dan save tetap ada]
     S --> K
 ```
 
 Nama pengguna adalah identitas masuk sekaligus nama tampilan. Email, authSubject dan displayName tidak digunakan pada rancangan login ini. Backend menyimpan username yang sudah dinormalisasi dan memberi indeks unik. Password asli maupun konfirmasi password tidak masuk database, log aksi, properties, narasi AI atau respons API.
 
-Akun belum pernah login memiliki lastLoginAt null. Sesi memuat referensi User._id; setiap endpoint game tetap memeriksa kepemilikan run. Login tidak mengubah revision permainan atau membuat event AI ulang. Penyimpanan sesi dan kebijakan kedaluwarsa memerlukan implementasi autentikasi tersendiri; bagian ini bukan klaim fitur login sudah berfungsi.
+Akun belum pernah login memiliki lastLoginAt null. JWT memuat referensi User._id; setiap endpoint game tetap memeriksa kepemilikan run. Login tidak mengubah revision permainan atau membuat event AI ulang. Secret JWT, masa berlaku token, dan cara penyimpanan di client memerlukan implementasi autentikasi tersendiri; bagian ini bukan klaim fitur login sudah berfungsi.

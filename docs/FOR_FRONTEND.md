@@ -7,6 +7,7 @@ Baca dulu: [DEV1_CONTRACT.md](./DEV1_CONTRACT.md)
 - UI produk: dashboard kota, tombol aksi, animasi battle, halaman event/reward
 - Tampilkan state dari backend (`GameState` version 3)
 - Map `error.code` ke pesan UI (jangan hardcode rumus biaya/damage di UI)
+- Auth: simpan JWT dari login BE dan kirim di `Authorization: Bearer <token>`; buang token saat logout
 
 ## Yang jangan dikerjakan FE
 

@@ -39,7 +39,7 @@ Di User, kami menyimpan identitas pemain, riwayat permainan yang selesai, dan re
 |---|---|
 | `_id` | Identitas unik pengguna |
 | `username` | Nama untuk daftar, masuk, dan ditampilkan di game; wajib dan unik |
-| `passwordHash` | Hasil hashing password dari backend; bukan password asli dan tidak dikirim ke browser |
+| `passwordHash` | Hasil hashing password dengan bcrypt di backend; bukan password asli dan tidak dikirim ke browser |
 | `createdAt` | Waktu akun dibuat |
 | `updatedAt` | Waktu data akun terakhir diubah |
 | `lastLoginAt` | Waktu login terakhir berhasil, atau null jika belum pernah login |
@@ -60,21 +60,21 @@ Backend memeriksa isi formulir, menyamakan konfirmasi password, lalu menormalisa
 
 Buat indeks unique pada User.username. Pengecekan nama sebelum insert membantu pesan formulir, tetapi indeks unik tetap diperlukan untuk menangani dua pendaftaran bersamaan. Username yang sudah terpakai ditolak; backend tidak mengganti akun atau save pengguna lama.
 
-Backend mengolah password menggunakan fungsi hashing khusus password, misalnya Argon2id dengan salt yang dikelola pustaka, lalu menyimpan hasilnya sebagai passwordHash. Jangan menyimpan password asli, konfirmasi password, atau mencatatnya ke log. Jangan memakai hashing umum seperti SHA-256 saja untuk password. Parameter Argon2id mengikuti panduan keamanan dan kemampuan server.
+Backend mengolah password dengan pustaka `bcrypt` (salt otomatis dari pustaka), lalu menyimpan hasilnya sebagai passwordHash. Jangan menyimpan password asli, konfirmasi password, atau mencatatnya ke log. Jangan memakai hashing umum seperti SHA-256 saja untuk password. Cost factor bcrypt mengikuti panduan keamanan dan kemampuan server.
 
 Akun baru berisi _id, username, passwordHash, createdAt, updatedAt, lastLoginAt: null, gameHistory: [], dan saveGame: null. Penyimpanan username/passwordHash menggantikan rancangan authSubject sebelumnya; tidak memerlukan akun layanan autentikasi eksternal. Sesudah berhasil daftar, pengguna diarahkan ke halaman login.
 
 ### Login: masuk ke akun yang sama
 
-Pemain memasukkan username dan password. Backend menormalisasi username dengan aturan yang sama, mengambil akun berdasarkan username, lalu memverifikasi password terhadap passwordHash dengan fungsi verify dari pustaka hashing. Hash tidak didekripsi dan tidak dibandingkan dengan password sebagai teks biasa.
+Pemain memasukkan username dan password. Backend menormalisasi username dengan aturan yang sama, mengambil akun berdasarkan username, lalu memverifikasi password terhadap passwordHash dengan `bcrypt.compare`. Hash tidak didekripsi dan tidak dibandingkan dengan password sebagai teks biasa.
 
-Jika akun tidak ditemukan atau password salah, kembalikan pesan umum seperti “Username atau password tidak sesuai” dan jangan membuat sesi. Jika berhasil, buat sesi dengan pengelola autentikasi backend dan perbarui lastLoginAt serta updatedAt. Identitas akun pada sesi berasal dari User._id, bukan hanya username.
+Jika akun tidak ditemukan atau password salah, kembalikan pesan umum seperti “Username atau password tidak sesuai” dan jangan menerbitkan token. Jika berhasil, buat JWT dengan pustaka `jsonwebtoken` (payload minimal berisi User._id) lalu perbarui lastLoginAt serta updatedAt. Identitas akun pada token berasal dari User._id, bukan hanya username.
 
-Browser menyimpan identitas sesi melalui cookie HttpOnly, Secure pada HTTPS, dan SameSite yang sesuai. PasswordHash tidak dikirim dalam respons profil. Endpoint perlu membatasi percobaan login/register; penyimpanan dan masa berlaku sesi perlu diatur saat implementasi. Koleksi sesi atau mekanisme pencabutan sesi belum dirinci pada diagram ini.
+Client menyimpan JWT (misalnya di memori atau penyimpanan aman yang disepakati FE/BE) dan mengirimkannya di header `Authorization: Bearer <token>` pada request terlindungi. PasswordHash tidak dikirim dalam respons profil. Endpoint perlu membatasi percobaan login/register; secret JWT, masa berlaku (`expiresIn`), dan cara menyimpan token di client perlu diatur saat implementasi. Koleksi sesi server-side atau denylist token belum dirinci pada diagram ini.
 
-Setelah login, aplikasi menampilkan username. Jika User.saveGame ada, pemain dapat menekan Lanjutkan untuk membuka game_runs miliknya. Login tidak memulai run baru, memanggil AI ulang, atau menerapkan upgrade lagi. Setelah logout, sesi browser diakhiri; akun, katalog event dan progres yang tersimpan tetap ada. Untuk masuk kembali, pemain memakai username dan password yang sama.
+Setelah login, aplikasi menampilkan username. Jika User.saveGame ada, pemain dapat menekan Lanjutkan untuk membuka game_runs miliknya. Login tidak memulai run baru, memanggil AI ulang, atau menerapkan upgrade lagi. Setelah logout, client membuang JWT; akun, katalog event dan progres yang tersimpan tetap ada. Untuk masuk kembali, pemain memakai username dan password yang sama.
 
-Panduan penyimpanan password: [OWASP Password Storage](https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html). Bagian ini merupakan rancangan autentikasi; formulir register/login, hashing, sesi, indeks unik dan endpoint Next.js belum diimplementasikan.
+Panduan penyimpanan password: [OWASP Password Storage](https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html). Bagian ini merupakan rancangan autentikasi; formulir register/login, bcrypt, JWT (`jsonwebtoken`), indeks unik dan endpoint Next.js belum diimplementasikan.
 
 ## 2. game_ruleset: versi aturan permainan
 
