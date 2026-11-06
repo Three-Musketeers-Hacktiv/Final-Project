@@ -1,160 +1,111 @@
+import { eventPackageForDay, gameConfig } from "./config";
+import { hasUnresolvedEvent, incomeAmountForDay, isBattleDay, isPreparationDay } from "./calendar";
 import { resolveBattle } from "./battle";
-import {
-  expectedEventPackageId,
-  isBattleDay,
-  isPreparationDay,
-  phaseForEnteringDay,
-} from "./calendar";
-import { WAVES, waveForDay } from "./config";
-import { clearEffectsAfterWave } from "./effects";
-import { incomeForDay } from "./economy";
-import { applyReward } from "./rewards";
-import {
-  baseAttack,
-  baseDefense,
-  defenseBonusForWave,
-  getEffectiveStats,
-} from "./stats";
-import type { ActionResult, GameErrorCode, GameState, WaveId } from "./types";
+import { clearEndOfCampaignEffects, clearWaveDefense } from "./effects";
+import { toActiveEvent } from "./events";
+import { fail, isEnded, ok } from "./result";
+import { getEffectiveAttack, getEffectiveDefense } from "./stats";
+import type { ActionResult, GamePhase, GameState } from "./types";
 
-function fail(code: GameErrorCode, message: string): ActionResult<GameState> {
-  return { ok: false, error: { code, message } };
-}
-
-export function createRunId(): string {
-  return `run-${Math.random().toString(36).slice(2, 10)}`;
-}
-
-export function enterDay(state: GameState, day: number): ActionResult<GameState> {
-  if (state.phase === "gameOver" || state.phase === "victory") {
-    return fail("GAME_ENDED", "Game has ended");
+export function endPreparationDay(state: GameState): ActionResult {
+  if (isEnded(state)) return fail("GAME_ENDED", "Game has ended");
+  if (state.phase !== "preparation" && state.phase !== "event") {
+    return fail("INVALID_PHASE", "Day can only advance from preparation");
   }
-
-  const eventId = expectedEventPackageId(day);
-  const eventDone =
-    eventId !== null && state.completedEventIds.includes(eventId);
-  const phase = phaseForEnteringDay(day, eventDone);
-
-  let next: GameState = {
-    ...state,
-    day,
-    phase,
-    actionUsedToday: false,
-    battleResult: isBattleDay(day) ? null : state.battleResult,
-    activeEvent: phase === "event" ? state.activeEvent : null,
-  };
-
-  if (isPreparationDay(day) && next.incomeGrantedForDay !== day) {
-    next = {
-      ...next,
-      gold: next.gold + incomeForDay(next, day),
-      incomeGrantedForDay: day,
-    };
-  }
-
-  return { ok: true, state: next };
-}
-
-export function endPreparationDay(state: GameState): ActionResult<GameState> {
-  if (state.phase === "event") {
-    return fail("EVENT_REQUIRED", "Resolve the event before advancing");
-  }
-  if (state.phase !== "preparation") {
-    return fail("INVALID_PHASE", "Can only end a preparation day");
+  if (hasUnresolvedEvent(state)) return fail("EVENT_REQUIRED", "Resolve the event before advancing");
+  if (!isPreparationDay(state.day) || !Number.isInteger(state.day)) {
+    return fail("INVALID_TRANSITION", "Current day cannot advance");
   }
   const nextDay = state.day + 1;
-  if (nextDay > 20) {
-    return fail("INVALID_PHASE", "No further preparation days");
+  if (nextDay > gameConfig.lastDay) return fail("INVALID_TRANSITION", "Calendar is finished");
+
+  let phase: GamePhase = "preparation";
+  let gold = state.gold;
+  let activeEvent = null as GameState["activeEvent"];
+  const incomeGrantedDays = [...state.incomeGrantedDays];
+
+  if (isBattleDay(nextDay)) {
+    phase = "battleReady";
+  } else if (isPreparationDay(nextDay)) {
+    if (!incomeGrantedDays.includes(nextDay)) {
+      gold += incomeAmountForDay(state, nextDay);
+      incomeGrantedDays.push(nextDay);
+    }
+    const pkg = eventPackageForDay(nextDay);
+    if (pkg && !state.completedEventIds.includes(pkg.eventId)) {
+      phase = "event";
+      activeEvent = toActiveEvent(pkg, "local");
+    }
+  } else {
+    return fail("INVALID_TRANSITION", "Next day is outside the calendar");
   }
-  return enterDay(state, nextDay);
+
+  return ok({
+    ...state,
+    day: nextDay,
+    phase,
+    gold,
+    incomeGrantedDays,
+    actionUsedToday: false,
+    activeEvent,
+    revision: state.revision + 1,
+  });
 }
 
-export function startBattle(state: GameState): ActionResult<GameState> {
-  if (state.phase !== "battleReady") {
-    return fail("INVALID_PHASE", "Not ready for battle");
+export function startBattle(state: GameState): ActionResult {
+  if (isEnded(state)) return fail("GAME_ENDED", "Game has ended");
+  if (state.phase === "battleReport" || (state.battleResult && state.battleResult.day === state.day)) {
+    return fail("BATTLE_ALREADY_RESOLVED", "Battle already computed");
   }
-  if (state.battleResult) {
-    return fail("BATTLE_ALREADY_RESOLVED", "Battle already resolved");
+  if (state.phase !== "battleReady" || !isBattleDay(state.day)) {
+    return fail("INVALID_PHASE", "Battle can only start on a battle-ready day");
   }
-  const wave = waveForDay(state.day);
-  if (!wave) {
-    return fail("BATTLE_INVALID", "Current day is not a battle day");
-  }
+  const monster = gameConfig.waves.find((wave) => wave.day === state.day);
+  if (!monster) return fail("BATTLE_INVALID", "No monster configured for this day");
+  const cityAttack = getEffectiveAttack(state);
+  const cityDefense = getEffectiveDefense(state, monster.wave);
+  if (state.cityHp <= 0 || cityAttack <= 0) return fail("BATTLE_INVALID", "City cannot fight");
 
-  const monster = WAVES[wave];
-  const defense = baseDefense(state) + defenseBonusForWave(state, wave);
-  const resolved = resolveBattle(
-    { hp: state.cityHp, attack: baseAttack(state), defense },
-    { name: monster.name, hp: monster.hp, attack: monster.attack },
-    wave,
-  );
-  if (!resolved.ok) return resolved;
+  const result = resolveBattle({
+    wave: monster.wave,
+    day: state.day,
+    cityHp: state.cityHp,
+    cityAttack,
+    cityDefense,
+    monsterHp: monster.hp,
+    monsterAttack: monster.attack,
+  });
+  if (!result) return fail("BATTLE_INVALID", "Battle configuration is invalid");
 
-  const result = resolved.state;
-  if (!result.won) {
-    return {
-      ok: true,
-      state: {
-        ...state,
-        cityHp: result.cityHpAfter,
-        battleResult: result,
-        phase: "gameOver",
-        effects: clearEffectsAfterWave(state.effects, wave),
-      },
-    };
-  }
-
-  return {
-    ok: true,
-    state: {
-      ...state,
-      cityHp: result.cityHpAfter,
-      battleResult: result,
-      wavesCleared: state.wavesCleared + 1,
-      phase: "battleReport",
-      effects: clearEffectsAfterWave(state.effects, wave),
-    },
-  };
+  let effects = clearWaveDefense(state.effects, monster.wave);
+  if (monster.wave === 2) effects = clearEndOfCampaignEffects();
+  const won = result.won;
+  return ok({
+    ...state,
+    cityHp: result.cityHpAfter,
+    effects,
+    battleResult: result,
+    wavesCleared: won ? monster.wave : state.wavesCleared,
+    phase: won ? "battleReport" : "gameOver",
+    revision: state.revision + 1,
+  });
 }
 
-export function continueFromReport(state: GameState): ActionResult<GameState> {
-  if (state.phase !== "battleReport") {
-    return fail("INVALID_PHASE", "Not in battle report phase");
+export function continueFromReport(state: GameState): ActionResult {
+  if (isEnded(state)) return fail("GAME_ENDED", "Game has ended");
+  if (state.phase !== "battleReport" || !state.battleResult) {
+    return fail("INVALID_PHASE", "No battle report to continue");
   }
-  const wave = state.battleResult?.wave;
-  if (wave === 1) {
-    return { ok: true, state: { ...state, phase: "reward" } };
+  if (!state.battleResult.won) {
+    return ok({ ...state, phase: "gameOver", revision: state.revision + 1 });
   }
-  if (wave === 2) {
-    return { ok: true, state: { ...state, phase: "victory" } };
+  if (state.battleResult.wave === 1) {
+    return ok({ ...state, phase: "reward", revision: state.revision + 1 });
   }
-  return fail("INVALID_PHASE", "Missing battle result wave");
-}
-
-export function chooseReward(
-  state: GameState,
-  rewardId: string,
-): ActionResult<GameState> {
-  const applied = applyReward(state, rewardId);
-  if (!applied.ok) return applied;
-  return enterDay(applied.state, 11);
-}
-
-export function previewWave(state: GameState): {
-  wave: WaveId;
-  name: string;
-  hp: number;
-  attack: number;
-  city: ReturnType<typeof getEffectiveStats> & { hp: number };
-} {
-  const wave = waveForDay(state.day) ?? (state.wavesCleared >= 1 ? 2 : 1);
-  const monster = WAVES[wave];
-  const stats = getEffectiveStats(state);
-  return {
-    wave,
-    name: monster.name,
-    hp: monster.hp,
-    attack: monster.attack,
-    city: { ...stats, hp: state.cityHp },
-  };
+  return ok({
+    ...state,
+    phase: "victory",
+    effects: clearEndOfCampaignEffects(),
+    revision: state.revision + 1,
+  });
 }
