@@ -18,7 +18,10 @@ export async function GET(request: Request) {
       requestId,
     );
   } catch (error) {
-    console.error("Readiness check failed", { requestId, error });
+    console.error("Readiness check failed", {
+      requestId,
+      errorName: error instanceof Error ? error.name : "UnknownError",
+    });
     return apiFailure(503, "SERVICE_NOT_READY", "Service dependencies are not ready", requestId);
   }
 }

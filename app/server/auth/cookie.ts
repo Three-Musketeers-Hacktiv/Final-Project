@@ -15,7 +15,13 @@ export function readSessionCookie(request: Request): string | null {
 
   for (const cookie of cookieHeader.split(";")) {
     const [rawName, ...rawValue] = cookie.trim().split("=");
-    if (rawName === name) return decodeURIComponent(rawValue.join("="));
+    if (rawName === name) {
+      try {
+        return decodeURIComponent(rawValue.join("="));
+      } catch {
+        return null;
+      }
+    }
   }
 
   return null;

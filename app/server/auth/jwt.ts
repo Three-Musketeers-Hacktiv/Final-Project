@@ -66,6 +66,8 @@ export async function verifySessionJwt(
       typeof payload.sub !== "string" ||
       !/^[a-f\d]{24}$/i.test(payload.sub) ||
       typeof payload.jti !== "string" ||
+      !/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(payload.jti) ||
+      typeof payload.iat !== "number" ||
       !payload.exp
     ) {
       throw new Error("JWT claims are incomplete");

@@ -477,3 +477,30 @@ Commit sebelumnya:
 Commit:
 - Status: dibuat setelah validasi final.
 - Push: tidak dilakukan.
+
+## 2026-11-06 — Hardening concurrency dan credential boundary
+
+Tujuan:
+- Menutup race condition dan memastikan input/token/error malformed gagal dengan aman sebelum handoff konfigurasi Atlas.
+
+Tindakan:
+- Menambahkan filter transaksi `saveGame: null` agar dua create-run paralel tidak dapat mengganti save tanpa consent.
+- Mempertahankan replace behavior hanya ketika `replaceActiveSave: true`.
+- Memperketat JWT agar `jti` wajib UUID v4 dan `iat` wajib tersedia.
+- Menangani cookie percent-encoding rusak sebagai unauthenticated, bukan internal error.
+- Menghapus logging objek error mentah dari route/readiness agar detail sensitif tidak tercetak.
+- Menambahkan regression test untuk `jti` tidak valid.
+
+Validasi:
+- `npm.cmd run lint`: lulus.
+- `npm.cmd run typecheck`: lulus.
+- `npm.cmd run test`: lulus, 10 file dan 28 test.
+- `npm.cmd run build`: lulus.
+- Root `src/**`, root `docs/**`, dan file frontend tidak diubah.
+
+Commit sebelumnya:
+- `23abf56 chore(backend): add frontend contract and api tooling`
+
+Commit:
+- Status: dibuat setelah pemeriksaan staged diff.
+- Push: tidak dilakukan.

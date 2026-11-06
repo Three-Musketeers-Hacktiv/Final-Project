@@ -51,6 +51,7 @@ export async function createRunTransaction(
   user: UserDocument,
   startRequestId: string,
   payloadHash: string,
+  replaceActiveSave: boolean,
 ): Promise<GameRunDocument> {
   const ruleset = await ensureRuleset();
   const client = await getMongoClient();
@@ -78,8 +79,8 @@ export async function createRunTransaction(
         createPropertyDocuments(runId, state, null, now),
         { session: mongoSession },
       );
-      await database.collection<UserDocument>("users").updateOne(
-        { _id: user._id },
+      const userUpdate = await database.collection<UserDocument>("users").updateOne(
+        replaceActiveSave ? { _id: user._id } : { _id: user._id, saveGame: null },
         {
           $set: {
             saveGame: { runId, savedRevision: state.revision, savedAt: now },
@@ -88,6 +89,9 @@ export async function createRunTransaction(
         },
         { session: mongoSession },
       );
+      if (userUpdate.modifiedCount !== 1) {
+        throw new ApiError(409, "ACTIVE_SAVE_EXISTS", "An active save already exists");
+      }
     });
     return run;
   } catch (error) {

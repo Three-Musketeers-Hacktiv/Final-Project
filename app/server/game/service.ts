@@ -49,7 +49,12 @@ export async function createRun(user: UserDocument, input: CreateRunInput) {
     throw new ApiError(409, "ACTIVE_SAVE_EXISTS", "An active save already exists");
   }
 
-  const run = await createRunTransaction(user, input.startRequestId, payloadHash);
+  const run = await createRunTransaction(
+    user,
+    input.startRequestId,
+    payloadHash,
+    input.replaceActiveSave,
+  );
   if (run.startRequestPayloadHash !== payloadHash) {
     throw new ApiError(409, "START_REQUEST_CONFLICT", "startRequestId was already used with another payload");
   }

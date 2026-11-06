@@ -48,4 +48,21 @@ describe("session JWT", () => {
       code: "UNAUTHENTICATED",
     });
   });
+
+  it("rejects a non-UUID jti", async () => {
+    const key = new TextEncoder().encode(config.secret);
+    const token = await new SignJWT({})
+      .setProtectedHeader({ alg: "HS256" })
+      .setSubject(userId)
+      .setJti("predictable-session")
+      .setIssuer(config.issuer)
+      .setAudience(config.audience)
+      .setIssuedAt()
+      .setExpirationTime("1h")
+      .sign(key);
+
+    await expect(verifySessionJwt(token, config)).rejects.toMatchObject({
+      code: "UNAUTHENTICATED",
+    });
+  });
 });

@@ -48,7 +48,10 @@ export function handleRouteError(error: unknown, requestId: string): Response {
     return apiFailure(400, "VALIDATION_ERROR", "Request validation failed", requestId, zodFields(error));
   }
 
-  console.error("Unhandled route error", { requestId, error });
+  console.error("Unhandled route error", {
+    requestId,
+    errorName: error instanceof Error ? error.name : "UnknownError",
+  });
   return apiFailure(500, "INTERNAL_ERROR", "An unexpected error occurred", requestId);
 }
 
