@@ -6,9 +6,11 @@ import { createGameState, getEngineRulesetMetadata } from "@/server/game-engine/
 import { createPropertyDocuments } from "@/server/game/properties";
 import type {
   GameActionDocument,
+  EventDataDocument,
   GameReportDocument,
   GameRulesetDocument,
   GameRunDocument,
+  RunEventDocument,
 } from "@/server/game/types";
 import { RULESET_ID } from "@/server/game/types";
 import { ApiError } from "@/server/http/api-error";
@@ -129,11 +131,13 @@ export async function commitGameAction(input: {
   nextRun: GameRunDocument;
   action: GameActionDocument;
   report: GameReportDocument | null;
+  generatedEvent: { eventData: EventDataDocument; runEvent: RunEventDocument } | null;
+  resolvedEvent: { eventId: string; choiceId: string } | null;
 }): Promise<void> {
   const client = await getMongoClient();
   const database = await getDatabase();
   const session = client.startSession();
-  const { currentRun, nextRun, action, report } = input;
+  const { currentRun, nextRun, action, report, generatedEvent, resolvedEvent } = input;
 
   try {
     await session.withTransaction(async () => {
@@ -153,6 +157,17 @@ export async function commitGameAction(input: {
       );
       if (report) {
         await database.collection<GameReportDocument>("game_reports").insertOne(report, { session });
+      }
+      if (generatedEvent) {
+        await database.collection<EventDataDocument>("event_data").insertOne(generatedEvent.eventData, { session });
+        await database.collection<RunEventDocument>("runs_event").insertOne(generatedEvent.runEvent, { session });
+      }
+      if (resolvedEvent) {
+        await database.collection<RunEventDocument>("runs_event").updateOne(
+          { runId: currentRun._id, eventId: resolvedEvent.eventId },
+          { $set: { chosenChoiceId: resolvedEvent.choiceId, resolvedAt: nextRun.updatedAt } },
+          { session },
+        );
       }
 
       const userUpdate: Record<string, unknown> = {

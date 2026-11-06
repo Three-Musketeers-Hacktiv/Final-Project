@@ -399,3 +399,45 @@ Commit:
 Catatan/risiko:
 - Event masih memakai narasi local engine sampai fitur OpenAI/fallback berikutnya selesai.
 - Concurrency dan transaction rollback wajib diverifikasi pada Atlas test replica set.
+
+## 2026-11-06 — Runtime narasi event OpenAI dengan fallback
+
+Tujuan:
+- Menambahkan variasi narasi runtime tanpa memberi AI kendali atas aturan game.
+
+Tindakan:
+- Menambahkan adapter OpenAI Responses API dengan Structured Outputs Zod.
+- Mengirim hanya konteks event tepercaya tanpa data pribadi pemain.
+- Memvalidasi dua choice ID terhadap event engine dan menolak pilihan buatan model.
+- Menggabungkan title/description/label AI dengan gold cost/effects engine yang tidak berubah.
+- Menambahkan fallback deterministik ketika key/model kosong, timeout, refusal, provider error, atau output invalid.
+- Menyimpan `event_data` dan snapshot `runs_event` dalam transaksi action yang memasuki event.
+- Menandai choice event terselesaikan dalam transaksi gameplay berikutnya.
+- Menjadikan konfigurasi OpenAI syarat readiness production, sementara local/test dapat berjalan fallback-only.
+
+File terdampak:
+- `app/server/ai/**` dibuat.
+- `app/server/game/service.ts`, repository, dan types diperbarui.
+- `app/app/api/health/readiness/route.ts` diperbarui.
+- Test dan dokumentasi backend diperbarui.
+
+Validasi:
+- `npm.cmd run lint`: lulus.
+- `npm.cmd run typecheck`: lulus.
+- `npm.cmd run test`: lulus, 10 file dan 27 test.
+- `npm.cmd run build`: lulus.
+- Test AI memastikan label dapat berubah tetapi cost/effects tetap dari engine.
+- Test AI memastikan choice ID tidak dikenal memicu fallback.
+- Real OpenAI smoke test belum dijalankan karena API key/model developer belum tersedia pada environment lokal.
+- Root `src/**`, root `docs/**`, dan file frontend tidak diubah.
+
+Commit sebelumnya:
+- `315950f feat(game): persist revision-safe gameplay runs`
+
+Commit:
+- Status: dibuat setelah validasi final.
+- Push: tidak dilakukan.
+
+Catatan/risiko:
+- `OPENAI_MODEL` masih harus dipilih oleh deployment owner dan wajib mendukung Structured Outputs.
+- Latency dan token budget perlu diuji pada Vercel Preview dengan API key project demo.

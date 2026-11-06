@@ -1,5 +1,6 @@
 import { MongoServerError, ObjectId } from "mongodb";
 
+import { decorateActiveEvent, generateEventNarrative } from "@/server/ai/event-narrative";
 import type { UserDocument } from "@/server/auth/types";
 import { applyGameAction, type EngineGameAction } from "@/server/game-engine/adapter";
 import { hashPayload } from "@/server/game/hash";
@@ -14,7 +15,12 @@ import {
   findRunForUser,
 } from "@/server/game/repository";
 import type { CreateRunInput, SubmitActionInput } from "@/server/game/schemas";
-import type { GameActionDocument, GameRunDocument } from "@/server/game/types";
+import type {
+  EventDataDocument,
+  GameActionDocument,
+  GameRunDocument,
+  RunEventDocument,
+} from "@/server/game/types";
 import { toGameView } from "@/server/game/view";
 import { ApiError } from "@/server/http/api-error";
 
@@ -100,6 +106,45 @@ export async function submitGameAction(
   }
 
   const now = new Date();
+  let nextState = result.state;
+  let generatedEvent: { eventData: EventDataDocument; runEvent: RunEventDocument } | null = null;
+  if (
+    result.state.activeEvent &&
+    currentRun.state.activeEvent?.eventId !== result.state.activeEvent.eventId
+  ) {
+    const narrativeResult = await generateEventNarrative(result.state.activeEvent);
+    nextState = decorateActiveEvent(result.state, narrativeResult);
+    const eventDataId = new ObjectId();
+    const narrative = narrativeResult.narrative;
+    const eventData: EventDataDocument = {
+      _id: eventDataId,
+      rulesetId: currentRun.rulesetId,
+      packageId: result.state.activeEvent.packageId,
+      day: result.state.activeEvent.day,
+      narrative,
+      source: narrativeResult.source,
+      ...(narrativeResult.model ? { model: narrativeResult.model } : {}),
+      promptVersion: narrativeResult.promptVersion,
+      schemaVersion: 1,
+      validationStatus: "valid",
+      createdAt: now,
+    };
+    generatedEvent = {
+      eventData,
+      runEvent: {
+        _id: new ObjectId(),
+        runId,
+        eventDataId,
+        eventId: result.state.activeEvent.eventId,
+        packageId: result.state.activeEvent.packageId,
+        day: result.state.activeEvent.day,
+        narrativeSnapshot: { ...narrative, source: narrativeResult.source },
+        chosenChoiceId: null,
+        createdAt: now,
+        resolvedAt: null,
+      },
+    };
+  }
   const payloadHash = hashPayload({ type: input.type, payload: input.payload });
   const action: GameActionDocument = {
     _id: new ObjectId(),
@@ -110,20 +155,23 @@ export async function submitGameAction(
     payload: input.payload,
     payloadHash,
     revisionBefore: currentRun.state.revision,
-    revisionAfter: result.state.revision,
+    revisionAfter: nextState.revision,
     createdAt: now,
   };
-  const ended = result.state.phase === "gameOver" || result.state.phase === "victory";
+  const ended = nextState.phase === "gameOver" || nextState.phase === "victory";
   const nextRun: GameRunDocument = {
     ...currentRun,
-    state: result.state,
+    state: nextState,
     updatedAt: now,
     endedAt: ended ? now : null,
   };
   const report = createReportDocument(nextRun, action);
+  const resolvedEvent = input.type === "chooseEventOption" && currentRun.state.activeEvent
+    ? { eventId: currentRun.state.activeEvent.eventId, choiceId: input.payload.choiceId }
+    : null;
 
   try {
-    await commitGameAction({ currentRun, nextRun, action, report });
+    await commitGameAction({ currentRun, nextRun, action, report, generatedEvent, resolvedEvent });
   } catch (error) {
     if (error instanceof ApiError && error.code === "STALE_REVISION") {
       const committed = await findAction(runId, input.actionId);

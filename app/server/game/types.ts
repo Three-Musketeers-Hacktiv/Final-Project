@@ -92,3 +92,34 @@ export type GameReportDocument = {
   };
   createdAt: Date;
 };
+
+export type EventDataDocument = {
+  _id: ObjectId;
+  rulesetId: ObjectId;
+  packageId: string;
+  day: number;
+  narrative: {
+    title: string;
+    description: string;
+    choices: [{ id: string; label: string }, { id: string; label: string }];
+  };
+  source: "ai" | "fallback";
+  model?: string;
+  promptVersion: string;
+  schemaVersion: 1;
+  validationStatus: "valid";
+  createdAt: Date;
+};
+
+export type RunEventDocument = {
+  _id: ObjectId;
+  runId: ObjectId;
+  eventDataId: ObjectId;
+  eventId: string;
+  packageId: string;
+  day: number;
+  narrativeSnapshot: EventDataDocument["narrative"] & { source: "ai" | "fallback" };
+  chosenChoiceId: string | null;
+  createdAt: Date;
+  resolvedAt: Date | null;
+};
