@@ -73,6 +73,14 @@ Aturan:
 - Seed tidak mengubah file atau aturan source game engine.
 - Migration/index script mencatat versi yang sudah diaplikasikan.
 
+Setelah `.env.local` menunjuk database target yang sudah diverifikasi, jalankan dari folder `app`:
+
+```text
+npm.cmd run db:indexes
+```
+
+Script bersifat idempotent, tetapi operator tetap wajib memeriksa `MONGODB_DB_NAME` sebelum menjalankannya.
+
 Detail collection dan index mengikuti [DATABASE_SCHEMA_V3.md](./DATABASE_SCHEMA_V3.md).
 
 ### 4.3 Operasional

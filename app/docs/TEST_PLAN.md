@@ -116,6 +116,8 @@ Backend menyediakan contoh request/response dan koleksi API yang mengikuti [API_
 
 Postman CLI yang tersedia dapat digunakan untuk menjalankan collection pada local atau Preview URL. Collection dan environment file yang aman boleh disimpan di area backend; secret environment lokal tidak boleh di-commit.
 
+Artefak smoke test tersedia di `postman/backend-api.postman_collection.json` dan `postman/backend-api.postman_environment.json`. Collection mencakup register, login, `/auth/me`, create run, satu action, current run, dan logout. Jalankan hanya setelah server dan Atlas test siap.
+
 ## 7. Pengujian keamanan minimum
 
 - IDOR: user tidak dapat membaca atau mengubah run user lain.

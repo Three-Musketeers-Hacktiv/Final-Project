@@ -441,3 +441,39 @@ Commit:
 Catatan/risiko:
 - `OPENAI_MODEL` masih harus dipilih oleh deployment owner dan wajib mendukung Structured Outputs.
 - Latency dan token budget perlu diuji pada Vercel Preview dengan API key project demo.
+
+## 2026-11-06 — Kontrak frontend dan tooling operasional
+
+Tujuan:
+- Memberikan artefak integrasi yang dapat digunakan frontend dan operator database tanpa mengubah kode milik developer lain.
+
+Tindakan:
+- Menambahkan shared TypeScript API contract untuk envelope, auth, GameView, create run, dan gameplay action.
+- Menambahkan script TypeScript idempotent untuk membuat seluruh index MongoDB Atlas.
+- Menambahkan dev dependency `tsx` dan command `npm.cmd run db:indexes`.
+- Menambahkan Postman collection/environment aman untuk smoke flow register sampai logout.
+- Menambahkan petunjuk frontend, index setup, dan Postman ke dokumentasi.
+
+File terdampak:
+- `app/contracts/api.ts` dibuat.
+- `app/scripts/setup-indexes.ts` dibuat.
+- `app/postman/**` dibuat.
+- `app/package.json`, lockfile, dan dokumentasi backend diperbarui.
+
+Validasi:
+- `npm.cmd run lint`: lulus.
+- `npm.cmd run typecheck`: lulus, termasuk shared contract dan setup script.
+- `npm.cmd run test`: lulus, 10 file dan 27 test.
+- `npm.cmd run build`: lulus.
+- JSON collection/environment Postman berhasil diparse.
+- Postman CLI `1.74.0` dan tsx `4.23.15` terdeteksi.
+- `npm.cmd audit --omit=dev`: 0 vulnerability production.
+- Collection belum dijalankan karena Atlas test dan server berkonfigurasi belum tersedia.
+- Root `src/**`, root `docs/**`, dan file frontend tidak diubah.
+
+Commit sebelumnya:
+- `4d696d4 feat(events): add runtime ai narratives with fallback`
+
+Commit:
+- Status: dibuat setelah validasi final.
+- Push: tidak dilakukan.

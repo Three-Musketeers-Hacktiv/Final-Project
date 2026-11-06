@@ -14,6 +14,8 @@ Dokumen terkait:
 - [AI event runtime](./AI_EVENT_RUNTIME.md)
 - [Game engine contract](../../docs/DEV1_CONTRACT.md)
 
+Tipe TypeScript yang dapat langsung dipakai frontend tersedia di `../contracts/api.ts`. File kontrak ini tidak berisi kode server, credential, atau akses database.
+
 ## 1. Prinsip kontrak
 
 - Backend menjadi sumber kebenaran state tersimpan.
