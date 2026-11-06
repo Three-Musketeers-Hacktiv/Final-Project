@@ -1,0 +1,234 @@
+# Backend Action Log
+
+Dokumen ini mencatat tindakan material pada pekerjaan backend Fantasy City Defense. Waktu menggunakan zona Asia/Jakarta. Secret, credential, connection string, password, dan token tidak boleh ditulis di sini.
+
+## Format entri
+
+```text
+## YYYY-MM-DD HH:mm — Judul
+
+Tujuan:
+- ...
+
+Tindakan:
+- ...
+
+File terdampak:
+- ...
+
+Validasi:
+- Perintah/pemeriksaan: ...
+- Hasil: ...
+
+Commit:
+- Status: belum dibuat / dibuat
+- Hash: ...
+- Pesan: ...
+
+Catatan/risiko:
+- ...
+```
+
+## 2026-11-06 19:16 — Audit scope dan sumber kebenaran (dicatat retrospektif)
+
+Tujuan:
+- Memastikan batas pekerjaan backend dan mencegah perubahan pada game engine atau area frontend.
+
+Tindakan:
+- Memeriksa file tracked dan untracked repository.
+- Menetapkan root `src/**` dan root `docs/**` sebagai read-only.
+- Menetapkan `app/app/api/**` dan `app/server/**` sebagai area utama backend.
+- Menetapkan file package/config sebagai shared dan harus dikoordinasikan dengan frontend.
+
+File terdampak:
+- Tidak ada perubahan kode.
+
+Validasi:
+- Pemeriksaan: `git ls-files` dan `git status --short`.
+- Hasil: dokumen tambahan di `app/app/api/docs/**` terdeteksi untracked; tidak dimodifikasi atau di-stage.
+
+Commit:
+- Status: belum dibuat.
+
+Catatan/risiko:
+- Staging implementasi harus memakai path eksplisit agar file untracked milik developer lain tidak ikut masuk commit.
+
+## 2026-11-06 19:16 — Pembuatan rencana implementasi backend (dicatat retrospektif)
+
+Tujuan:
+- Menyediakan rencana backend yang dapat bersinergi dengan game engine dan menjadi kontrak integrasi frontend.
+
+Tindakan:
+- Membuat rencana arsitektur, endpoint, action controller, autentikasi, schema MongoDB, event AI, testing, milestone, dan Definition of Done.
+- Mencatat kebijakan commit per fitur dan larangan push otomatis.
+
+File terdampak:
+- `app/docs/BACKEND_IMPLEMENTATION_PLAN.md` dibuat dan diperbarui.
+
+Validasi:
+- Pemeriksaan: struktur heading, path referensi engine, dan status Git.
+- Hasil: dokumen berada di dalam scope `app/`; root `src/`, root `docs/`, dan file frontend tidak berubah.
+
+Commit:
+- Status: belum dibuat.
+
+Catatan/risiko:
+- Dokumen masih untracked sampai dibuat commit dokumentasi secara eksplisit.
+
+## 2026-11-06 19:16 — Penguncian keputusan infrastruktur dan integrasi (dicatat retrospektif)
+
+Tujuan:
+- Mengurangi keputusan terbuka sebelum Phase 1.
+
+Tindakan:
+- Menetapkan MongoDB Atlas, deployment Vercel, session tetap tujuh hari, satu session aktif per user, password minimum enam karakter, dan MongoDB `ObjectId`.
+- Menetapkan `GameState.runId` sebagai hex string dari `ObjectId`, sedangkan `actionId` dan `startRequestId` tetap string idempotency.
+- Menetapkan backend sebagai pemilik kontrak API.
+- Menetapkan OpenAI sebagai provider runtime narasi dengan API key/model melalui environment.
+- Menetapkan Zod sebagai runtime validator.
+- Menetapkan fallback event sebagai jalur wajib ketika OpenAI gagal.
+- Menetapkan commit otomatis per fitur selesai dan push manual oleh pemilik repository.
+
+File terdampak:
+- `app/docs/BACKEND_IMPLEMENTATION_PLAN.md` diperbarui.
+- `app/docs/BACKEND_ACTION_LOG.md` dibuat.
+
+Validasi:
+- Pemeriksaan: keputusan dibandingkan dengan kontrak engine committed dan batas folder backend.
+- Hasil: tidak diperlukan perubahan pada root `src/**` atau root `docs/**`.
+
+Commit:
+- Status: belum dibuat.
+
+Catatan/risiko:
+- Model OpenAI default, timeout, retry, dan budget output masih perlu dikunci.
+- Library Argon2id tetap harus dibuktikan kompatibel dengan Vercel.
+
+## 2026-11-06 19:16 — Verifikasi identitas Git (dicatat retrospektif)
+
+Tujuan:
+- Memastikan commit implementasi memakai identitas developer, bukan identitas AI.
+
+Tindakan:
+- Memeriksa effective Git author dan committer.
+- Menetapkan tidak memakai `--author` atau trailer `Co-authored-by` AI.
+- Menetapkan push tidak dilakukan otomatis.
+
+File terdampak:
+- Tidak ada konfigurasi Git yang diubah.
+
+Validasi:
+- Pemeriksaan: `git var GIT_AUTHOR_IDENT` dan `git var GIT_COMMITTER_IDENT`.
+- Hasil: author dan committer efektif menggunakan identitas Muhamad Yoga Supratama.
+
+Commit:
+- Status: belum dibuat.
+
+Catatan/risiko:
+- Git commit signing belum dikonfigurasi; atribusi GitHub bergantung pada email Git yang terhubung ke akun developer.
+
+## 2026-11-06 19:16 — Verifikasi rancangan OpenAI runtime
+
+Tujuan:
+- Memastikan rancangan provider AI mengikuti dokumentasi resmi dan dapat diganti melalui environment.
+
+Tindakan:
+- Memeriksa official OpenAI documentation untuk API key, official SDK, Responses API, service account, dan Structured Outputs.
+- Menetapkan `OPENAI_API_KEY` dan `OPENAI_MODEL` sebagai environment server-only.
+- Menetapkan official OpenAI SDK dan Responses API.
+- Menetapkan Structured Outputs + Zod untuk output narasi.
+- Merekomendasikan project service account khusus production Vercel dan project key masing-masing developer untuk local development.
+
+File terdampak:
+- `app/docs/BACKEND_IMPLEMENTATION_PLAN.md` diperbarui.
+- `app/docs/BACKEND_ACTION_LOG.md` diperbarui.
+
+Validasi:
+- Pemeriksaan: OpenAI developer quickstart, API key/service account guidance, dan Structured Outputs guide.
+- Hasil: rancangan menyimpan credential di server environment dan tidak mengeksposnya ke browser/source control.
+
+Commit:
+- Status: belum dibuat.
+
+Catatan/risiko:
+- Model dari `OPENAI_MODEL` harus mendukung Structured Outputs.
+- Codex-optimized model tidak perlu dijadikan default narasi; model general-purpose dapat dipilih lewat environment tanpa perubahan kode.
+
+## 2026-11-06 19:27 +07:00 — Penyusunan spesifikasi backend sebelum implementasi
+
+Tujuan:
+- Menurunkan rencana backend menjadi kontrak dan runbook yang dapat direview developer frontend dan game engine sebelum kode dibuat.
+
+Tindakan:
+- Menyusun kontrak API untuk auth, run, action, idempotency, error, dan frontend integration.
+- Menyusun schema MongoDB versi 3, strategi `ObjectId`, index, dan batas transaksi.
+- Menyusun runtime event AI dengan OpenAI Responses API, Structured Outputs Zod, fallback, timeout, dan audit.
+- Menyusun spesifikasi opaque session tujuh hari dan kebijakan satu perangkat aktif.
+- Menyusun test matrix termasuk concurrency, IDOR, fallback AI, contract test, dan Postman CLI.
+- Menyusun runbook MongoDB Atlas, Vercel, environment, deployment, observability, dan rollback.
+- Menambahkan tautan seluruh dokumen turunan ke rencana implementasi utama.
+
+File terdampak:
+- `app/docs/API_CONTRACT.md` dibuat.
+- `app/docs/DATABASE_SCHEMA_V3.md` dibuat.
+- `app/docs/AI_EVENT_RUNTIME.md` dibuat.
+- `app/docs/AUTH_SESSION_SPEC.md` dibuat.
+- `app/docs/TEST_PLAN.md` dibuat.
+- `app/docs/ENVIRONMENT_AND_DEPLOYMENT.md` dibuat.
+- `app/docs/BACKEND_IMPLEMENTATION_PLAN.md` diperbarui.
+- `app/docs/BACKEND_ACTION_LOG.md` diperbarui.
+
+Validasi:
+- Pemeriksaan: seluruh file dokumentasi backend berada di bawah `app/docs`.
+- Pemeriksaan scope: `git status --short -- docs src` dan `git diff --name-only -- docs src` tidak menghasilkan perubahan.
+- Referensi OpenAI diperiksa terhadap dokumentasi resmi mengenai SDK, Responses API, Structured Outputs, API key, dan project service account.
+- Pemeriksaan tautan Markdown lokal: seluruh target ditemukan.
+- Pemeriksaan status: `app/app/api/docs/` tetap untracked dan tidak disentuh karena bukan scope dokumentasi backend ini.
+
+Commit:
+- Status: belum dibuat; dokumentasi masih menunggu review sebelum implementasi.
+
+Catatan/risiko:
+- Model default OpenAI belum dikunci karena perlu menyesuaikan akses akun, dukungan Structured Outputs, latency, dan budget demo.
+- Library Argon2id masih memerlukan technical spike build pada Vercel Node.js.
+- Kontrak API berstatus draft sampai direview frontend dan game-engine developer.
+
+## 2026-11-06 19:42 +07:00 — Perubahan autentikasi menjadi bcrypt dan JWT
+
+Tujuan:
+- Mengganti keputusan hashing password dan token autentikasi sesuai arahan terbaru pemilik backend.
+
+Tindakan:
+- Mengganti Argon2id menjadi bcrypt dengan cost factor awal 12 yang harus di-benchmark pada Vercel Preview.
+- Mengganti opaque session token menjadi JWT `HS256` dalam cookie `HttpOnly`.
+- Menetapkan claim minimum JWT: `sub`, `jti`, `iat`, `exp`, `iss`, dan `aud`.
+- Mempertahankan record `sessions` di MongoDB berdasarkan `jti` agar logout dan kebijakan satu perangkat dapat mencabut JWT sebelum expiry.
+- Menambahkan `JWT_SECRET`, `JWT_ISSUER`, `JWT_AUDIENCE`, dan `BCRYPT_SALT_ROUNDS` ke rancangan environment.
+- Menambahkan skenario pengujian signature, algoritma, issuer, audience, dan revoked `jti`.
+- Menegaskan register tidak otomatis membuat session; session JWT dibuat ketika login sukses.
+
+Keputusan yang digantikan:
+- Argon2id dan opaque random session token pada entri sebelumnya tidak lagi berlaku.
+- Durasi session tujuh hari, satu perangkat aktif, dan cookie server-side tetap berlaku.
+
+File terdampak:
+- `app/docs/AUTH_SESSION_SPEC.md` diperbarui.
+- `app/docs/API_CONTRACT.md` diperbarui.
+- `app/docs/DATABASE_SCHEMA_V3.md` diperbarui.
+- `app/docs/BACKEND_IMPLEMENTATION_PLAN.md` diperbarui.
+- `app/docs/ENVIRONMENT_AND_DEPLOYMENT.md` diperbarui.
+- `app/docs/TEST_PLAN.md` diperbarui.
+- `app/docs/BACKEND_ACTION_LOG.md` diperbarui.
+
+Validasi:
+- Pemeriksaan istilah lama di luar riwayat action log: tidak ada referensi aktif ke Argon2id, opaque token, `tokenHash`, atau SHA-256 session token.
+- Pemeriksaan konsistensi: schema, index, environment, kontrak API, dan test plan telah memakai bcrypt, JWT, dan `jti`.
+- Pemeriksaan tautan Markdown lokal: seluruh target ditemukan.
+- Pemeriksaan scope: root `docs/**` dan `src/**` tidak berubah.
+
+Commit:
+- Status: belum dibuat; masih tahap dokumentasi perencanaan.
+
+Catatan/risiko:
+- JWT tidak dibuat stateless penuh karena kebutuhan logout langsung dan satu perangkat aktif memerlukan pemeriksaan session `jti` di MongoDB.
+- Cost bcrypt 12 perlu diukur agar latency login sesuai batas runtime Vercel.
