@@ -377,9 +377,8 @@ Dipakai bila rate limiting tidak sepenuhnya ditangani Vercel Firewall.
 ```ts
 type AuthRateLimitDocument = {
   _id: ObjectId;
-  keyHash: string;
-  route: "register" | "login";
-  windowStartedAt: Date;
+  key: string; // HMAC dari route + IP + optional username
+  windowStart: Date;
   count: number;
   expiresAt: Date;
 };

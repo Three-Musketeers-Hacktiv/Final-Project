@@ -1,0 +1,151 @@
+import { MongoServerError, ObjectId } from "mongodb";
+
+import type { UserDocument } from "@/server/auth/types";
+import { applyGameAction, type EngineGameAction } from "@/server/game-engine/adapter";
+import { hashPayload } from "@/server/game/hash";
+import {
+  commitGameAction,
+  createReportDocument,
+  createRunTransaction,
+  findAction,
+  findCurrentRun,
+  findLatestReport,
+  findRunByStartRequest,
+  findRunForUser,
+} from "@/server/game/repository";
+import type { CreateRunInput, SubmitActionInput } from "@/server/game/schemas";
+import type { GameActionDocument, GameRunDocument } from "@/server/game/types";
+import { toGameView } from "@/server/game/view";
+import { ApiError } from "@/server/http/api-error";
+
+function parseRunId(runId: string): ObjectId {
+  if (!/^[a-f\d]{24}$/i.test(runId)) {
+    throw new ApiError(400, "VALIDATION_ERROR", "runId must be a valid ObjectId");
+  }
+  return new ObjectId(runId);
+}
+
+async function viewForRun(run: GameRunDocument) {
+  return toGameView(run, await findLatestReport(run._id));
+}
+
+export async function createRun(user: UserDocument, input: CreateRunInput) {
+  const payloadHash = hashPayload({ replaceActiveSave: input.replaceActiveSave });
+  const existing = await findRunByStartRequest(user._id, input.startRequestId);
+  if (existing) {
+    if (existing.startRequestPayloadHash !== payloadHash) {
+      throw new ApiError(409, "START_REQUEST_CONFLICT", "startRequestId was already used with another payload");
+    }
+    return { run: existing, game: await viewForRun(existing), replayed: true };
+  }
+
+  if (user.saveGame && !input.replaceActiveSave) {
+    throw new ApiError(409, "ACTIVE_SAVE_EXISTS", "An active save already exists");
+  }
+
+  const run = await createRunTransaction(user, input.startRequestId, payloadHash);
+  if (run.startRequestPayloadHash !== payloadHash) {
+    throw new ApiError(409, "START_REQUEST_CONFLICT", "startRequestId was already used with another payload");
+  }
+  return { run, game: await viewForRun(run), replayed: false };
+}
+
+export async function getCurrentGame(userId: ObjectId) {
+  const run = await findCurrentRun(userId);
+  if (!run) throw new ApiError(404, "NO_ACTIVE_SAVE", "No active save was found");
+  return { run, game: await viewForRun(run) };
+}
+
+export async function getGameById(userId: ObjectId, runId: string) {
+  const run = await findRunForUser(parseRunId(runId), userId);
+  if (!run) throw new ApiError(404, "RUN_NOT_FOUND", "Game run was not found");
+  return { run, game: await viewForRun(run) };
+}
+
+function toEngineAction(input: SubmitActionInput): EngineGameAction {
+  return input as EngineGameAction;
+}
+
+export async function submitGameAction(
+  userId: ObjectId,
+  runIdValue: string,
+  input: SubmitActionInput,
+) {
+  const runId = parseRunId(runIdValue);
+  const duplicate = await findAction(runId, input.actionId);
+  if (duplicate) {
+    const currentRun = await findRunForUser(runId, userId);
+    if (!currentRun) throw new ApiError(404, "RUN_NOT_FOUND", "Game run was not found");
+    throw new ApiError(409, "DUPLICATE_ACTION", "This action has already been applied", {
+      currentRevision: currentRun.state.revision.toString(),
+    });
+  }
+
+  const currentRun = await findRunForUser(runId, userId);
+  if (!currentRun) throw new ApiError(404, "RUN_NOT_FOUND", "Game run was not found");
+  if (currentRun.endedAt) throw new ApiError(409, "GAME_ENDED", "Game run has ended");
+  if (currentRun.state.version !== 3) {
+    throw new ApiError(409, "UNSUPPORTED_STATE_VERSION", "Game state version is not supported");
+  }
+  if (currentRun.state.revision !== input.expectedRevision) {
+    throw new ApiError(409, "STALE_REVISION", "Game state has changed; reload the current game", {
+      currentRevision: currentRun.state.revision.toString(),
+    });
+  }
+
+  const result = applyGameAction(currentRun.state, toEngineAction(input));
+  if (!result.ok) throw new ApiError(422, result.error.code, result.error.message);
+  if (result.state.revision !== currentRun.state.revision + 1) {
+    throw new Error("Engine action did not advance exactly one revision");
+  }
+
+  const now = new Date();
+  const payloadHash = hashPayload({ type: input.type, payload: input.payload });
+  const action: GameActionDocument = {
+    _id: new ObjectId(),
+    runId,
+    userId,
+    actionId: input.actionId,
+    type: input.type,
+    payload: input.payload,
+    payloadHash,
+    revisionBefore: currentRun.state.revision,
+    revisionAfter: result.state.revision,
+    createdAt: now,
+  };
+  const ended = result.state.phase === "gameOver" || result.state.phase === "victory";
+  const nextRun: GameRunDocument = {
+    ...currentRun,
+    state: result.state,
+    updatedAt: now,
+    endedAt: ended ? now : null,
+  };
+  const report = createReportDocument(nextRun, action);
+
+  try {
+    await commitGameAction({ currentRun, nextRun, action, report });
+  } catch (error) {
+    if (error instanceof ApiError && error.code === "STALE_REVISION") {
+      const committed = await findAction(runId, input.actionId);
+      if (committed) {
+        throw new ApiError(409, "DUPLICATE_ACTION", "This action has already been applied", {
+          currentRevision: committed.revisionAfter.toString(),
+        });
+      }
+    }
+    if (error instanceof MongoServerError && error.code === 11000) {
+      throw new ApiError(409, "DUPLICATE_ACTION", "This action has already been applied");
+    }
+    throw error;
+  }
+
+  return {
+    action: {
+      actionId: action.actionId,
+      type: action.type,
+      revisionBefore: action.revisionBefore,
+      revisionAfter: action.revisionAfter,
+    },
+    game: toGameView(nextRun, report ?? (await findLatestReport(runId))),
+  };
+}

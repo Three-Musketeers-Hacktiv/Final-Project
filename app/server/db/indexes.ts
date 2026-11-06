@@ -15,11 +15,14 @@ const indexDefinitions: IndexDefinition[] = [
   { collection: "sessions", keys: { userId: 1 }, options: { name: "sessions_user_unique", unique: true } },
   { collection: "sessions", keys: { jti: 1 }, options: { name: "sessions_jti_unique", unique: true } },
   { collection: "sessions", keys: { expiresAt: 1 }, options: { name: "sessions_expiry_ttl", expireAfterSeconds: 0 } },
+  { collection: "game_rulesets", keys: { rulesetId: 1 }, options: { name: "rulesets_id_unique", unique: true } },
   {
     collection: "game_runs",
     keys: { userId: 1, startRequestId: 1 },
     options: { name: "runs_start_request_unique", unique: true },
   },
+  { collection: "game_runs", keys: { userId: 1, updatedAt: -1 }, options: { name: "runs_user_updated" } },
+  { collection: "game_runs", keys: { userId: 1, endedAt: 1 }, options: { name: "runs_user_ended" } },
   {
     collection: "game_actions",
     keys: { runId: 1, actionId: 1 },
@@ -44,6 +47,11 @@ const indexDefinitions: IndexDefinition[] = [
     collection: "game_reports",
     keys: { runId: 1, wave: 1 },
     options: { name: "reports_wave_unique", unique: true },
+  },
+  {
+    collection: "game_reports",
+    keys: { runId: 1, actionId: 1 },
+    options: { name: "reports_action_unique", unique: true },
   },
   {
     collection: "event_data",

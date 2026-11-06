@@ -358,3 +358,44 @@ Commit:
 Catatan/risiko:
 - Validasi transaksi session dan unique index harus diulang terhadap Atlas test sebelum deployment.
 - Cost bcrypt 12 harus di-benchmark pada Vercel Preview.
+
+## 2026-11-06 — Run persistence dan gameplay action
+
+Tujuan:
+- Menyediakan vertical slice game yang dapat dipakai frontend dari new game sampai seluruh command engine.
+
+Tindakan:
+- Memperluas adapter tunggal untuk seluruh public gameplay action tanpa menyalin rumus engine.
+- Menambahkan schema Zod untuk create run dan discriminated union sembilan gameplay action.
+- Menambahkan create run idempotent dengan `startRequestId`, payload hash, replace-save guard, ruleset metadata, dan revision-0 properties.
+- Menambahkan current run dan detail run dengan ownership filter.
+- Menambahkan action persistence atomik dengan optimistic revision guard, action idempotency, delapan property snapshots, report battle, save pointer, dan history ending.
+- Menambahkan fingerprint ruleset berdasarkan config engine melalui adapter read-only.
+- Menambahkan response `GameView` berisi state, selector stats, wave preview, active narrative, dan battle report.
+- Menambahkan route `/api/runs`, `/api/runs/current`, `/api/runs/[runId]`, serta `/api/runs/[runId]/actions`.
+
+File terdampak:
+- `app/server/game-engine/adapter.ts` diperbarui.
+- `app/server/game/**` dibuat.
+- `app/app/api/runs/**` dibuat.
+- Index database, test, dan dokumentasi backend diperbarui.
+
+Validasi:
+- `npm.cmd run lint`: lulus.
+- `npm.cmd run typecheck`: lulus.
+- `npm.cmd run test`: lulus, 9 file dan 25 test.
+- `npm.cmd run build`: lulus; seluruh run/action route terdeteksi dynamic.
+- Test mencakup schema command, payload hash, delapan properties, compatibility engine, delegasi action, dan pass-through domain error.
+- Transaction/concurrency test MongoDB Atlas belum dijalankan karena URI test belum tersedia.
+- Root `src/**`, root `docs/**`, dan file frontend tidak diubah.
+
+Commit sebelumnya:
+- `bcbc329 feat(auth): add bcrypt and jwt authentication`
+
+Commit:
+- Status: dibuat setelah validasi final.
+- Push: tidak dilakukan.
+
+Catatan/risiko:
+- Event masih memakai narasi local engine sampai fitur OpenAI/fallback berikutnya selesai.
+- Concurrency dan transaction rollback wajib diverifikasi pada Atlas test replica set.
