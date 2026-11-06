@@ -1,40 +1,29 @@
-import type {
-  ActionResult,
-  BattleResult,
-  BattleRoundLog,
-  CityBattleSnapshot,
-  MonsterSnapshot,
-  WaveId,
-} from "./types";
+import type { BattleResult, BattleRoundLog } from "./types";
 
-export function resolveBattle(
-  city: CityBattleSnapshot,
-  monster: MonsterSnapshot,
-  wave: WaveId,
-): ActionResult<BattleResult> {
-  if (city.hp <= 0 || monster.hp <= 0 || city.attack <= 0) {
-    return {
-      ok: false,
-      error: {
-        code: "BATTLE_INVALID",
-        message: "Battle requires positive city HP, monster HP, and city attack",
-      },
-    };
+export type BattleSnapshot = {
+  wave: 1 | 2;
+  day: number;
+  cityHp: number;
+  cityAttack: number;
+  cityDefense: number;
+  monsterHp: number;
+  monsterAttack: number;
+};
+
+export function resolveBattle(snapshot: BattleSnapshot): BattleResult | null {
+  if (snapshot.cityHp <= 0 || snapshot.monsterHp <= 0 || snapshot.cityAttack <= 0 || snapshot.monsterAttack <= 0) {
+    return null;
   }
-
-  let cityHp = city.hp;
-  let monsterHp = monster.hp;
+  let cityHp = snapshot.cityHp;
+  let monsterHp = snapshot.monsterHp;
   const rounds: BattleRoundLog[] = [];
   let round = 0;
-
   while (cityHp > 0 && monsterHp > 0) {
     round += 1;
-    const damageToMonster = city.attack;
-    const damageToCity = Math.max(1, monster.attack - city.defense);
-    const nextCity = Math.max(0, cityHp - damageToCity);
-    const nextMonster = Math.max(0, monsterHp - damageToMonster);
-    cityHp = nextCity;
-    monsterHp = nextMonster;
+    const damageToMonster = snapshot.cityAttack;
+    const damageToCity = Math.max(1, snapshot.monsterAttack - snapshot.cityDefense);
+    cityHp = Math.max(0, cityHp - damageToCity);
+    monsterHp = Math.max(0, monsterHp - damageToMonster);
     rounds.push({
       round,
       damageToMonster,
@@ -43,21 +32,20 @@ export function resolveBattle(
       monsterHpAfter: monsterHp,
     });
   }
-
-  const won = monsterHp <= 0 && cityHp > 0;
+  const won = monsterHp === 0 && cityHp > 0;
   return {
-    ok: true,
-    state: {
-      wave,
-      won,
-      rounds,
-      cityHpBefore: city.hp,
-      cityHpAfter: cityHp,
-      monsterHpBefore: monster.hp,
-      monsterHpAfter: monsterHp,
-      cityAttack: city.attack,
-      cityDefense: city.defense,
-      monsterAttack: monster.attack,
-    },
+    wave: snapshot.wave,
+    day: snapshot.day,
+    won,
+    rounds,
+    cityHpBefore: snapshot.cityHp,
+    cityHpAfter: cityHp,
+    monsterHpBefore: snapshot.monsterHp,
+    monsterHpAfter: monsterHp,
+    cityAttack: snapshot.cityAttack,
+    cityDefense: snapshot.cityDefense,
+    monsterAttack: snapshot.monsterAttack,
+    cityHpLost: snapshot.cityHp - cityHp,
+    monsterHpLost: snapshot.monsterHp - monsterHp,
   };
 }
