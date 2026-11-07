@@ -1,5 +1,7 @@
 // Placeholder data for laying out /play. Replace with GameState from the backend later.
 
+import type { IconName } from "@/components/Icon";
+
 export type TimelineCategory = "city" | "battle" | "event";
 export type TimelineTone = "city" | "gain" | "loss" | "neutral";
 
@@ -7,6 +9,7 @@ export type TimelineEntry = {
   day: number;
   category: TimelineCategory;
   tone: TimelineTone;
+  icon: IconName;
   highlight?: string;
   text: string;
 };
@@ -54,11 +57,11 @@ export const mockRun = {
     { wave: 3, day: 30, enemies: ["Goblin", "Ogre", "Bat"] },
   ] satisfies UpcomingWave[],
   timeline: [
-    { day: 6, category: "city", tone: "city", highlight: "Upgraded City", text: "to Lv.3." },
-    { day: 5, category: "event", tone: "gain", highlight: "Gained 200 Gold", text: "from an event." },
-    { day: 4, category: "city", tone: "city", highlight: "Upgraded Wall", text: "to Lv.1." },
-    { day: 3, category: "city", tone: "city", highlight: "Recruited soldiers.", text: "Attack increased by 5." },
-    { day: 2, category: "event", tone: "loss", highlight: "Lost 30 Gold", text: "due to a supply shortage." },
-    { day: 1, category: "city", tone: "neutral", text: "The city is prepared for the coming siege." },
+    { day: 6, category: "city", tone: "city", icon: "cityLevel", highlight: "Upgraded City", text: "to Lv.3." },
+    { day: 5, category: "event", tone: "gain", icon: "plus", highlight: "Gained 200 Gold", text: "from an event." },
+    { day: 4, category: "city", tone: "city", icon: "wallLevel", highlight: "Upgraded Wall", text: "to Lv.1." },
+    { day: 3, category: "city", tone: "city", icon: "troopLevel", highlight: "Recruited soldiers.", text: "Attack increased by 5." },
+    { day: 2, category: "event", tone: "loss", icon: "minus", highlight: "Lost 30 Gold", text: "due to a supply shortage." },
+    { day: 1, category: "city", tone: "neutral", icon: "upcomingWaves", text: "The city is prepared for the coming siege." },
   ] satisfies TimelineEntry[],
 };

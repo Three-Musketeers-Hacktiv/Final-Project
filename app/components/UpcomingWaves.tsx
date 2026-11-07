@@ -1,10 +1,11 @@
 import type { UpcomingWave } from "@/app/play/mockData";
+import Icon from "./Icon";
 import Panel from "./Panel";
 import SpritePlaceholder from "./SpritePlaceholder";
 
 export default function UpcomingWaves({ waves }: { waves: UpcomingWave[] }) {
   return (
-    <Panel title="Upcoming Waves" icon={<SpritePlaceholder label="⚑" className="size-6" />}>
+    <Panel title="Upcoming Waves" icon={<Icon name="upcomingWaves" className="size-6" />}>
       <ul className="divide-y divide-frame/40">
         {waves.map((wave) => (
           <li key={wave.wave} className="flex items-center gap-2 py-3">

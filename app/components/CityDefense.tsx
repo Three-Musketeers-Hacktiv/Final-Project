@@ -9,8 +9,8 @@ type CityDefenseProps = {
 
 // Sprites keep their relative pixel sizes: 1 sprite pixel = --u, which scales with the scene width.
 const units = (px: number) => `calc(var(--u) * ${px})`;
-// How far the wall background tucks under each tower so no seam shows.
-const WALL_TUCK = 24;
+// Wall background height relative to the towers.
+const WALL_TO_TOWER_HEIGHT = 0.6;
 
 function Sprite({ src, alt, flip = false }: { src: StaticImageData; alt: string; flip?: boolean }) {
   return (
@@ -46,11 +46,12 @@ export default function CityDefense({ cityLevel, wallLevel, troopLevel }: CityDe
             alt={`Wall, level ${wallLevel}`}
             unoptimized
             draggable={false}
-            className="absolute bottom-0 max-w-none select-none"
+            // Runs from the center of one tower to the center of the other; cover keeps the art undistorted.
+            className="absolute bottom-0 max-w-none select-none object-cover"
             style={{
-              left: units(-WALL_TUCK),
-              width: `calc(100% + ${units(WALL_TUCK * 2)})`,
-              height: units(wall.height),
+              left: units(-tower.width / 2),
+              width: `calc(100% + ${units(tower.width)})`,
+              height: units(tower.height * WALL_TO_TOWER_HEIGHT),
             }}
           />
           <Sprite src={city} alt={`City, level ${cityLevel}`} />

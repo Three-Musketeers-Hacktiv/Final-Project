@@ -1,5 +1,5 @@
 import Panel from "./Panel";
-import SpritePlaceholder from "./SpritePlaceholder";
+import Icon, { type IconName } from "./Icon";
 
 type CityStatusProps = {
   hp: number;
@@ -25,22 +25,22 @@ function LevelBar({ level, max, color }: { level: number; max: number; color: st
 
 export default function CityStatus(props: CityStatusProps) {
   const { hp, maxHp, maxLevel } = props;
-  const tracks = [
-    { label: "Wall Level", level: props.wallLevel, color: "bg-amber-400" },
-    { label: "Troop Level", level: props.troopLevel, color: "bg-sky-500" },
-    { label: "City Level", level: props.cityLevel, color: "bg-purple-500" },
+  const tracks: { label: string; icon: IconName; level: number; color: string }[] = [
+    { label: "Wall Level", icon: "wallLevel", level: props.wallLevel, color: "bg-amber-400" },
+    { label: "Troop Level", icon: "troopLevel", level: props.troopLevel, color: "bg-sky-500" },
+    { label: "City Level", icon: "cityLevel", level: props.cityLevel, color: "bg-purple-500" },
   ];
-  const stats = [
-    { label: "Attack", value: props.attack },
-    { label: "Defense", value: props.defense },
-    { label: "Income", value: props.income },
+  const stats: { label: string; icon: IconName; value: number }[] = [
+    { label: "Attack", icon: "attack", value: props.attack },
+    { label: "Defense", icon: "defense", value: props.defense },
+    { label: "Income", icon: "income", value: props.income },
   ];
 
   return (
     <Panel title="City Status">
       <div className="flex flex-col gap-4">
         <div className="flex items-center gap-3">
-          <SpritePlaceholder label="HP" />
+          <Icon name="cityHp" />
           <div className="flex-1">
             <div className="flex justify-between">
               <span>City HP</span>
@@ -56,7 +56,7 @@ export default function CityStatus(props: CityStatusProps) {
 
         {tracks.map((track) => (
           <div key={track.label} className="flex items-center gap-3">
-            <SpritePlaceholder label={track.label.split(" ")[0]} />
+            <Icon name={track.icon} />
             <div className="flex-1">
               <div className="mb-1 flex justify-between">
                 <span>{track.label}</span>
@@ -74,7 +74,7 @@ export default function CityStatus(props: CityStatusProps) {
         <dl className="flex flex-col gap-2">
           {stats.map((stat) => (
             <div key={stat.label} className="flex items-center gap-3">
-              <SpritePlaceholder label={stat.label.slice(0, 3)} className="size-6" />
+              <Icon name={stat.icon} className="size-6" />
               <dt className="flex-1">{stat.label}</dt>
               <dd>{stat.value}</dd>
             </div>

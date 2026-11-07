@@ -26,8 +26,6 @@
   --color-gold: var(--game-gold);
   --color-track: var(--game-track);
   --color-sky-top: var(--game-sky-top);
-  --color-sky-mid: var(--game-sky-mid);
-  --color-ground: var(--game-ground);
 }
 
 :root,
@@ -42,8 +40,6 @@
   --game-gold: #e8b94a;
   --game-track: rgb(255 255 255 / 0.14);
   --game-sky-top: #0d1530;
-  --game-sky-mid: #1b2a4a;
-  --game-ground: #2b3d2c;
 }
 
 [data-theme="day"] {
@@ -57,8 +53,6 @@
   --game-gold: #d9a636;
   --game-track: rgb(42 34 50 / 0.14);
   --game-sky-top: #7fb6e6;
-  --game-sky-mid: #bfdcf2;
-  --game-ground: #7aa35a;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -72,4 +66,62 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Battle scene clouds (components/Clouds.tsx). Durations and delays are set per cloud. */
+@keyframes cloud-drift {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(100cqw);
+  }
+}
+
+@keyframes cloud-bob {
+  0%,
+  100% {
+    translate: 0 0;
+  }
+  50% {
+    translate: 0 calc(100cqw / 1534 * 4);
+  }
+}
+
+/* Thins out, vanishes for a while, then reforms. */
+@keyframes cloud-fade {
+  0%,
+  45% {
+    opacity: 1;
+  }
+  60% {
+    opacity: 0.35;
+  }
+  70%,
+  78% {
+    opacity: 0;
+  }
+  92%,
+  100% {
+    opacity: 1;
+  }
+}
+
+.cloud-drift {
+  animation: cloud-drift linear infinite;
+}
+
+.cloud-bob {
+  animation: cloud-bob ease-in-out infinite;
+}
+
+.cloud-bob.cloud-fade {
+  animation-name: cloud-bob, cloud-fade;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cloud-drift,
+  .cloud-bob {
+    animation-play-state: paused;
+  }
 }

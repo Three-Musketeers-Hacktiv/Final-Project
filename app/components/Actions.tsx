@@ -1,12 +1,12 @@
+import Icon, { type IconName } from "./Icon";
 import Panel from "./Panel";
-import SpritePlaceholder from "./SpritePlaceholder";
 
 // Matches the engine actions: upgradeCity, upgradeTroops, upgradeWall, repairCity.
-const ACTIONS = [
-  { id: "upgradeCity", label: "Upgrade City" },
-  { id: "upgradeTroops", label: "Recruit Soldiers" },
-  { id: "upgradeWall", label: "Upgrade Wall" },
-  { id: "repairCity", label: "Repair Wall" },
+const ACTIONS: { id: string; label: string; icon: IconName }[] = [
+  { id: "upgradeCity", label: "Upgrade City", icon: "cityLevel" },
+  { id: "upgradeTroops", label: "Recruit Soldiers", icon: "troopLevel" },
+  { id: "upgradeWall", label: "Upgrade Wall", icon: "wallLevel" },
+  { id: "repairCity", label: "Repair Wall", icon: "repairWall" },
 ];
 
 export default function Actions() {
@@ -19,7 +19,7 @@ export default function Actions() {
             type="button"
             className="flex items-center gap-3 rounded-sm border-2 border-gold/60 bg-panel-head px-3 py-2 text-left leading-tight text-parchment transition-colors hover:border-gold hover:bg-track"
           >
-            <SpritePlaceholder label="Icon" className="size-9" />
+            <Icon name={action.icon} className="size-9" />
             <span>{action.label}</span>
           </button>
         ))}

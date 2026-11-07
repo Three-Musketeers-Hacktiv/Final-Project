@@ -1,6 +1,6 @@
 import type { TimelineEntry, TimelineTone } from "@/app/play/mockData";
 import Panel from "./Panel";
-import SpritePlaceholder from "./SpritePlaceholder";
+import Icon from "./Icon";
 
 const FILTERS = [
   { id: "all", label: "All", dot: null },
@@ -35,7 +35,7 @@ export default function Timeline({ entries }: { entries: TimelineEntry[] }) {
   );
 
   return (
-    <Panel title="Timeline" aside={filters} className="flex-1">
+    <Panel title="Timeline" icon={<Icon name="timeline" className="size-6" />} aside={filters} className="flex-1">
       <ol className="relative">
         {entries.map((entry) => (
           <li
@@ -44,7 +44,7 @@ export default function Timeline({ entries }: { entries: TimelineEntry[] }) {
           >
             <span className="size-3 shrink-0 rounded-full border-2 border-muted" />
             <span className="w-14 shrink-0 text-sm text-muted">Day {String(entry.day).padStart(2, "0")}</span>
-            <SpritePlaceholder label={entry.category} className="size-6" />
+            <Icon name={entry.icon} className="size-6" />
             <p>
               {entry.highlight && <span className={TONE_CLASS[entry.tone]}>{entry.highlight} </span>}
               {entry.text}
