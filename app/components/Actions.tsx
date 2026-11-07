@@ -11,8 +11,8 @@ const ACTIONS = [
 
 export default function Actions() {
   return (
-    <Panel title="Actions" subtitle="(1 per day)">
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+    <Panel title="Actions" subtitle="(1 per day)" className="@container">
+      <div className="grid grid-cols-2 gap-3 @2xl:grid-cols-4">
         {ACTIONS.map((action) => (
           <button
             key={action.id}

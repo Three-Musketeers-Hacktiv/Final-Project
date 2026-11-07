@@ -36,7 +36,7 @@ export const mockRun = {
     wallLevel: 1,
     troopLevel: 1,
     cityLevel: 3,
-    maxLevel: 5,
+    maxLevel: 10,
     attack: 15,
     defense: 8,
     income: 49,
