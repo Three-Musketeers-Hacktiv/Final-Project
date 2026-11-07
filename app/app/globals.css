@@ -12,6 +12,49 @@
   --font-mono: var(--font-geist-mono);
 }
 
+/* Game UI palette (used by /play). Values switch with data-theme set by ThemeProvider. */
+@custom-variant day (&:where([data-theme="day"], [data-theme="day"] *));
+
+@theme inline {
+  --color-ink: var(--game-ink);
+  --color-panel: var(--game-panel);
+  --color-panel-head: var(--game-panel-head);
+  --color-frame: var(--game-frame);
+  --color-parchment: var(--game-parchment);
+  --color-muted: var(--game-muted);
+  --color-crimson: var(--game-crimson);
+  --color-gold: var(--game-gold);
+  --color-track: var(--game-track);
+  --color-sky-top: var(--game-sky-top);
+}
+
+:root,
+[data-theme="night"] {
+  --game-ink: #11162a;
+  --game-panel: #181e33;
+  --game-panel-head: #262238;
+  --game-frame: #6b4a55;
+  --game-parchment: #ece1cc;
+  --game-muted: #a69c90;
+  --game-crimson: #9e3346;
+  --game-gold: #e8b94a;
+  --game-track: rgb(255 255 255 / 0.14);
+  --game-sky-top: #0d1530;
+}
+
+[data-theme="day"] {
+  --game-ink: #ece3cf;
+  --game-panel: #f8f2e4;
+  --game-panel-head: #e6d9bf;
+  --game-frame: #a7836b;
+  --game-parchment: #2a2232;
+  --game-muted: #6d6256;
+  --game-crimson: #d98593;
+  --game-gold: #d9a636;
+  --game-track: rgb(42 34 50 / 0.14);
+  --game-sky-top: #7fb6e6;
+}
+
 @media (prefers-color-scheme: dark) {
   :root {
     --background: #0a0a0a;
@@ -23,4 +66,62 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Battle scene clouds (components/Clouds.tsx). Durations and delays are set per cloud. */
+@keyframes cloud-drift {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(100cqw);
+  }
+}
+
+@keyframes cloud-bob {
+  0%,
+  100% {
+    translate: 0 0;
+  }
+  50% {
+    translate: 0 calc(100cqw / 1534 * 4);
+  }
+}
+
+/* Thins out, vanishes for a while, then reforms. */
+@keyframes cloud-fade {
+  0%,
+  45% {
+    opacity: 1;
+  }
+  60% {
+    opacity: 0.35;
+  }
+  70%,
+  78% {
+    opacity: 0;
+  }
+  92%,
+  100% {
+    opacity: 1;
+  }
+}
+
+.cloud-drift {
+  animation: cloud-drift linear infinite;
+}
+
+.cloud-bob {
+  animation: cloud-bob ease-in-out infinite;
+}
+
+.cloud-bob.cloud-fade {
+  animation-name: cloud-bob, cloud-fade;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cloud-drift,
+  .cloud-bob {
+    animation-play-state: paused;
+  }
 }
