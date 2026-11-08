@@ -93,6 +93,7 @@ Verified results:
 - timeline smoke passed against MongoDB development;
 - surrender regression smoke passed;
 - full 42-action campaign passed through day 20 and `victory`;
+- engine validation patch `fba69be` was merged and the same backend gates/smokes passed again;
 - no frontend or game-engine source was modified.
 
 Push remains manual.

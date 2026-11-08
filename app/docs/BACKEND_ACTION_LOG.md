@@ -815,3 +815,32 @@ Database, handoff, dan scope:
 - Tidak mengubah `app/components/**`, `app/lib/**`, `app/app/(game)/**`, atau `app/proxy.ts` milik frontend.
 - `.env` lokal tidak diubah atau di-commit.
 - Push tidak dilakukan.
+
+## 2026-11-08 — Audit kompatibilitas patch validasi engine terbaru
+
+Tujuan:
+- Mengintegrasikan commit rekan `fba69be` dan memastikan backend timeline/surrender tetap sinkron sebelum push.
+
+Tindakan:
+- Menjalankan `git fetch origin --prune` dan menemukan patch engine baru pada remote branch.
+- Membaca spec/tiket `engine-validation-patch` serta diff `src/game/events.ts`, `src/game/battle.ts`, dan kontrak engine.
+- Memastikan patch tidak mengubah API publik, `GameState.version`, balancing, atau bentuk persisted state.
+- Merge dilakukan memakai strategi Git `ort`; file engine/root docs berasal utuh dari commit rekan dan tidak diedit backend.
+- Memasang dependency root sesuai lockfile agar test engine dapat dijalankan langsung pada checkout gabungan.
+
+Validasi setelah merge:
+- Root `npm.cmd run typecheck`: lulus.
+- Root `npm.cmd test`: lulus, 2 file dan 30 test engine/UI.
+- App `npm.cmd run typecheck`: lulus.
+- App `npm.cmd run test`: lulus, 16 file dan 52 test backend.
+- App `npm.cmd run lint`: lulus tanpa warning.
+- App `npm.cmd run build`: lulus production build.
+- App `npm.cmd run test:timeline`: lulus.
+- App `npm.cmd run test:surrender`: lulus.
+- App `npm.cmd run test:campaign`: lulus 42 action sampai `victory` pada engine terbaru.
+
+Catatan dependency dan data:
+- `npm ci` root tidak mengubah source atau lockfile; `node_modules` tetap ignored.
+- Audit instalasi root melaporkan 1 moderate dan 2 critical vulnerability dependency development. `npm audit fix --force` tidak dijalankan karena dapat membuat perubahan breaking di luar scope.
+- Smoke test menambah data development untuk audit dan tidak melakukan delete/reset.
+- Push tidak dilakukan.
