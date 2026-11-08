@@ -23,8 +23,9 @@ Dokumen terkait:
 - `actionId` dan `startRequestId` tetap UUID/string idempotency dari frontend.
 - Timestamp disimpan sebagai BSON `Date` dalam UTC.
 - Semua document yang berubah memiliki `createdAt`; document mutable juga memiliki `updatedAt`.
-- Password plaintext, JWT lengkap, JWT signing secret, dan OpenAI API key tidak pernah disimpan.
+- Password plaintext, JWT lengkap, JWT signing secret, dan provider AI API key tidak pernah disimpan.
 - State lama dengan `version !== 3` ditolak; tidak dimigrasikan diam-diam.
+- State versi 3 sebelum patch `eventPlan` tidak otomatis dianggap kompatibel hanya karena angka versinya sama.
 
 ### Catatan penerapan perubahan nama REF
 
@@ -133,6 +134,7 @@ Aturan MVP:
 - Engine tetap membaca config source code.
 - Document ruleset yang sudah digunakan run immutable.
 - Perubahan balancing membuat ruleset metadata baru.
+- Existing `rulesetId` dengan fingerprint berbeda harus ditolak; fingerprint lama tidak boleh ditimpa.
 
 Indeks:
 
@@ -160,6 +162,7 @@ Aturan:
 
 - `state.runId === _id.toHexString()`.
 - `state.version === 3`.
+- `state.eventPlan` berisi tepat satu package tepercaya untuk hari 3, 7, 13, dan 17 sesuai hasil engine untuk `state.runId`.
 - `state.revision` hanya dinaikkan engine.
 - Backend tidak menyimpan total attack/defense ke state.
 - Run selesai immutable untuk gameplay.
@@ -406,7 +409,7 @@ type AuthRateLimitDocument = {
 Indeks:
 
 ```text
-unique { keyHash: 1, route: 1, windowStartedAt: 1 }
+unique { key: 1, windowStart: 1 }
 TTL    { expiresAt: 1 } expireAfterSeconds: 0
 ```
 
@@ -455,9 +458,10 @@ Saat continue:
 2. Load `game_runs` menggunakan `_id + userId`.
 3. Validasi state versi 3.
 4. Pastikan `state.runId` cocok dengan `_id`.
-5. Pastikan pointer revision cocok dengan state revision.
-6. Bila membaca properties, ambil seluruh delapan dari revision yang sama.
-7. Load active run event/report bila relevan.
+5. Validasi ruleset fingerprint dan `eventPlan` patched state.
+6. Pastikan pointer run dan revision cocok dengan state.
+7. Bila membaca properties, ambil seluruh delapan dari revision yang sama.
+8. Load active run event/report bila relevan.
 
 Backend tidak menyusun state kembali dari action log atau properties.
 

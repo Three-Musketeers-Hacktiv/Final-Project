@@ -1,6 +1,6 @@
 # API Contract — Fantasy City Defense
 
-Status: **Draft untuk review Backend + Frontend**  
+Status: **Target contract; remediation implementation pending**
 Versi kontrak: `1`  
 Base path: `/api`  
 Transport: HTTPS + JSON  
@@ -22,6 +22,7 @@ Tipe TypeScript yang dapat langsung dipakai frontend tersedia di `../contracts/a
 - Engine menjadi sumber kebenaran aturan game.
 - Frontend tidak menghitung biaya, damage, income, efek, atau transisi fase.
 - Semua perubahan gameplay dikirim sebagai command dengan `actionId` dan `expectedRevision`.
+- Event/choice ID berasal dari `state.eventPlan` dan `eventNarrative.choices`; ID tidak boleh dibentuk atau di-hardcode berdasarkan hari.
 - Semua ID keluar API berbentuk string, termasuk `ObjectId` MongoDB yang sudah diubah menjadi hex string.
 - Timestamp API menggunakan ISO 8601 UTC.
 - Response tidak pernah memuat password hash, session token, connection string, API key, atau stack trace.
@@ -107,9 +108,10 @@ type GameView = {
 
 Catatan:
 
-- `state` berasal dari snapshot MongoDB yang sudah divalidasi sebagai versi 3.
+- `state` berasal dari snapshot MongoDB yang sudah divalidasi sebagai patched version 3, termasuk `runId` dan empat entry `eventPlan`.
 - `stats` dan `wavePreview` selalu berasal dari selector engine.
 - `eventNarrative` hanya mendekorasi teks/label; cost dan effects tetap dari package engine terpercaya.
+- Source persisten setelah dekorasi adalah `ai`, `fallback`, atau `mock`; `local` hanya boleh muncul sementara dari engine sebelum backend mendekorasi event.
 - `report` hanya tersedia jika battle terkait sudah diselesaikan.
 
 ## 4. Auth endpoints
@@ -250,6 +252,7 @@ Aturan:
 - Jika true, pointer save berpindah ke run baru; run lama tetap tersimpan dan tidak dianggap selesai.
 - Create run hanya menyimpan state awal, delapan properties revision 0, metadata ruleset, dan pointer save.
 - Narasi event baru dibuat ketika action engine pertama kali memasuki hari event (3, 7, 13, atau 17). Jika AI tidak tersedia/gagal, fallback lokal digunakan pada action yang sama.
+- Create run mengembalikan `state.eventPlan`; setiap entry berisi `day`, `packageId`, dan `eventId` yang dipilih engine secara deterministik dari `runId`.
 
 Sukses run baru: `201 Created`. Retry run yang sudah sukses: `200 OK` dengan run yang sama.
 
@@ -364,6 +367,8 @@ Sukses: `200 OK`
 
 Frontend tidak dapat mengirim `attachActiveEvent`, `ensureLocalEvent`, state baru, cost, damage, effects, atau revision baru.
 
+Untuk `chooseEventOption`, frontend wajib mengirim `choiceId` yang dibaca dari `game.eventNarrative.choices`. Legacy ID seperti `day3-skip` tidak menjadi kontrak dan tidak boleh diasumsikan tersedia pada run tertentu.
+
 ## 7. Idempotency dan retry
 
 ### Action sukses tetapi respons hilang
@@ -372,6 +377,8 @@ Frontend mengirim ulang request yang identik dengan `actionId` yang sama. Backen
 
 - `409 DUPLICATE_ACTION`; dan
 - revision server terbaru pada `error.fields.currentRevision`.
+
+Jika `actionId` yang sama digunakan dengan `type` atau `payload` berbeda, target remediasi mengembalikan `409 ACTION_PAYLOAD_CONFLICT`, bukan `DUPLICATE_ACTION`.
 
 Frontend kemudian memanggil `GET /api/runs/:runId` atau `GET /api/runs/current` untuk mengambil state server terbaru.
 
@@ -409,8 +416,11 @@ Tidak ada write dan revision tidak berubah. Error code stabil engine diteruskan,
 | 409 | `USERNAME_TAKEN` | Username sudah dipakai |
 | 409 | `ACTIVE_SAVE_EXISTS` | New game perlu konfirmasi replace |
 | 409 | `DUPLICATE_ACTION` | `actionId` sudah berhasil |
+| 409 | `ACTION_PAYLOAD_CONFLICT` | `actionId` dipakai ulang dengan type/payload berbeda |
 | 409 | `STALE_REVISION` | Expected revision tidak cocok |
 | 409 | `UNSUPPORTED_STATE_VERSION` | Save bukan versi 3 |
+| 409 | `RUN_INTEGRITY_ERROR` | `state.runId`, ruleset, atau bentuk patched state tidak konsisten |
+| 409 | `SAVE_POINTER_MISMATCH` | Pointer active save tidak cocok dengan run/revision tersimpan |
 | 409/422 | engine code | Action game ditolak engine |
 | 429 | `RATE_LIMITED` | Terlalu banyak request |
 | 500 | `INTERNAL_ERROR` | Error tak terduga |
