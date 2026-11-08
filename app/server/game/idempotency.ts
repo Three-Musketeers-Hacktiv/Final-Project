@@ -5,7 +5,7 @@ export function assertActionIdempotency(
   existing: Pick<GameActionDocument, "payloadHash" | "revisionAfter">,
   requestPayloadHash: string,
   currentRevision = existing.revisionAfter,
-): never {
+): void {
   if (existing.payloadHash !== requestPayloadHash) {
     throw new ApiError(
       409,
@@ -15,10 +15,4 @@ export function assertActionIdempotency(
     );
   }
 
-  throw new ApiError(
-    409,
-    "DUPLICATE_ACTION",
-    "This action has already been applied",
-    { currentRevision: currentRevision.toString() },
-  );
 }

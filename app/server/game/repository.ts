@@ -188,7 +188,14 @@ export async function commitGameAction(input: {
     await session.withTransaction(async () => {
       const update = await database.collection<GameRunDocument>("game_runs").updateOne(
         { _id: currentRun._id, userId: currentRun.userId, "state.revision": currentRun.state.revision },
-        { $set: { state: nextRun.state, updatedAt: nextRun.updatedAt, endedAt: nextRun.endedAt } },
+        {
+          $set: {
+            state: nextRun.state,
+            timeline: nextRun.timeline,
+            updatedAt: nextRun.updatedAt,
+            endedAt: nextRun.endedAt,
+          },
+        },
         { session },
       );
       if (update.modifiedCount !== 1) {

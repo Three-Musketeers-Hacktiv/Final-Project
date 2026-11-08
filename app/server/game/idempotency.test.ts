@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { ApiError } from "@/server/http/api-error";
 import { assertActionIdempotency } from "./idempotency";
 
-function captureCode(callback: () => never) {
+function captureCode(callback: () => void) {
   try {
     callback();
     throw new Error("Expected idempotency check to throw");
@@ -14,13 +14,10 @@ function captureCode(callback: () => never) {
 }
 
 describe("assertActionIdempotency", () => {
-  it("reports a duplicate for the same payload hash", () => {
-    const error = captureCode(() =>
+  it("allows replay for the same payload hash", () => {
+    expect(() =>
       assertActionIdempotency({ payloadHash: "same", revisionAfter: 4 }, "same", 7),
-    );
-
-    expect(error.code).toBe("DUPLICATE_ACTION");
-    expect(error.fields).toEqual({ currentRevision: "7" });
+    ).not.toThrow();
   });
 
   it("reports a conflict when an action id is reused with another payload", () => {

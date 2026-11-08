@@ -6,6 +6,7 @@ import { applyGameAction, type EngineGameAction } from "@/server/game-engine/ada
 import { hashPayload } from "@/server/game/hash";
 import { assertActionIdempotency } from "@/server/game/idempotency";
 import { assertLoadableRun } from "@/server/game/load";
+import { describeTimelineAction } from "@/server/game/timeline";
 import {
   toEventDay,
   toPersistedNarrativeSource,
@@ -99,6 +100,23 @@ function toEngineAction(input: SubmitActionInput): EngineGameAction {
   return input as EngineGameAction;
 }
 
+async function replayCommittedAction(
+  run: GameRunDocument,
+  action: GameActionDocument,
+  payloadHash: string,
+) {
+  assertActionIdempotency(action, payloadHash, run.state.revision);
+  return {
+    action: {
+      actionId: action.actionId,
+      type: action.type,
+      revisionBefore: action.revisionBefore,
+      revisionAfter: action.revisionAfter,
+    },
+    game: await viewForRun(run),
+  };
+}
+
 export async function submitGameAction(
   userId: ObjectId,
   runIdValue: string,
@@ -108,17 +126,14 @@ export async function submitGameAction(
   const payloadHash = hashPayload({ type: input.type, payload: input.payload });
   const currentRun = await findRunForUser(runId, userId);
   if (!currentRun) throw new ApiError(404, "RUN_NOT_FOUND", "Game run was not found");
-  if (currentRun.endedAt) throw new ApiError(409, "GAME_ENDED", "Game run has ended");
 
   const duplicate = await findAction(runId, input.actionId);
   if (duplicate) {
-    const pointer = await findSavePointer(userId);
-    if (!pointer) {
-      throw new ApiError(409, "SAVE_POINTER_MISMATCH", "Game run is not the active save");
-    }
-    await validateRun(currentRun, pointer);
-    assertActionIdempotency(duplicate, payloadHash, currentRun.state.revision);
+    await validateRun(currentRun);
+    return replayCommittedAction(currentRun, duplicate, payloadHash);
   }
+
+  if (currentRun.endedAt) throw new ApiError(409, "GAME_ENDED", "Game run has ended");
 
   const pointer = await findSavePointer(userId);
   if (!pointer) {
@@ -193,13 +208,23 @@ export async function submitGameAction(
     createdAt: now,
   };
   const ended = nextState.phase === "gameOver" || nextState.phase === "victory";
-  const nextRun: GameRunDocument = {
+  let nextRun: GameRunDocument = {
     ...currentRun,
     state: nextState,
+    timeline: currentRun.timeline ?? [],
     updatedAt: now,
     endedAt: ended ? now : null,
   };
   const report = createReportDocument(nextRun, action);
+  const timelineEntries = describeTimelineAction(
+    input,
+    toGameView(currentRun),
+    toGameView(nextRun, report),
+  );
+  nextRun = {
+    ...nextRun,
+    timeline: [...(currentRun.timeline ?? []), ...timelineEntries],
+  };
   const resolvedEvent = input.type === "chooseEventOption" && currentRun.state.activeEvent
     ? { eventId: currentRun.state.activeEvent.eventId, choiceId: input.payload.choiceId }
     : null;
@@ -211,22 +236,16 @@ export async function submitGameAction(
       const committed = await findAction(runId, input.actionId);
       if (committed) {
         const latest = await findRunForUser(runId, userId);
-        assertActionIdempotency(
-          committed,
-          payloadHash,
-          latest?.state.revision ?? committed.revisionAfter,
-        );
+        if (!latest) throw new ApiError(404, "RUN_NOT_FOUND", "Game run was not found");
+        return replayCommittedAction(latest, committed, payloadHash);
       }
     }
     if (error instanceof MongoServerError && error.code === 11000) {
       const committed = await findAction(runId, input.actionId);
       if (committed) {
         const latest = await findRunForUser(runId, userId);
-        assertActionIdempotency(
-          committed,
-          payloadHash,
-          latest?.state.revision ?? committed.revisionAfter,
-        );
+        if (!latest) throw new ApiError(404, "RUN_NOT_FOUND", "Game run was not found");
+        return replayCommittedAction(latest, committed, payloadHash);
       }
       throw new ApiError(409, "STALE_REVISION", "Game state has changed; reload the current game");
     }
