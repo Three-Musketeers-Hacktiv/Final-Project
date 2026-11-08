@@ -1,6 +1,6 @@
 # Backend Implementation Plan — Fantasy City Defense
 
-Status: **Implemented baseline; surrender extension planned**
+Status: **Implemented and synchronized with latest engine patch, including surrender**
 Target: prototipe 20 hari / 2 wave  
 Backend: Next.js Route Handlers + MongoDB  
 Kontrak engine: `../../docs/DEV1_CONTRACT.md` dan `../../src/game` (read-only)

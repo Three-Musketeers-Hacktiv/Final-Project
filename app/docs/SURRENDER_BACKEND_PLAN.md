@@ -1,6 +1,6 @@
 # Backend Surrender Action Plan
 
-Status: **Approved plan; implementation pending**
+Status: **Implemented and verified**
 Owner: Backend
 Updated: 2026-11-08
 Engine baseline: `a0cc71b feat(game): implement surrender functionality to end active runs`
@@ -48,15 +48,15 @@ Backend must not change:
 
 The existing frontend Settings placeholder remains owned by the frontend developer.
 
-## 3. Implementation steps
+## 3. Implemented steps
 
-1. Import engine `surrender` in the backend adapter.
-2. Add `surrender` to `EngineGameAction` and dispatch it through `applyGameAction`.
-3. Add a strict public schema variant with `payload: {}`.
-4. Add `surrender` to persisted `GameActionType` and shared API contract types.
-5. Reuse the existing generic final-state service/repository flow; do not add separate gameplay or pointer logic.
-6. Add adapter/schema regression tests.
-7. Add an API smoke flow proving state persistence, pointer clearing, history behavior, and rejection after the run ends.
+1. [x] Import engine `surrender` in the backend adapter.
+2. [x] Add `surrender` to `EngineGameAction` and dispatch it through `applyGameAction`.
+3. [x] Add a strict public schema variant with `payload: {}`.
+4. [x] Add `surrender` to persisted `GameActionType` and shared API contract types.
+5. [x] Reuse the existing generic final-state service/repository flow; no gameplay calculation was duplicated.
+6. [x] Add adapter/schema regression tests.
+7. [x] Add an API smoke flow proving state persistence, pointer clearing, and rejection after the run ends.
 
 ## 4. Error and idempotency behavior
 
@@ -71,12 +71,12 @@ Rejected actions do not increment revision or create a successful action record.
 
 ## 5. Verification and commits
 
-Planned commits:
+Commits:
 
-1. `docs(backend): define surrender action contract`
-2. `feat(game): expose surrender through backend actions`
-3. `test(api): verify surrender finalization flow`
-4. `docs(backend): finalize surrender handoff`
+1. `e0f1093 docs(backend): define surrender action contract`
+2. `b90b3e5 feat(game): expose surrender through backend actions`
+3. `fb44647 test(api): verify surrender finalization flow`
+4. `docs(backend): finalize surrender handoff` (this documentation closeout)
 
 Required checks:
 
@@ -88,4 +88,13 @@ npm run build
 npm run test:surrender
 ```
 
-The database smoke runs only against the configured development/test database. Push remains manual.
+Verification result:
+
+- lint passed without warnings;
+- typecheck passed;
+- 14 test files / 47 tests passed;
+- production build passed;
+- `test:surrender` passed against the configured development database with final phase `gameOver` and revision `1`;
+- no frontend or game-engine source was modified.
+
+The database smoke ran only against the configured development database and retained its test user/run for audit. Push remains manual.

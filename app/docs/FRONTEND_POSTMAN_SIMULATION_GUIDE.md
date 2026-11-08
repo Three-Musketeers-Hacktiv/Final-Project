@@ -16,7 +16,7 @@ Jangan mengirim URI, password database, JWT secret, atau API key melalui Git. Fi
 
 Gemini key tidak diperlukan untuk pengujian ini. Jika `GEMINI_API_KEY` dan `GEMINI_MODEL` kosong, backend memakai narasi fallback terpercaya dan gameplay tetap berjalan.
 
-Game engine dan backend sudah memakai `eventPlan` serta choice ID dinamis. Panduan ini telah diverifikasi melalui campaign API 42 action sampai `victory`.
+Game engine dan backend sudah memakai `eventPlan` serta choice ID dinamis. Panduan ini telah diverifikasi melalui campaign API 42 action sampai `victory` dan smoke test surrender sampai `gameOver`.
 
 ## 2. Prasyarat laptop
 
@@ -255,7 +255,43 @@ Sesudah final action hari 20:
 4. Kirim `Logout`; hasil harus `200`.
 5. Kirim `Current User`; hasil harus `401 UNAUTHENTICATED`.
 
-## 8. Error yang paling umum
+## 8. Simulasi surrender
+
+Surrender dapat diuji segera setelah `Create Run`; campaign tidak perlu dijalankan sampai hari 20. Pastikan `runId` dan `revision` berasal dari response run aktif, lalu kirim:
+
+```http
+POST {{baseUrl}}/api/runs/{{runId}}/actions
+Content-Type: application/json
+```
+
+```json
+{
+  "actionId": "{{$guid}}",
+  "expectedRevision": {{revision}},
+  "type": "surrender",
+  "payload": {}
+}
+```
+
+Hasil yang wajib diperiksa:
+
+1. Response `200` dan `data.game.state.phase` menjadi `gameOver`.
+2. Revision bertambah tepat satu; field gameplay lain tidak berubah.
+3. `GET {{baseUrl}}/api/runs/{{runId}}` tetap `200` dan menyimpan final state tersebut.
+4. `GET {{baseUrl}}/api/runs/current` menghasilkan `404 NO_ACTIVE_SAVE`.
+5. Surrender baru terhadap run yang sama menghasilkan `409 GAME_ENDED`.
+6. Payload selain `{}`, misalnya `{ "reason": "quit" }`, menghasilkan `400 VALIDATION_ERROR`.
+
+Developer yang ingin menjalankan alur otomatis dari Git Bash dapat memakai:
+
+```bash
+cd app
+SURRENDER_ORIGIN=http://localhost:3001 npm run test:surrender
+```
+
+Ganti nilai `SURRENDER_ORIGIN` agar sama persis dengan `APP_ORIGIN` pada environment lokal. Server backend harus tetap berjalan di terminal lain; bila port backend bukan 3000, tambahkan `SURRENDER_BASE_URL`, misalnya `SURRENDER_BASE_URL=http://localhost:3002`.
+
+## 9. Error yang paling umum
 
 ### `SERVICE_NOT_READY` atau koneksi MongoDB gagal
 
@@ -292,7 +328,7 @@ Username sudah dipakai. Kosongkan variable `username` agar collection membuat us
 
 Hentikan proses lama dengan `Ctrl+C`. Bila backend dijalankan pada port lain, samakan `baseUrl`, `APP_ORIGIN`, `CAMPAIGN_BASE_URL`, dan `CAMPAIGN_ORIGIN`.
 
-## 9. Informasi yang dikirim ke developer backend bila gagal
+## 10. Informasi yang dikirim ke developer backend bila gagal
 
 Kirim informasi berikut tanpa secret:
 

@@ -725,3 +725,37 @@ Batas scope:
 - Tidak mengubah `src/game/**`, komponen/halaman frontend, `app/lib/**`, `app/proxy.ts`, atau root `docs/**`.
 - Implementasi source belum dilakukan pada commit perencanaan ini.
 - Push tidak dilakukan.
+
+## 2026-11-08 — Implementasi dan verifikasi backend surrender
+
+Tujuan:
+- Mengekspos transisi engine `surrender(state)` melalui endpoint action backend tanpa mengubah source engine atau frontend.
+- Membuktikan finalisasi `gameOver` tersimpan dan active-save pointer dilepas.
+
+Implementasi:
+- Menambahkan action `surrender` dengan payload strict `{}` pada schema Zod, shared API contract, persisted action type, dan adapter engine.
+- Meneruskan state langsung ke fungsi engine tanpa menyalin rumus atau mengubah field gameplay di backend.
+- Memprioritaskan `GAME_ENDED` ketika action dikirim ke run yang telah final, meskipun active-save pointer sudah dilepas.
+- Menambahkan regression test adapter/schema serta runner `npm run test:surrender`.
+- Memperbarui kontrak, implementation plan, rencana surrender, dan panduan Postman/frontend.
+
+Commit:
+- `e0f1093 docs(backend): define surrender action contract`.
+- `b90b3e5 feat(game): expose surrender through backend actions`.
+- `fb44647 test(api): verify surrender finalization flow`.
+- Commit dokumentasi closeout dibuat setelah pemeriksaan final.
+
+Validasi aktual:
+- `npm.cmd run test`: lulus, 14 file dan 47 test.
+- `npm.cmd run typecheck`: lulus.
+- `npm.cmd run lint`: lulus tanpa warning.
+- `npm.cmd run build`: lulus production build.
+- `npm.cmd run test:surrender`: lulus terhadap MongoDB development setelah origin runner disamakan dengan `APP_ORIGIN`.
+- Smoke test membuktikan payload tambahan ditolak `400`, surrender sukses `200`, final run dapat dibaca `200`, active save menjadi `404`, dan action setelah final ditolak `409 GAME_ENDED`.
+
+Database dan scope:
+- Smoke test menambahkan satu user/run development dan mempertahankannya untuk audit; tidak ada reset atau penghapusan data.
+- Tidak mengubah `src/game/**`, `src/ui/**`, root `docs/**`, atau file game engine.
+- Tidak mengubah `app/components/**`, `app/app/(game)/**`, `app/lib/**`, atau `app/proxy.ts` milik frontend.
+- `.env` lokal tidak diubah atau di-commit.
+- Push tidak dilakukan.
