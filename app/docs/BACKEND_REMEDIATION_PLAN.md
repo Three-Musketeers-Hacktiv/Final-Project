@@ -176,10 +176,10 @@ The campaign runner and manual guide read event choice IDs from the API response
 
 ## 6. Implementation order and commits
 
-1. `fix(backend): validate patched engine saves and rulesets` — BE-R00 + BE-R01
-2. `fix(game): harden active run pointer and action idempotency` — BE-R02 + BE-R07
-3. `fix(database): align indexes and persisted game literals` — BE-R03 + BE-R04
-4. `feat(ai): add configurable gemini narrative runtime` — BE-R06
+1. `feat(ai): add configurable gemini narrative runtime` — BE-R06
+2. `fix(backend): validate patched engine saves and rulesets` — BE-R00 + BE-R01
+3. `fix(game): harden active run pointer and action idempotency` — BE-R02 + BE-R07
+4. `fix(database): align indexes and persisted game literals` — BE-R03 + BE-R04
 5. `test(campaign): support dynamic engine event plans` — BE-R08
 6. `docs(backend): finalize remediation contracts` — BE-R05 and final action log
 

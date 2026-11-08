@@ -1,6 +1,6 @@
 # Panduan Simulasi Backend untuk Developer Frontend
 
-Terakhir diperbarui: 2026-11-06
+Terakhir diperbarui: 2026-11-08
 
 Panduan ini digunakan untuk menjalankan backend secara lokal, mencoba smoke test melalui Postman, dan memverifikasi campaign hari 1–20 sebelum integrasi UI frontend.
 
@@ -14,7 +14,9 @@ Sebelum mulai, minta informasi berikut melalui jalur komunikasi privat:
 
 Jangan mengirim URI, password database, JWT secret, atau API key melalui Git. File `.env` tidak boleh di-commit.
 
-OpenAI key tidak diperlukan untuk pengujian ini. Jika `OPENAI_API_KEY` dan `OPENAI_MODEL` kosong, backend memakai narasi fallback lokal dan gameplay tetap berjalan.
+Gemini key tidak diperlukan untuk pengujian ini. Jika `GEMINI_API_KEY` dan `GEMINI_MODEL` kosong, backend memakai narasi fallback terpercaya dan gameplay tetap berjalan.
+
+Catatan status: game engine sudah memakai `eventPlan` dan choice ID dinamis. Source backend masih harus menjalani remediasi BE-R00–BE-R08 sebelum panduan target ini dianggap lulus penuh.
 
 ## 2. Prasyarat laptop
 
@@ -57,12 +59,15 @@ JWT_AUDIENCE=city-defense-web
 BCRYPT_SALT_ROUNDS=12
 APP_ORIGIN=http://localhost:3000
 
-OPENAI_API_KEY=
-OPENAI_MODEL=
-OPENAI_TIMEOUT_MS=10000
-OPENAI_MAX_RETRIES=1
-OPENAI_MAX_OUTPUT_TOKENS=800
-OPENAI_PROMPT_VERSION=event-v1
+AI_PROVIDER=gemini
+GEMINI_API_KEY=
+GEMINI_MODEL=
+AI_API_KEY=
+AI_MODEL=
+AI_TIMEOUT_MS=10000
+AI_MAX_RETRIES=1
+AI_MAX_OUTPUT_TOKENS=800
+AI_PROMPT_VERSION=event-advisor-en-v1
 
 LOG_LEVEL=info
 ```
@@ -100,7 +105,7 @@ curl http://localhost:3000/api/health
 curl http://localhost:3000/api/health/readiness
 ```
 
-Readiness yang benar mengembalikan status `ready`, database `reachable`, dan AI `fallback-only` bila OpenAI tidak dikonfigurasi.
+Readiness yang benar mengembalikan status `ready`, database `reachable`, dan AI `fallback-only` bila Gemini tidak dikonfigurasi.
 
 ## 4. Mengimpor Postman collection
 
@@ -201,26 +206,28 @@ Untuk setiap baris berikut, ubah `type` dan `payload`, lalu klik **Send**. Janga
 |---:|---|---|
 | 1 | `upgradeCity`, `endPreparationDay` | masuk hari 2 |
 | 2 | `upgradeCity`, `endPreparationDay` | masuk event hari 3 |
-| 3 | `chooseEventOption`, `endPreparationDay` | `{ "choiceId": "day3-skip" }` |
+| 3 | `chooseEventOption`, `endPreparationDay` | pilih ID choice kedua dari response event aktif |
 | 4 | `upgradeCity`, `endPreparationDay` | masuk hari 5 |
 | 5 | `upgradeTroops`, `endPreparationDay` | masuk hari 6 |
 | 6 | `upgradeTroops`, `endPreparationDay` | masuk event hari 7 |
-| 7 | `chooseEventOption`, `endPreparationDay` | `{ "choiceId": "day7-pay" }` |
+| 7 | `chooseEventOption`, `endPreparationDay` | pilih ID choice pertama dari response event aktif |
 | 8 | `upgradeTroops`, `endPreparationDay` | masuk hari 9 |
 | 9 | `endPreparationDay` | masuk `battleReady` hari 10 |
 | 10 | `startBattle`, `continueFromReport`, `chooseReward` | reward: `{ "rewardId": "reward-income" }`; masuk hari 11 |
 | 11 | `repairCity`, `endPreparationDay` | masuk hari 12 |
 | 12 | `repairCity`, `endPreparationDay` | masuk event hari 13 |
-| 13 | `chooseEventOption`, `repairCity`, `endPreparationDay` | event: `{ "choiceId": "day13-discount" }` |
+| 13 | `chooseEventOption`, `repairCity`, `endPreparationDay` | pilih ID choice kedua dari response event aktif |
 | 14 | `repairCity`, `endPreparationDay` | masuk hari 15 |
 | 15 | `upgradeTroops`, `endPreparationDay` | masuk hari 16 |
 | 16 | `upgradeWall`, `endPreparationDay` | masuk event hari 17 |
-| 17 | `chooseEventOption`, `upgradeWall`, `endPreparationDay` | event: `{ "choiceId": "day17-pay" }` |
+| 17 | `chooseEventOption`, `upgradeWall`, `endPreparationDay` | pilih ID choice pertama dari response event aktif |
 | 18 | `upgradeTroops`, `endPreparationDay` | masuk hari 19 |
 | 19 | `upgradeWall`, `endPreparationDay` | masuk `battleReady` hari 20 |
 | 20 | `startBattle`, `continueFromReport` | fase akhir `victory` |
 
-Gunakan `{}` untuk action tanpa payload khusus. Contoh event action:
+Gunakan `{}` untuk action tanpa payload khusus. Saat masuk hari event, buka response action sebelumnya, periksa `data.game.eventNarrative.choices`, lalu salin `id` pada posisi yang disebutkan tabel. ID berbeda menurut package yang dipilih engine dan tidak boleh ditebak dari nomor hari.
+
+Contoh event action setelah ID disalin:
 
 ```json
 {
@@ -228,7 +235,7 @@ Gunakan `{}` untuk action tanpa payload khusus. Contoh event action:
   "expectedRevision": {{revision}},
   "type": "chooseEventOption",
   "payload": {
-    "choiceId": "day3-skip"
+    "choiceId": "GANTI_DENGAN_ID_DARI_RESPONSE"
   }
 }
 ```

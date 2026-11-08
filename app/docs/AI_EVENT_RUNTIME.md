@@ -1,186 +1,152 @@
 # AI Event Runtime Specification
 
-Status: **Draft untuk review backend dan game-engine developer**  
-Pemilik: Backend  
-Terakhir diperbarui: 2026-11-06
+Status: **Target Gemini contract; source migration pending (BE-R06)**
+Owner: Backend
+Updated: 2026-11-08
 
-## 1. Tujuan dan batas tanggung jawab
+## 1. Purpose and authority
 
-Runtime AI digunakan untuk menghasilkan narasi ketika action engine memasuki event baru. Create run tidak memanggil AI. AI **bukan** sumber kebenaran aturan permainan.
+The AI runtime decorates a trusted engine event when an action first enters an event day. Create-run does not call an AI provider, and prepared narratives are out of scope.
 
-- Game engine menentukan efek, biaya, syarat, damage, attack, defense, dan hasil aksi.
-- Backend memilih data event tepercaya, meminta variasi narasi kepada AI, memvalidasi respons, lalu menyimpannya.
-- Frontend hanya menampilkan narasi dan pilihan yang sudah dikembalikan backend.
-- Kegagalan AI tidak boleh membuat action memasuki hari event gagal; fallback lokal harus tetap menghasilkan bentuk narasi yang sama.
+- The game engine owns `eventPlan`, event/choice IDs, costs, effects, rules, damage, and state transitions.
+- Backend sends trusted event copy to a provider, validates the response, and persists the decorated narrative with the action.
+- AI may change only the title, description, and choice labels.
+- Provider failure must not fail a valid gameplay action; backend uses the trusted engine copy as fallback.
+- Frontend displays the backend response and never calls Gemini directly.
 
-## 2. Integrasi OpenAI
+The current source still contains an OpenAI-specific adapter. BE-R06 replaces it; this document defines the target contract and must not be read as proof that migration is complete.
 
-Implementasi memakai:
+## 2. Default provider and configuration
 
-- SDK resmi OpenAI untuk JavaScript/TypeScript.
-- Responses API.
-- Structured Outputs dengan schema Zod.
-- API key dan model dari environment variable agar akun atau project OpenAI dapat diganti tanpa perubahan kode.
+Google Gemini is the default provider. The adapter is selected only by server environment configuration.
 
-Environment variable terkait:
-
-| Variable | Wajib | Default rekomendasi | Keterangan |
+| Variable | Required | Recommended/default | Purpose |
 |---|---:|---|---|
-| `OPENAI_API_KEY` | Ya pada runtime AI | - | Secret server-side; tidak boleh memakai prefix `NEXT_PUBLIC_`. |
-| `OPENAI_MODEL` | Ya | ditentukan saat setup | Model dapat diganti oleh developer/deployment owner. |
-| `OPENAI_TIMEOUT_MS` | Tidak | `10000` | Batas waktu satu permintaan. |
-| `OPENAI_MAX_RETRIES` | Tidak | `1` | Retry aplikasi setelah kegagalan sementara. |
-| `OPENAI_MAX_OUTPUT_TOKENS` | Tidak | `800` | Pembatas keluaran narasi. |
-| `OPENAI_PROMPT_VERSION` | Tidak | `event-v1` | Versi prompt untuk audit dan reproduksi. |
+| `AI_PROVIDER` | Yes | `gemini` | Selects a supported backend adapter. |
+| `GEMINI_API_KEY` | For Gemini runtime | none | Server-only Gemini credential. |
+| `GEMINI_MODEL` | For Gemini runtime | chosen during deployment | Gemini model with JSON/schema output support. |
+| `AI_TIMEOUT_MS` | No | `10000` | One provider-call timeout. |
+| `AI_MAX_RETRIES` | No | `1` | Retry count for transient failures. |
+| `AI_MAX_OUTPUT_TOKENS` | No | `800` | Maximum narrative output. |
+| `AI_PROMPT_VERSION` | No | `event-advisor-en-v1` | Audit/reproduction identifier. |
+| `AI_API_KEY` | Only for an implemented alternative adapter | none | Generic alternative-provider credential. |
+| `AI_MODEL` | Only for an implemented alternative adapter | none | Generic alternative-provider model. |
 
-Untuk pengembangan lokal, setiap developer dapat memakai key dari project OpenAI miliknya. Untuk production, gunakan project service account khusus aplikasi dan simpan key hanya pada Vercel Environment Variables.
+The environment schema rejects an unsupported `AI_PROVIDER`. Defining generic variables does not imply that an adapter exists. Secrets never use a `NEXT_PUBLIC_` prefix and are stored only in local untracked environment files or Vercel Environment Variables.
 
-## 3. Kontrak output AI
+Local/test may intentionally run fallback-only. Preview/Production preflight reports an incomplete AI configuration when live Gemini is required for the demo.
 
-Contoh schema awal:
+## 3. Provider-neutral interface
 
-```ts
-import { z } from "zod";
-
-export const GeneratedEventNarrativeSchema = z.object({
-  title: z.string(),
-  description: z.string(),
-  choices: z.tuple([
-    z.object({
-      id: z.string(),
-      label: z.string(),
-    }),
-    z.object({
-      id: z.string(),
-      label: z.string(),
-    }),
-  ]),
-});
-```
-
-Ketentuan schema Structured Outputs:
-
-- Root schema berupa object, bukan union/`anyOf`.
-- Semua field dinyatakan required.
-- Object tidak menerima property tambahan.
-- Validasi bisnis tambahan tetap dilakukan setelah parsing, misalnya panjang teks, bahasa, jumlah pilihan, dan kecocokan `choice.id`.
-
-Respons AI tidak boleh menentukan nilai numerik gameplay. `choice.id` harus cocok dengan ID pilihan tepercaya yang diberikan backend. Label boleh divariasikan, tetapi backend menggabungkannya kembali dengan cost/effect yang berasal dari katalog atau engine.
-
-## 4. Input yang dikirim ke AI
-
-Payload prompt implementasi:
-
-- locale `id-ID`;
-- `eventId` dan hari event;
-- title serta description lokal dari engine;
-- daftar ID pilihan, gold cost, dan effects tepercaya;
-- instruksi untuk mempertahankan choice ID serta tidak menambah pilihan, biaya, efek, atau aturan gameplay.
-
-Jangan mengirim:
-
-- username, password, session token, IP mentah, atau data pribadi pemain;
-- secret, connection string, atau konfigurasi internal;
-- input bebas pemain yang tidak disanitasi.
-
-## 5. Alur runtime
-
-1. Frontend mengirim action `endPreparationDay` pada hari sebelum jadwal event.
-2. Engine menghasilkan state berikutnya dengan `activeEvent` tepercaya.
-3. Backend membangun prompt dari event tersebut.
-4. Permintaan AI diselesaikan **sebelum** transaksi action MongoDB dibuka.
-5. Respons Structured Output diparse dan divalidasi dengan Zod.
-6. Backend memastikan kedua `choice.id` unik dan berasal dari pilihan engine.
-7. Backend hanya mengganti title, description, dan label; cost/effect tetap dari engine.
-8. Jika AI gagal atau tidak dikonfigurasi, backend memakai title/description/label lokal dari engine sebagai fallback.
-9. Transaksi action menyimpan state, action log, properties, `event_data`, dan `runs_event` bersama-sama.
-
-Retry yang sudah tercatat ditolak sebelum generasi narasi. Pada request konkuren, lebih dari satu panggilan provider mungkin sempat berjalan, tetapi optimistic revision dan unique index memastikan hanya satu action/event yang tersimpan.
-
-## 6. Fallback wajib
-
-Fallback berasal langsung dari `activeEvent` tepercaya yang dibuat engine. Fallback memiliki bentuk data yang sama dengan output AI dan tidak mengubah cost/effects.
-
-Fallback digunakan bila terjadi:
-
-- timeout;
-- error jaringan atau rate limit setelah retry;
-- respons refusal atau tidak memiliki parsed output;
-- output tidak lolos schema Zod;
-- ID pilihan berubah, hilang, duplikat, atau tidak dikenal;
-- model atau API key tidak tersedia pada environment non-production yang memang mengizinkan mode fallback.
-
-Pada production demo, tidak adanya `OPENAI_API_KEY` atau `OPENAI_MODEL` harus terlihat pada preflight/deployment check. Permainan tetap memiliki fallback, tetapi status tersebut dicatat sebagai konfigurasi deployment yang tidak lengkap.
-
-## 7. Timeout dan retry
-
-- Timeout awal: 10 detik per permintaan.
-- Retry SDK: maksimum satu kali sesuai `OPENAI_MAX_RETRIES`.
-- Output invalid/refusal akhirnya masuk fallback; backend tidak membuka transaksi selama menunggu provider.
-- Batasi concurrency action agar perpindahan ke hari event tidak membuat lonjakan permintaan.
-- Total waktu AI harus memiliki budget yang lebih kecil daripada timeout endpoint Vercel.
-
-Nilai final perlu diuji di Preview Vercel dan dapat disesuaikan melalui environment variable.
-
-## 8. Penyimpanan dan audit
-
-Metadata minimum pada `event_data`:
-
-```ts
-type EventGenerationMetadata = {
-  source: "ai" | "fallback";
-  model?: string;
-  promptVersion: string;
-  createdAt: Date;
-};
-```
-
-Log operasional boleh mencatat:
-
-- internal request/correlation ID;
-- run ID dan event ID;
-- model dan prompt version;
-- latency;
-- source `ai` atau `fallback`;
-- kategori error;
-- token usage bila tersedia.
-
-Log tidak boleh memuat API key, cookie, token sesi, connection string, atau prompt lengkap yang mungkin mengandung data sensitif.
-
-## 9. Antarmuka adapter
-
-Kode domain tidak bergantung langsung pada SDK OpenAI.
+Domain services depend on an interface, not a Gemini SDK:
 
 ```ts
 interface EventNarrativeGenerator {
+  readonly provider: string;
   readonly model: string | null;
-  generate(event: ActiveEvent): Promise<GeneratedEventNarrative>;
+  generate(input: EventNarrativeInput): Promise<GeneratedEventNarrative>;
 }
 ```
 
-Implementasi menyediakan generator OpenAI, fallback lokal, dan generator substitusi untuk unit test.
+The implementation set consists of a Gemini generator, trusted fallback generator, and deterministic mock for tests. Another provider may be added only behind the same interface and validation rules.
 
-## 10. Pengujian
+## 4. Input and prompt
 
-- Unit test dekorasi field narasi tanpa mengubah cost/effects.
-- Unit test choice ID tidak tepercaya menghasilkan fallback.
-- Unit test fallback ketika provider tidak dikonfigurasi dijalankan melalui flow campaign/API.
-- Campaign API memakai fallback lokal agar deterministik dan gratis bila key tidak tersedia.
-- Smoke test OpenAI asli bersifat eksplisit, tidak dijalankan pada setiap test lokal/CI, dan memakai batas biaya.
-- Contract test memastikan frontend selalu menerima bentuk event yang sama untuk source `ai` maupun `fallback`.
+The provider receives only:
 
-## 11. Kriteria penerimaan
+- `locale: "en-US"`;
+- day, `eventId`, and `packageId` from the active engine event;
+- trusted title and description;
+- each trusted choice ID and its original label;
+- concise trusted cost/effect summaries when needed for coherent wording.
 
-- Action yang memasuki hari event tetap berhasil saat OpenAI tidak dikonfigurasi atau gagal.
-- Tidak ada efek gameplay yang bersumber dari teks AI.
-- Output selalu lolos schema Zod dan validasi bisnis sebelum disimpan.
-- Retry request yang sudah tercatat tidak membuat record event ganda; transaksi dan index tetap menjadi pengaman request konkuren.
-- Secret hanya tersedia di server.
-- Source narasi dapat diaudit sebagai `ai` atau `fallback`.
+Prompt intent:
 
-## 12. Referensi resmi
+> Provide the narrative and choices in English as a loyal city advisor recommending options to his lord. Preserve every supplied choice ID and do not create or change gameplay rules, choices, costs, or effects.
 
-- [OpenAI API quickstart](https://developers.openai.com/api/docs/quickstart)
-- [Structured Outputs dengan Responses API](https://developers.openai.com/api/docs/guides/structured-outputs?api-mode=responses)
-- [API key dan project service account](https://developers.openai.com/api/docs/guides/api-keys)
+Do not send username, password, cookie, JWT, IP address, MongoDB URI, full save state, secrets, or unsanitized player input.
 
+## 5. Validated output
+
+Zod is the runtime source of truth for provider output. The target shape is:
+
+```ts
+const GeneratedEventNarrativeSchema = z.object({
+  title: z.string().min(1),
+  description: z.string().min(1),
+  choices: z.array(
+    z.object({
+      id: z.string().min(1),
+      label: z.string().min(1),
+    }).strict(),
+  ).length(2),
+}).strict();
+```
+
+Post-schema validation requires:
+
+- exactly the trusted choice-ID set, with no duplicate, missing, or invented ID;
+- English text within configured length limits;
+- no numeric gameplay authority from provider output;
+- merge by choice ID, never by array position.
+
+Backend restores trusted costs/effects after validation. Event and choice IDs are dynamic and come from the selected engine package; no prompt or client may assume legacy day-based IDs.
+
+## 6. On-demand flow
+
+1. The client submits an ordinary game action.
+2. The engine returns a next state whose `activeEvent` is newly present.
+3. Backend derives input from that trusted event and selected `eventPlan` package.
+4. Backend calls Gemini before opening the MongoDB transaction.
+5. Backend parses with Zod and applies business validation.
+6. Valid narrative fields decorate the trusted event; otherwise fallback copies trusted engine text.
+7. The action transaction persists state, logs, properties, `event_data`, and `runs_event` atomically.
+
+An idempotent retry detected before generation does not call the provider. Concurrent requests may briefly issue more than one provider call, but revision checks and unique indexes permit only one committed transition.
+
+## 7. Fallback and sources
+
+Fallback is mandatory for missing configuration, timeout, network/rate error, refusal, invalid JSON/schema, unsafe text, unknown choice IDs, or any adapter exception.
+
+Persistent source values are:
+
+```ts
+type EventNarrativeSource = "ai" | "fallback" | "mock";
+```
+
+Engine `activeEvent.source === "local"` is a transient pre-decoration value and is never stored as the backend narrative source.
+
+Minimum metadata includes source, provider/model when applicable, prompt version, and creation time. Operational logs may include correlation ID, run/event ID, latency, source, error category, and usage metadata. Logs must not contain provider keys, cookies, tokens, connection strings, or full prompts.
+
+## 8. Timeout and retry
+
+- Initial timeout: 10 seconds.
+- At most one application retry for an explicitly transient failure.
+- Invalid output/refusal goes directly to trusted fallback unless the adapter classifies it as safely retryable.
+- The total provider budget stays below the Vercel function timeout.
+- MongoDB transactions are never held open while waiting for AI.
+
+Final values are verified in Vercel Preview and remain configurable through the generic `AI_*` variables.
+
+## 9. Test requirements
+
+- Valid Gemini output changes narrative fields only.
+- Reordered valid choices merge by ID.
+- Missing, duplicate, invented, or dynamic-ID mismatch falls back.
+- Missing key, timeout, network error, refusal, and invalid schema fall back.
+- Fallback and AI responses expose the same API shape.
+- On-demand generation occurs once for the successfully committed event transition.
+- Default unit/integration/campaign tests use a mock or fallback and never call live Gemini.
+- A live Gemini smoke test is explicit, budget-limited, and requires dedicated environment opt-in.
+
+## 10. Acceptance criteria
+
+- Gemini is the default configured provider.
+- Advisor text is English and addresses the player as “my lord”.
+- Gameplay remains fully engine-owned.
+- A provider outage does not block a valid event transition.
+- Only validated provider output is persisted.
+- Provider credentials remain server-only.
+- Source/provider/model/prompt version are auditable without logging secrets.
+
+Implementation and verification are tracked as BE-R06 in [BACKEND_REMEDIATION_PLAN.md](./BACKEND_REMEDIATION_PLAN.md).

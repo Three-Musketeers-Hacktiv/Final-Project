@@ -1,8 +1,8 @@
 # Backend Test Plan
 
-Status: **Draft untuk review tiga developer**  
+Status: **Target test plan; remediation implementation pending**
 Pemilik: Backend  
-Terakhir diperbarui: 2026-11-06
+Terakhir diperbarui: 2026-11-08
 
 ## 1. Tujuan
 
@@ -11,7 +11,8 @@ Dokumen ini mendefinisikan bukti yang harus tersedia sebelum fitur backend diang
 ## 2. Prinsip
 
 - Test domain harus deterministik.
-- Test default tidak memanggil OpenAI asli.
+- Test default tidak memanggil Gemini atau provider eksternal asli.
+- Event dan choice ID selalu dibaca dari state/response engine, bukan legacy ID yang di-hardcode.
 - Efek gameplay selalu dibandingkan dengan keluaran engine, bukan dihitung ulang oleh backend test fixture yang terpisah.
 - Database test terpisah dari development dan production.
 - Setiap bug penting mendapatkan regression test.
@@ -22,7 +23,7 @@ Dokumen ini mendefinisikan bukti yang harus tersedia sebelum fitur backend diang
 | Lapisan | Fokus | Dependency |
 |---|---|---|
 | Unit | Zod schema, mapper, service/domain rule backend, error mapping | Mock/in-memory |
-| Adapter contract | Kontrak adapter engine, Mongo repository, OpenAI/fallback | Fixture terkontrol |
+| Adapter contract | Kontrak adapter engine, Mongo repository, Gemini/fallback | Fixture terkontrol |
 | Integration | Route handler + service + MongoDB | Database test |
 | API contract | Request/response HTTP, cookie, status/error code | Server test/Preview |
 | End-to-end smoke | Alur frontend-login-start-action-resume | Preview deployment |
@@ -63,6 +64,10 @@ Dokumen ini mendefinisikan bukti yang harus tersedia sebelum fitur backend diang
 | Retry `startRequestId` sama | Integration | Run yang sama dikembalikan |
 | `startRequestId` sama dengan payload beda | Integration | Conflict eksplisit |
 | Start run baru | Integration | Run lama tetap ada, pointer menunjuk run baru |
+| New run patched v3 | Adapter/Integration | Empat entry `eventPlan` valid untuk hari 3/7/13/17 |
+| Save v3 lama tanpa `eventPlan` | Integration | Ditolak sebagai incompatible; tidak ditafsir ulang diam-diam |
+| Ruleset ID dengan fingerprint berbeda | Integration | Ditolak; metadata lama tidak ditimpa |
+| Pointer run/revision tidak cocok | Integration | `SAVE_POINTER_MISMATCH` tanpa write |
 | Resume setelah logout/login | API | Current run user yang sama dikembalikan |
 | Akses run user lain | Security/API | Tidak ditemukan atau ditolak tanpa data leak |
 | Dokumen save inkonsisten | Integration | Error terkontrol, bukan silent corruption |
@@ -76,7 +81,9 @@ Dokumen ini mendefinisikan bukti yang harus tersedia sebelum fitur backend diang
 | Choice tidak dikenal | Unit/API | `400`/domain error sesuai kontrak |
 | Resolve battle | Adapter/Integration | Report dan state tersimpan atomik |
 | Advance day | Integration | Timeline berubah satu kali |
-| Action duplikat | Integration | Hasil action pertama dikembalikan, tidak diterapkan ulang |
+| Action ID dan payload sama | Integration | `DUPLICATE_ACTION`, tidak diterapkan ulang |
+| Action ID sama, payload berbeda | Integration | `ACTION_PAYLOAD_CONFLICT`, tidak ada write |
+| Action pada run yang sudah diganti | Integration | Ditolak dan tidak mengambil alih pointer save aktif |
 | Dua action paralel pada version sama | Concurrency | Hanya satu berhasil, lainnya conflict |
 | Engine melempar domain error | Adapter/API | Dipetakan ke error API stabil |
 | Engine state/version tidak didukung | Adapter | Gagal jelas tanpa memodifikasi data |
@@ -90,9 +97,10 @@ Dokumen ini mendefinisikan bukti yang harus tersedia sebelum fitur backend diang
 | Rate limit/provider error | Unit | Retry terbatas lalu fallback |
 | Refusal/no parsed output | Unit | Fallback dipakai |
 | ID pilihan berubah | Unit | Respons AI ditolak, fallback dipakai |
+| Urutan choice berubah tetapi ID valid | Unit | Digabungkan berdasarkan ID, bukan posisi array |
 | Output schema invalid | Unit | Tidak masuk database sebagai AI result |
 | Retry start request | Integration | Tidak menghasilkan record/event ganda |
-| OpenAI smoke eksplisit | Manual/Preview | Respons valid dalam budget waktu/biaya |
+| Gemini smoke eksplisit | Manual/Preview | Respons valid dalam budget waktu/biaya |
 
 ### 5.5 Ending dan laporan
 
@@ -113,6 +121,7 @@ Backend menyediakan contoh request/response dan koleksi API yang mengikuti [API_
 - enum dan error code tidak berubah tanpa versi/review;
 - cookie behavior sesuai environment;
 - response event source `ai` dan `fallback` memiliki bentuk identik.
+- event/choice ID pada contract test diambil dari response run/event aktif.
 
 Postman CLI yang tersedia dapat digunakan untuk menjalankan collection pada local atau Preview URL. Collection dan environment file yang aman boleh disimpan di area backend; secret environment lokal tidak boleh di-commit.
 
@@ -141,14 +150,16 @@ Test concurrency menjalankan minimal dua request action pada `runId` dan version
 - version state bertambah secara monoton;
 - event/report terkait konsisten dengan state;
 - request yang kalah mendapat `409 STALE_REVISION` dan dapat mengambil state terbaru.
+- run lama tidak dapat mengubah atau menghapus pointer run aktif baru.
+- conditional pointer update memeriksa `gameRunId` dan `savedRevision`.
 
 Test transaksi juga menyuntikkan kegagalan di tengah write untuk memastikan tidak ada partial save.
 
-## 9. OpenAI test policy
+## 9. Gemini/provider test policy
 
 - Unit test memakai generator substitusi untuk kasus sukses dan choice ID tidak tepercaya.
 - Mode tanpa API key memakai fallback lokal dan tercakup dalam campaign API.
-- Real API smoke test hanya berjalan bila flag eksplisit dan `OPENAI_API_KEY` tersedia.
+- Real API smoke test hanya berjalan bila flag eksplisit dan `GEMINI_API_KEY` tersedia.
 - Real smoke test menggunakan jumlah request dan output token kecil.
 - Hasil smoke test tidak menjadi assertion narasi kata-per-kata; yang diuji schema, latency budget, dan fallback behavior.
 
@@ -164,7 +175,7 @@ npm run build
 npm run test:campaign
 ```
 
-`npm run test:campaign` memerlukan server lokal aktif pada `http://localhost:3000` dan MongoDB Atlas development/test yang mendukung transaction. Base URL lain dapat diberikan melalui `CAMPAIGN_BASE_URL`; bila `APP_ORIGIN` berbeda dari base URL runner, berikan origin yang diizinkan melalui `CAMPAIGN_ORIGIN`. Runner tidak memerlukan OpenAI key karena fallback lokal adalah jalur yang valid.
+`npm run test:campaign` memerlukan server lokal aktif pada `http://localhost:3000` dan MongoDB Atlas development/test yang mendukung transaction. Base URL lain dapat diberikan melalui `CAMPAIGN_BASE_URL`; bila `APP_ORIGIN` berbeda dari base URL runner, berikan origin yang diizinkan melalui `CAMPAIGN_ORIGIN`. Runner tidak memerlukan Gemini key karena fallback lokal adalah jalur yang valid. Pada target remediasi, runner mengambil choice ID dinamis dari response event.
 
 ## 11. Urutan CI/deployment gate
 
@@ -198,6 +209,6 @@ Jangan menulis bahwa test lulus apabila belum benar-benar dijalankan.
 - Build production berhasil.
 - Contract test Preview berhasil.
 - Frontend dapat login, memulai, melakukan action, reload/resume, logout, dan login ulang.
-- Kegagalan OpenAI tidak menghentikan permainan.
+- Kegagalan Gemini/provider AI tidak menghentikan permainan.
 - Tidak ada perubahan pada source game engine oleh pekerjaan backend.
 

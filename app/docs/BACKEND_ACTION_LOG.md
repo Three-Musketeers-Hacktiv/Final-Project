@@ -627,3 +627,33 @@ Tindakan:
 Batas scope:
 - Tidak mengubah source game engine, endpoint backend, atau artefak Postman.
 - Root `src/**` dan root `docs/**` tidak diubah.
+
+## 2026-11-08 — Penyelarasan dokumentasi dengan patch game engine dan Gemini
+
+Tujuan:
+- Menyusun target remediasi backend setelah patch game engine terbaru tanpa mengubah source frontend atau engine.
+- Menetapkan Gemini sebagai provider AI default dan mempertahankan fallback terpercaya.
+
+Tindakan:
+- Mengaudit kontrak remediasi terlampir terhadap engine, backend, runner campaign, schema, index, dan dokumentasi yang ada.
+- Menambahkan `BACKEND_REMEDIATION_PLAN.md` dengan ticket BE-R00–BE-R08, urutan implementasi, test, release gate, dan batas ownership file.
+- Menyelaraskan API contract, implementation plan, dan database schema dengan `eventPlan`, event/choice ID dinamis, ruleset fingerprint, load consistency, active-save pointer, serta payload idempotency.
+- Mengubah target runtime AI menjadi provider-neutral dengan Gemini sebagai default, output Zod, English advisor voice, dan generasi on-demand.
+- Memperbarui environment contract, deployment runbook, test plan, dan panduan Postman agar memakai konfigurasi `AI_*`/`GEMINI_*` serta choice ID dari response.
+- Menjaga seluruh value pada `.env.example` tetap kosong sesuai keputusan pemilik backend.
+
+Batas scope:
+- Tidak mengubah `src/game/**`, `src/ui/**`, root `docs/**`, atau source game engine lain.
+- Tidak mengubah `app/components/**`, `app/app/(game)/**`, `app/lib/**`, atau `app/proxy.ts` milik frontend.
+- Tidak mengubah source backend pada tahap dokumentasi ini; migrasi Gemini dan remediasi source masih berstatus pending.
+- Tidak menjalankan migrasi atau penghapusan data MongoDB.
+
+Validasi dokumentasi:
+- Memeriksa `git diff --check`.
+- Memeriksa daftar file berubah terhadap backend-owned scope.
+- Memeriksa ulang referensi OpenAI/legacy choice ID pada dokumen aktif; referensi historis action log dipertahankan sebagai riwayat.
+
+Commit:
+- `dafb875 docs(backend): align engine remediation contracts`.
+- Commit Gemini/runbook dibuat setelah staged diff final.
+- Push tidak dilakukan.
