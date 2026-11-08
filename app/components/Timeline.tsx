@@ -1,4 +1,4 @@
-import type { TimelineEntry, TimelineTone } from "@/app/play/mockData";
+import type { TimelineEntry, TimelineTone } from "@/lib/timeline";
 import Panel from "./Panel";
 import Icon from "./Icon";
 
@@ -36,10 +36,11 @@ export default function Timeline({ entries }: { entries: TimelineEntry[] }) {
 
   return (
     <Panel title="Timeline" icon={<Icon name="timeline" className="size-6" />} aside={filters} className="flex-1">
+      {entries.length === 0 && <p className="py-2 text-muted">Nothing has happened yet. Your actions will show up here.</p>}
       <ol className="relative">
         {entries.map((entry) => (
           <li
-            key={`${entry.day}-${entry.highlight ?? entry.text}`}
+            key={entry.id ?? `${entry.day}-${entry.highlight ?? entry.text}`}
             className="flex items-center gap-4 border-b border-frame/40 py-2.5 last:border-b-0"
           >
             <span className="size-3 shrink-0 rounded-full border-2 border-muted" />

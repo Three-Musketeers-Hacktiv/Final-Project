@@ -1,18 +1,6 @@
-// Placeholder data for laying out /play. Replace with GameState from the backend later.
+// Placeholder data the API doesn't provide yet (only the City Record panel still uses it).
 
-import type { IconName } from "@/components/Icon";
-
-export type TimelineCategory = "city" | "battle" | "event";
-export type TimelineTone = "city" | "gain" | "loss" | "neutral";
-
-export type TimelineEntry = {
-  day: number;
-  category: TimelineCategory;
-  tone: TimelineTone;
-  icon: IconName;
-  highlight?: string;
-  text: string;
-};
+import type { TimelineEntry } from "@/lib/timeline";
 
 export type UpcomingWave = {
   wave: number;
