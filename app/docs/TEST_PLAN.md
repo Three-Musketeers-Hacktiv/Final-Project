@@ -71,6 +71,8 @@ Dokumen ini mendefinisikan bukti yang harus tersedia sebelum fitur backend diang
 | Resume setelah logout/login | API | Current run user yang sama dikembalikan |
 | Akses run user lain | Security/API | Tidak ditemukan atau ditolak tanpa data leak |
 | Dokumen save inkonsisten | Integration | Error terkontrol, bukan silent corruption |
+| Run baru | API/Integration | `game.timeline` tersedia sebagai `[]` |
+| Run lama tanpa timeline | Unit/Integration | `GameView.timeline` dinormalisasi menjadi `[]` |
 
 ### 5.3 Action dan engine
 
@@ -81,7 +83,7 @@ Dokumen ini mendefinisikan bukti yang harus tersedia sebelum fitur backend diang
 | Choice tidak dikenal | Unit/API | `400`/domain error sesuai kontrak |
 | Resolve battle | Adapter/Integration | Report dan state tersimpan atomik |
 | Advance day | Integration | Timeline berubah satu kali |
-| Action ID dan payload sama | Integration | `DUPLICATE_ACTION`, tidak diterapkan ulang |
+| Action ID dan payload sama | Integration | Replay `200`, state/action/timeline tidak diterapkan ulang |
 | Action ID sama, payload berbeda | Integration | `ACTION_PAYLOAD_CONFLICT`, tidak ada write |
 | Action pada run yang sudah diganti | Integration | Ditolak dan tidak mengambil alih pointer save aktif |
 | Dua action paralel pada version sama | Concurrency | Hanya satu berhasil, lainnya conflict |
@@ -91,6 +93,9 @@ Dokumen ini mendefinisikan bukti yang harus tersedia sebelum fitur backend diang
 | Surrender payload non-kosong | Schema/API | `400 VALIDATION_ERROR`, tidak ada write |
 | Surrender setelah run berakhir | Adapter/API | `GAME_ENDED`, tidak ada revision/action baru |
 | Finalisasi surrender | Integration | `endedAt` terisi, pointer aktif kosong, history `gameOver` tercatat |
+| Action sukses | Unit/Integration | Entry timeline deterministik ditambahkan oldest-first |
+| Action ditolak/stale | Integration | Timeline tidak berubah |
+| GET current/by-id setelah action | API | Timeline sama dengan hasil POST action terakhir |
 
 ### 5.4 Event AI
 

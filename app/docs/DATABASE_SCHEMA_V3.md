@@ -145,6 +145,19 @@ unique { rulesetId: 1 }
 ## 6. `game_runs`
 
 ```ts
+type TimelineCategory = "city" | "battle" | "event";
+type TimelineTone = "city" | "gain" | "loss" | "neutral";
+
+type TimelineEntry = {
+  id: string;
+  day: number;
+  category: TimelineCategory;
+  tone: TimelineTone;
+  icon: string;
+  highlight?: string;
+  text: string;
+};
+
 type GameRunDocument = {
   _id: ObjectId;
   userId: ObjectId;
@@ -152,6 +165,7 @@ type GameRunDocument = {
   startRequestId: string;
   startRequestPayloadHash: string;
   state: GameState;
+  timeline: TimelineEntry[];
   createdAt: Date;
   updatedAt: Date;
   endedAt: Date | null;
@@ -164,6 +178,10 @@ Aturan:
 - `state.version === 3`.
 - `state.eventPlan` berisi tepat satu package tepercaya untuk hari 3, 7, 13, dan 17 sesuai hasil engine untuk `state.runId`.
 - `state.revision` hanya dinaikkan engine.
+- `timeline` disimpan di top-level run, bukan di dalam `GameState`, dan berurutan paling lama ke paling baru.
+- Run baru memakai `timeline: []`; dokumen lama tanpa field dinormalisasi sebagai `[]` saat read.
+- ID entry berbentuk `${actionId}:${index}` dan append terjadi atomik bersama update revision.
+- Timeline hanya dibuat backend dari hasil action sukses; request frontend tidak boleh memasok entry.
 - Backend tidak menyimpan total attack/defense ke state.
 - Run selesai immutable untuk gameplay.
 - `startRequestPayloadHash` mendeteksi penggunaan ID sama dengan payload berbeda.

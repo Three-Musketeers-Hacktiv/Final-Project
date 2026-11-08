@@ -230,6 +230,7 @@ type GameView = {
   wavePreview: ReturnType<typeof getWavePreview>;
   eventNarrative: EventNarrativeView | null;
   report: BattleReportView | null;
+  timeline: TimelineEntry[];
 };
 ```
 
@@ -305,19 +306,21 @@ Aturan `expectedRevision`:
 2. Verifikasi session.
 3. Load run dan periksa ownership.
 4. Tolak GameState version selain 3.
-5. Periksa actionId yang sudah tercatat.
+5. Periksa actionId yang sudah tercatat; request identik menjadi replay sukses tanpa write kedua, payload berbeda ditolak.
 6. Cocokkan expectedRevision.
 7. Dispatch action ke satu fungsi public engine.
 8. Jika engine gagal, jangan menulis database.
 9. Jika sukses, pastikan revisionAfter = revisionBefore + 1.
-10. Bentuk snapshot properties dari state dan selector engine.
-11. Tulis run, action log, properties, event/report/history terkait dalam transaksi.
+10. Bentuk snapshot properties dan timeline entry dari view sebelum/sesudah.
+11. Tulis run, timeline, action log, properties, event/report/history terkait dalam transaksi.
 12. Commit transaksi.
 13. Bentuk GameView dari state yang benar-benar tersimpan.
 14. Kirim respons sukses.
 ```
 
 Update `game_runs` menggunakan filter `_id + userId + state.revision`. Filter ini menjadi optimistic concurrency guard tambahan selain pemeriksaan awal.
+
+Timeline persisten berada pada `game_runs.timeline`, bukan engine state. Entry mempunyai ID deterministik `${actionId}:${index}`, disimpan oldest-first, dan selalu dikembalikan melalui `GameView`. Dokumen prototype lama yang belum memiliki field diperlakukan sebagai array kosong.
 
 ## 10. Autentikasi dan session
 

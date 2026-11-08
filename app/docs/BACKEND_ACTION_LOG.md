@@ -759,3 +759,20 @@ Database dan scope:
 - Tidak mengubah `app/components/**`, `app/app/(game)/**`, `app/lib/**`, atau `app/proxy.ts` milik frontend.
 - `.env` lokal tidak diubah atau di-commit.
 - Push tidak dilakukan.
+
+## 2026-11-08 — Perencanaan persistent game timeline
+
+Tujuan:
+- Menindaklanjuti spec dan tiket baru `.scratch/game-runs-timeline/` tanpa mengubah frontend atau game engine.
+- Menetapkan `game_runs.timeline` dan `GameView.timeline` sebagai kontrak backend untuk hydrate frontend.
+
+Tindakan:
+- Menambahkan `TIMELINE_BACKEND_PLAN.md` dengan pembagian scope tiket 01–02 backend dan tiket 03 frontend.
+- Memperbarui API contract, database schema, implementation plan, dan test plan.
+- Menetapkan entry ID deterministik, append atomik, fallback dokumen lama, dan timeline oldest-first.
+- Mengubah kontrak retry identik dari `409 DUPLICATE_ACTION` menjadi replay sukses `200` tanpa write kedua sesuai spec terbaru.
+
+Batas scope:
+- Tidak mengubah `src/game/**`, root `docs/**`, `app/components/**`, `app/lib/**`, `app/app/(game)/**`, atau `app/proxy.ts`.
+- Implementasi source belum dilakukan pada commit perencanaan ini.
+- Push tidak dilakukan.

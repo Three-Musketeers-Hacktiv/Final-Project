@@ -97,12 +97,26 @@ type BattleReportView = {
   createdAt: string;
 };
 
+type TimelineCategory = "city" | "battle" | "event";
+type TimelineTone = "city" | "gain" | "loss" | "neutral";
+
+type TimelineEntry = {
+  id: string;
+  day: number;
+  category: TimelineCategory;
+  tone: TimelineTone;
+  icon: TimelineIcon;
+  highlight?: string;
+  text: string;
+};
+
 type GameView = {
   state: GameState;
   stats: EffectiveStats;
   wavePreview: ReturnType<typeof getWavePreview>;
   eventNarrative: EventNarrativeView | null;
   report: BattleReportView | null;
+  timeline: TimelineEntry[];
 };
 ```
 
@@ -113,6 +127,8 @@ Catatan:
 - `eventNarrative` hanya mendekorasi teks/label; cost dan effects tetap dari package engine terpercaya.
 - Source persisten setelah dekorasi adalah `ai`, `fallback`, atau `mock`; `local` hanya boleh muncul sementara dari engine sebelum backend mendekorasi event.
 - `report` hanya tersedia jika battle terkait sudah diselesaikan.
+- `timeline` selalu tersedia dalam urutan kronologis. Run baru dan dokumen lama tanpa field timeline dibaca sebagai `[]`.
+- Timeline dibuat backend dari action serta snapshot sebelum/sesudah; frontend tidak mengirim atau membuat ulang entry persisten.
 
 ## 4. Auth endpoints
 
@@ -377,14 +393,11 @@ Untuk `chooseEventOption`, frontend wajib mengirim `choiceId` yang dibaca dari `
 
 ### Action sukses tetapi respons hilang
 
-Frontend mengirim ulang request yang identik dengan `actionId` yang sama. Backend mencari action log dan mengembalikan:
+Frontend mengirim ulang request yang identik dengan `actionId` yang sama. Backend mencari action log dan mengembalikan `200` dengan metadata action yang sudah commit serta `GameView` tersimpan saat ini. State, revision, action log, dan timeline tidak diterapkan ulang.
 
-- `409 DUPLICATE_ACTION`; dan
-- revision server terbaru pada `error.fields.currentRevision`.
+Jika `actionId` yang sama digunakan dengan `type` atau `payload` berbeda, backend mengembalikan `409 ACTION_PAYLOAD_CONFLICT`.
 
-Jika `actionId` yang sama digunakan dengan `type` atau `payload` berbeda, target remediasi mengembalikan `409 ACTION_PAYLOAD_CONFLICT`, bukan `DUPLICATE_ACTION`.
-
-Frontend kemudian memanggil `GET /api/runs/:runId` atau `GET /api/runs/current` untuk mengambil state server terbaru.
+Frontend mengganti game view lokal dengan response replay sukses tersebut. Tidak perlu request GET tambahan hanya untuk retry identik.
 
 ### Dua klik berbeda dari revision sama
 
@@ -419,7 +432,6 @@ Tidak ada write dan revision tidak berubah. Error code stabil engine diteruskan,
 | 404 | `NO_ACTIVE_SAVE` | User belum memiliki save aktif |
 | 409 | `USERNAME_TAKEN` | Username sudah dipakai |
 | 409 | `ACTIVE_SAVE_EXISTS` | New game perlu konfirmasi replace |
-| 409 | `DUPLICATE_ACTION` | `actionId` sudah berhasil |
 | 409 | `ACTION_PAYLOAD_CONFLICT` | `actionId` dipakai ulang dengan type/payload berbeda |
 | 409 | `STALE_REVISION` | Expected revision tidak cocok |
 | 409 | `UNSUPPORTED_STATE_VERSION` | Save bukan versi 3 |
@@ -439,7 +451,8 @@ Tidak ada write dan revision tidak berubah. Error code stabil engine diteruskan,
 - Mengirim `expectedRevision` dari state server terakhir.
 - Menonaktifkan double-click saat request berjalan, tetapi tetap mengandalkan backend untuk keamanan.
 - Mengganti local game view dengan response server setelah sukses.
-- Reload state pada `STALE_REVISION` atau `DUPLICATE_ACTION`.
+- Menggunakan `game.timeline` dari response create/load/action sebagai sumber timeline persisten.
+- Reload state pada `STALE_REVISION`; retry identik yang sukses langsung mengganti view lokal.
 - Menampilkan error berdasarkan `error.code`, bukan parsing message.
 - Tidak menghitung cost, damage, efek, atau state hasil secara lokal.
 
