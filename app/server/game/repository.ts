@@ -145,6 +145,17 @@ export async function findCurrentRun(userId: ObjectId): Promise<{
   return { run, pointer: user.saveGame };
 }
 
+export async function findSavePointer(
+  userId: ObjectId,
+): Promise<UserDocument["saveGame"]> {
+  const database = await getDatabase();
+  const user = await database.collection<UserDocument>("users").findOne(
+    { _id: userId },
+    { projection: { saveGame: 1 } },
+  );
+  return user?.saveGame ?? null;
+}
+
 export async function findAction(runId: ObjectId, actionId: string): Promise<GameActionDocument | null> {
   const database = await getDatabase();
   return database.collection<GameActionDocument>("game_actions").findOne({ gameRunId: runId, actionId });
@@ -222,17 +233,23 @@ export async function commitGameAction(input: {
           },
         };
       }
-      await database.collection<UserDocument>("users").updateOne(
-        { _id: currentRun.userId },
+      const pointerUpdate = await database.collection<UserDocument>("users").updateOne(
+        {
+          _id: currentRun.userId,
+          "saveGame.gameRunId": currentRun._id,
+          "saveGame.savedRevision": currentRun.state.revision,
+        },
         userUpdate,
         { session },
       );
+      if (pointerUpdate.modifiedCount !== 1) {
+        throw new ApiError(
+          409,
+          "SAVE_POINTER_MISMATCH",
+          "Active save changed while the action was being committed",
+        );
+      }
     });
-  } catch (error) {
-    if (error instanceof MongoServerError && error.code === 11000) {
-      throw new ApiError(409, "DUPLICATE_ACTION", "This action has already been applied");
-    }
-    throw error;
   } finally {
     await session.endSession();
   }

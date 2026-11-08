@@ -4,6 +4,7 @@ import { decorateActiveEvent, generateEventNarrative } from "@/server/ai/event-n
 import type { UserDocument } from "@/server/auth/types";
 import { applyGameAction, type EngineGameAction } from "@/server/game-engine/adapter";
 import { hashPayload } from "@/server/game/hash";
+import { assertActionIdempotency } from "@/server/game/idempotency";
 import { assertLoadableRun } from "@/server/game/load";
 import {
   commitGameAction,
@@ -15,6 +16,7 @@ import {
   findRunByStartRequest,
   findRunForUser,
   findRulesetById,
+  findSavePointer,
 } from "@/server/game/repository";
 import type { CreateRunInput, SubmitActionInput } from "@/server/game/schemas";
 import type {
@@ -99,19 +101,26 @@ export async function submitGameAction(
   input: SubmitActionInput,
 ) {
   const runId = parseRunId(runIdValue);
+  const payloadHash = hashPayload({ type: input.type, payload: input.payload });
   const duplicate = await findAction(runId, input.actionId);
   if (duplicate) {
     const currentRun = await findRunForUser(runId, userId);
     if (!currentRun) throw new ApiError(404, "RUN_NOT_FOUND", "Game run was not found");
-    await validateRun(currentRun);
-    throw new ApiError(409, "DUPLICATE_ACTION", "This action has already been applied", {
-      currentRevision: currentRun.state.revision.toString(),
-    });
+    const pointer = await findSavePointer(userId);
+    if (!pointer) {
+      throw new ApiError(409, "SAVE_POINTER_MISMATCH", "Game run is not the active save");
+    }
+    await validateRun(currentRun, pointer);
+    assertActionIdempotency(duplicate, payloadHash, currentRun.state.revision);
   }
 
   const currentRun = await findRunForUser(runId, userId);
   if (!currentRun) throw new ApiError(404, "RUN_NOT_FOUND", "Game run was not found");
-  await validateRun(currentRun);
+  const pointer = await findSavePointer(userId);
+  if (!pointer) {
+    throw new ApiError(409, "SAVE_POINTER_MISMATCH", "Game run is not the active save");
+  }
+  await validateRun(currentRun, pointer);
   if (currentRun.endedAt) throw new ApiError(409, "GAME_ENDED", "Game run has ended");
   if (currentRun.state.revision !== input.expectedRevision) {
     throw new ApiError(409, "STALE_REVISION", "Game state has changed; reload the current game", {
@@ -166,7 +175,6 @@ export async function submitGameAction(
       },
     };
   }
-  const payloadHash = hashPayload({ type: input.type, payload: input.payload });
   const action: GameActionDocument = {
     _id: new ObjectId(),
     gameRunId: runId,
@@ -197,13 +205,25 @@ export async function submitGameAction(
     if (error instanceof ApiError && error.code === "STALE_REVISION") {
       const committed = await findAction(runId, input.actionId);
       if (committed) {
-        throw new ApiError(409, "DUPLICATE_ACTION", "This action has already been applied", {
-          currentRevision: committed.revisionAfter.toString(),
-        });
+        const latest = await findRunForUser(runId, userId);
+        assertActionIdempotency(
+          committed,
+          payloadHash,
+          latest?.state.revision ?? committed.revisionAfter,
+        );
       }
     }
     if (error instanceof MongoServerError && error.code === 11000) {
-      throw new ApiError(409, "DUPLICATE_ACTION", "This action has already been applied");
+      const committed = await findAction(runId, input.actionId);
+      if (committed) {
+        const latest = await findRunForUser(runId, userId);
+        assertActionIdempotency(
+          committed,
+          payloadHash,
+          latest?.state.revision ?? committed.revisionAfter,
+        );
+      }
+      throw new ApiError(409, "STALE_REVISION", "Game state has changed; reload the current game");
     }
     throw error;
   }
