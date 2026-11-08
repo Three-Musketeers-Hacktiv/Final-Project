@@ -1,6 +1,6 @@
 # AI Event Runtime Specification
 
-Status: **Target Gemini contract; source migration pending (BE-R06)**
+Status: **Implemented (BE-R06)**
 Owner: Backend
 Updated: 2026-11-08
 
@@ -14,7 +14,7 @@ The AI runtime decorates a trusted engine event when an action first enters an e
 - Provider failure must not fail a valid gameplay action; backend uses the trusted engine copy as fallback.
 - Frontend displays the backend response and never calls Gemini directly.
 
-The current source still contains an OpenAI-specific adapter. BE-R06 replaces it; this document defines the target contract and must not be read as proof that migration is complete.
+The active backend runtime uses the official Google Gen AI SDK. The former OpenAI dependency and hardcoded runtime path have been removed.
 
 ## 2. Default provider and configuration
 

@@ -1,6 +1,6 @@
 # Backend Implementation Plan — Fantasy City Defense
 
-Status: **Implemented baseline; remediation planned for latest engine patch**
+Status: **Implemented and synchronized with latest engine patch**
 Target: prototipe 20 hari / 2 wave  
 Backend: Next.js Route Handlers + MongoDB  
 Kontrak engine: `../../docs/DEV1_CONTRACT.md` dan `../../src/game` (read-only)
@@ -30,7 +30,7 @@ Keputusan berikut telah dikonfirmasi oleh pemilik backend dan menjadi default im
 | Save aktif | Satu save aktif; run lama tetap tersimpan/read-only ketika pointer diganti dan tidak otomatis dianggap selesai |
 | File ownership | Mengikuti pembagian backend/frontend/shared pada dokumen ini |
 
-Baseline awal sudah diimplementasikan. Pekerjaan berikutnya mengikuti [BACKEND_REMEDIATION_PLAN.md](./BACKEND_REMEDIATION_PLAN.md), terutama kompatibilitas patched state v3, ruleset fingerprint, pointer consistency, dynamic event IDs, dan migrasi runtime AI ke Gemini.
+Baseline dan remediasi BE-R00–BE-R08 sudah diimplementasikan. Detail hasil, commit, dan release gate tersedia di [BACKEND_REMEDIATION_PLAN.md](./BACKEND_REMEDIATION_PLAN.md).
 
 ## 1. Tujuan dokumen
 

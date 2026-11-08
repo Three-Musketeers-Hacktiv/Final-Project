@@ -1,6 +1,6 @@
 # Environment and Deployment Runbook
 
-Status: **Target runbook; Gemini source migration pending**
+Status: **Active runbook for Gemini backend**
 Pemilik: Backend  
 Target: MongoDB Atlas + Vercel  
 Terakhir diperbarui: 2026-11-08

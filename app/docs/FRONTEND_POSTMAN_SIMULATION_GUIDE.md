@@ -16,7 +16,7 @@ Jangan mengirim URI, password database, JWT secret, atau API key melalui Git. Fi
 
 Gemini key tidak diperlukan untuk pengujian ini. Jika `GEMINI_API_KEY` dan `GEMINI_MODEL` kosong, backend memakai narasi fallback terpercaya dan gameplay tetap berjalan.
 
-Catatan status: game engine sudah memakai `eventPlan` dan choice ID dinamis. Source backend masih harus menjalani remediasi BE-R00–BE-R08 sebelum panduan target ini dianggap lulus penuh.
+Game engine dan backend sudah memakai `eventPlan` serta choice ID dinamis. Panduan ini telah diverifikasi melalui campaign API 42 action sampai `victory`.
 
 ## 2. Prasyarat laptop
 

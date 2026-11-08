@@ -657,3 +657,54 @@ Commit:
 - `dafb875 docs(backend): align engine remediation contracts`.
 - Commit Gemini/runbook dibuat setelah staged diff final.
 - Push tidak dilakukan.
+
+## 2026-11-08 — Implementasi remediasi backend setelah patch engine
+
+Tujuan:
+- Menyelesaikan BE-R00–BE-R08 tanpa mengubah source frontend atau game engine.
+- Menjamin backend dapat membaca, memvalidasi, menyimpan, dan menjalankan campaign berdasarkan `eventPlan` terbaru.
+
+Implementasi:
+- Mengganti dependency/runtime OpenAI dengan SDK resmi `@google/genai` dan Gemini sebagai provider default.
+- Menambahkan konfigurasi `AI_*`/`GEMINI_*`, readiness provider aktif, JSON schema, validasi Zod, prompt advisor English, trusted choice IDs, timeout/retry, dan fallback.
+- Mengganti ruleset menjadi `prototype-v3-event-plan-v1` serta menolak fingerprint ruleset yang tidak cocok.
+- Menambahkan shared load validator untuk state version, `runId`, deterministic `eventPlan`, active event, ruleset, dan current-save pointer.
+- Membedakan `DUPLICATE_ACTION` dari `ACTION_PAYLOAD_CONFLICT` menggunakan `payloadHash` pada jalur normal dan race.
+- Membatasi action pada active save serta membuat update/clear pointer kondisional terhadap run dan revision di dalam transaksi.
+- Menambah index query remediation, literal hari event/battle, source `ai | fallback | mock`, dan runtime guard sebelum write MongoDB.
+- Mengubah runner campaign agar mengambil event/choice ID dinamis dari response API.
+- Menyelaraskan status kontrak API, schema, runtime AI, implementation/remediation plan, test plan, environment runbook, dan panduan Postman.
+
+Commit fitur:
+- `173f07d feat(ai): add configurable gemini narrative runtime`.
+- `c76521c fix(backend): validate patched engine saves and rulesets`.
+- `2331d9e fix(game): harden active run pointer and action idempotency`.
+- `1463d13 fix(database): align indexes and persisted game literals`.
+- `cf80172 test(campaign): support dynamic engine event plans`.
+
+Validasi aktual:
+- `npm.cmd run lint`: lulus.
+- `npm.cmd run typecheck`: lulus.
+- `npm.cmd run test`: lulus, 14 file dan 43 test.
+- `npm.cmd run db:indexes`: lulus pada database development yang dikonfigurasi; setup tetap idempotent dan tidak menghapus data/index lama.
+- `npm.cmd run test:campaign`: lulus 42 action sampai `phase: victory`, revision 42; dynamic packages/choice IDs terbaca dari response.
+- Campaign memverifikasi run final dapat dibaca ulang, active save kosong, logout sukses, dan `/api/auth/me` sesudah logout menghasilkan `401`.
+- `npm.cmd run build`: percobaan sandbox pertama gagal mengambil Google Fonts milik frontend; pengulangan dengan akses network lulus penuh.
+- `npm.cmd audit --omit=dev`: tidak menemukan vulnerability pada dependency production.
+- Live Gemini call belum dijalankan karena `GEMINI_API_KEY`/`GEMINI_MODEL` belum diisi; jalur fallback dan fake generator tercakup test/campaign.
+
+Database dan data:
+- Index baru diterapkan pada database development yang sudah diverifikasi.
+- User/run campaign baru dipertahankan untuk audit development.
+- Tidak ada reset, delete, atau migrasi destruktif terhadap save lama.
+
+Handoff frontend:
+- Frontend membaca choice ID dari `game.eventNarrative.choices`, bukan membentuk ID dari hari.
+- Frontend perlu menyediakan pesan untuk `UNSUPPORTED_STATE_VERSION`, `RUN_INTEGRITY_ERROR`, `SAVE_POINTER_MISMATCH`, dan `ACTION_PAYLOAD_CONFLICT`.
+- Mapping frontend tidak diedit karena berada di luar ownership backend.
+
+Batas scope:
+- Tidak ada perubahan pada `src/game/**`, `src/ui/**`, root `docs/**`, atau file game engine.
+- Tidak ada perubahan pada `app/components/**`, `app/app/(game)/**`, `app/lib/**`, atau `app/proxy.ts`.
+- `.env` lokal tidak diubah atau di-commit.
+- Push tidak dilakukan.

@@ -1,6 +1,6 @@
 # Backend Remediation Plan — Engine Patch Alignment
 
-Status: **Approved plan; implementation pending**
+Status: **Implemented and verified**
 Owner: Backend (Dev 3)
 Updated: 2026-11-08
 Baseline: `development` commit `eb9321c`, game-engine patch `3c14d24`
@@ -73,7 +73,7 @@ The patch changed the state shape and `gameConfig` while retaining state version
 
 ## 5. Remediation tickets
 
-### BE-R00 — Ruleset and patched-v3 compatibility (P0)
+### BE-R00 — Ruleset and patched-v3 compatibility (P0) — Completed
 
 Problem:
 
@@ -89,7 +89,7 @@ Target:
 4. Do not silently reinterpret an active legacy event using a new package.
 5. Decide separately whether development data is reset or old runs remain read-only. No destructive migration runs automatically.
 
-### BE-R01 — Load consistency (P0)
+### BE-R01 — Load consistency (P0) — Completed
 
 All load paths use one shared validator.
 
@@ -100,7 +100,7 @@ All load paths use one shared validator.
 
 The validator applies to current-run load, run-by-ID load, create-run replay, and action load. Backend does not rebuild state from action/property history.
 
-### BE-R02 — Action idempotency and payload hash (P1)
+### BE-R02 — Action idempotency and payload hash (P1) — Completed
 
 - Same `actionId` and same `{ type, payload }` hash → `DUPLICATE_ACTION`.
 - Same `actionId` and different hash → `ACTION_PAYLOAD_CONFLICT`.
@@ -109,7 +109,7 @@ The validator applies to current-run load, run-by-ID load, create-run replay, an
 
 Full successful-response replay is out of scope.
 
-### BE-R03 — Database indexes and schema sync (P1)
+### BE-R03 — Database indexes and schema sync (P1) — Completed
 
 Add idempotent indexes:
 
@@ -124,7 +124,7 @@ The new `event_data` index uses a new name so it can be created before the old i
 
 The `auth_rate_limits` schema documentation uses `key` and `windowStart`, matching code.
 
-### BE-R04 — Persisted literals and event source (P2)
+### BE-R04 — Persisted literals and event source (P2) — Completed
 
 - Event day: `3 | 7 | 13 | 17`
 - Battle report day: `10 | 20`
@@ -132,7 +132,7 @@ The `auth_rate_limits` schema documentation uses `key` and `windowStart`, matchi
 - Engine `activeEvent.source === "local"` remains valid only as transient state before decoration.
 - Runtime guards narrow engine `number` values before database writes; type casts alone are insufficient.
 
-### BE-R05 — API/docs/error surface (P2)
+### BE-R05 — API/docs/error surface (P2) — Completed for backend handoff
 
 Expose and document:
 
@@ -144,7 +144,7 @@ Expose and document:
 
 The response envelope and contract version remain unchanged. Frontend mapping is handed off to the frontend owner.
 
-### BE-R06 — Gemini runtime and English advisor prompt (P0)
+### BE-R06 — Gemini runtime and English advisor prompt (P0) — Completed
 
 Replace the active OpenAI-only runtime with a provider interface whose default implementation is Gemini.
 
@@ -164,26 +164,26 @@ The request includes `locale: "en-US"`, day, event ID, package ID, original trus
 
 Provider/key absence, timeout, network error, refusal, invalid schema, or untrusted IDs falls back to the engine event copy. Provider work remains outside MongoDB transactions.
 
-### BE-R07 — Active-save pointer race (P1)
+### BE-R07 — Active-save pointer race (P1) — Completed
 
 Only the active run may receive gameplay actions. An abandoned run remains readable but cannot reclaim the current-save pointer.
 
 User pointer updates are conditional on both `gameRunId` and `savedRevision`. Ending a run clears the pointer only if it still points to that run. A pointer mismatch rolls back the transaction.
 
-### BE-R08 — Dynamic campaign and Postman flow (P0)
+### BE-R08 — Dynamic campaign and Postman flow (P0) — Completed
 
 The campaign runner and manual guide read event choice IDs from the API response. They never send legacy hardcoded IDs. The full campaign remains 42 successful actions and ends at victory when using the documented strategy.
 
 ## 6. Implementation order and commits
 
-1. `feat(ai): add configurable gemini narrative runtime` — BE-R06
-2. `fix(backend): validate patched engine saves and rulesets` — BE-R00 + BE-R01
-3. `fix(game): harden active run pointer and action idempotency` — BE-R02 + BE-R07
-4. `fix(database): align indexes and persisted game literals` — BE-R03 + BE-R04
-5. `test(campaign): support dynamic engine event plans` — BE-R08
+1. `173f07d feat(ai): add configurable gemini narrative runtime` — BE-R06
+2. `c76521c fix(backend): validate patched engine saves and rulesets` — BE-R00 + BE-R01
+3. `2331d9e fix(game): harden active run pointer and action idempotency` — BE-R02 + BE-R07
+4. `1463d13 fix(database): align indexes and persisted game literals` — BE-R03 + BE-R04
+5. `cf80172 test(campaign): support dynamic engine event plans` — BE-R08
 6. `docs(backend): finalize remediation contracts` — BE-R05 and final action log
 
-Each commit is created only after its relevant tests pass. No automatic push is performed.
+Each commit was created after its relevant tests passed. No automatic push was performed.
 
 ## 7. Required tests
 
@@ -212,4 +212,4 @@ npm run db:indexes
 npm run test:campaign
 ```
 
-`db:indexes` runs only against a verified development/test database. Final review confirms no changes under engine, frontend, or root documentation paths.
+All gates passed on 2026-11-08. The first sandboxed build attempt could not fetch frontend Google Fonts; the approved network-enabled build passed. `db:indexes` and the 42-action campaign passed against the configured development database. Final review confirms no changes under engine, frontend, or root documentation paths.

@@ -1,6 +1,6 @@
 # Database Schema v3 — Fantasy City Defense
 
-Status: **Draft untuk implementasi MongoDB Atlas**  
+Status: **Implemented for MongoDB Atlas**
 Database: MongoDB Atlas  
 State: `GameState.version === 3`  
 ID dokumen: `ObjectId`

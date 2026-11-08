@@ -1,6 +1,6 @@
 # Backend Test Plan
 
-Status: **Target test plan; remediation implementation pending**
+Status: **Implemented and active**
 Pemilik: Backend  
 Terakhir diperbarui: 2026-11-08
 

@@ -1,6 +1,6 @@
 # API Contract — Fantasy City Defense
 
-Status: **Target contract; remediation implementation pending**
+Status: **Implemented backend contract**
 Versi kontrak: `1`  
 Base path: `/api`  
 Transport: HTTPS + JSON  
