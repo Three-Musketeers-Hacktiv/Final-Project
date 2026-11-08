@@ -102,7 +102,7 @@ The validator applies to current-run load, run-by-ID load, create-run replay, an
 
 ### BE-R02 — Action idempotency and payload hash (P1) — Completed
 
-- Same `actionId` and same `{ type, payload }` hash → `DUPLICATE_ACTION`.
+- Same `actionId` and same `{ type, payload }` hash → replay `200` without another write.
 - Same `actionId` and different hash → `ACTION_PAYLOAD_CONFLICT`.
 - The same distinction is applied after transaction races/unique-index failures.
 - Successful actions continue storing `payloadHash`.

@@ -1,6 +1,6 @@
 # API Contract — Fantasy City Defense
 
-Status: **Implemented backend contract, including surrender**
+Status: **Implemented backend contract, including surrender and persistent timeline**
 Versi kontrak: `1`  
 Base path: `/api`  
 Transport: HTTPS + JSON  

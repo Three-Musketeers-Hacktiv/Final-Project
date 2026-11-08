@@ -291,7 +291,31 @@ SURRENDER_ORIGIN=http://localhost:3001 npm run test:surrender
 
 Ganti nilai `SURRENDER_ORIGIN` agar sama persis dengan `APP_ORIGIN` pada environment lokal. Server backend harus tetap berjalan di terminal lain; bila port backend bukan 3000, tambahkan `SURRENDER_BASE_URL`, misalnya `SURRENDER_BASE_URL=http://localhost:3002`.
 
-## 9. Error yang paling umum
+## 9. Verifikasi timeline persisten
+
+Setiap response create/load/action sekarang selalu memiliki `data.game.timeline`.
+
+Verifikasi manual yang disarankan:
+
+1. Jalankan `Create Run`; pastikan `data.game.timeline` adalah `[]`.
+2. Simpan satu `actionId`, lalu jalankan action `upgradeWall`; pastikan timeline berisi entry dengan ID `<actionId>:0`.
+3. Kirim ulang request yang persis sama dengan `actionId`, type, payload, dan expected revision awal yang sama; hasil harus `200`, revision tidak bertambah, dan entry timeline tidak terduplikasi.
+4. Gunakan `actionId` yang sama dengan type/payload berbeda; hasil harus `409 ACTION_PAYLOAD_CONFLICT`.
+5. Kirim action yang ditolak engine; GET run kembali dan pastikan timeline tidak berubah.
+6. Refresh atau kirim `GET /api/runs/current`/`GET /api/runs/:runId`; array timeline harus sama dengan response action terakhir.
+
+Timeline disimpan oldest-first. Frontend boleh membalik urutan untuk tampilan, tetapi harus memakai `game.timeline` server sebagai sumber kebenaran dan tidak menambahkan hasil `describeAction` lokal di atas array server.
+
+Runner otomatis dari Git Bash:
+
+```bash
+cd app
+TIMELINE_ORIGIN=http://localhost:3001 npm run test:timeline
+```
+
+Samakan `TIMELINE_ORIGIN` dengan `APP_ORIGIN`. Jika backend tidak berjalan di port 3000, tambahkan `TIMELINE_BASE_URL`.
+
+## 10. Error yang paling umum
 
 ### `SERVICE_NOT_READY` atau koneksi MongoDB gagal
 
@@ -316,9 +340,9 @@ Jalankan `Login` kembali dan pastikan Postman cookie jar aktif. Setelah logout, 
 
 Nilai environment `revision` tertinggal. Kirim `GET /api/runs/{{runId}}`, salin `data.game.state.revision` ke environment, lalu ulangi intent dengan `actionId` baru.
 
-### `409 DUPLICATE_ACTION`
+### Retry action dengan `actionId` sama
 
-`actionId` pernah digunakan. Gunakan `{{$guid}}` dan kirim intent baru hanya setelah state terbaru sudah diambil.
+Request identik sekarang menghasilkan replay `200` dan tidak menambah revision/timeline. Jika type atau payload berbeda, backend menghasilkan `409 ACTION_PAYLOAD_CONFLICT`; buat `actionId` baru hanya untuk intent baru.
 
 ### Register menghasilkan `409`
 
@@ -328,7 +352,7 @@ Username sudah dipakai. Kosongkan variable `username` agar collection membuat us
 
 Hentikan proses lama dengan `Ctrl+C`. Bila backend dijalankan pada port lain, samakan `baseUrl`, `APP_ORIGIN`, `CAMPAIGN_BASE_URL`, dan `CAMPAIGN_ORIGIN`.
 
-## 10. Informasi yang dikirim ke developer backend bila gagal
+## 11. Informasi yang dikirim ke developer backend bila gagal
 
 Kirim informasi berikut tanpa secret:
 

@@ -776,3 +776,42 @@ Batas scope:
 - Tidak mengubah `src/game/**`, root `docs/**`, `app/components/**`, `app/lib/**`, `app/app/(game)/**`, atau `app/proxy.ts`.
 - Implementasi source belum dilakukan pada commit perencanaan ini.
 - Push tidak dilakukan.
+
+## 2026-11-08 — Implementasi dan verifikasi persistent game timeline
+
+Tujuan:
+- Menyelesaikan tiket backend timeline 01–02 dan menyediakan kontrak siap konsumsi untuk tiket frontend 03.
+- Menjaga timeline, state, action log, report/event, serta active-save pointer tetap konsisten dalam transaksi yang sama.
+
+Implementasi:
+- Menambahkan tipe publik `TimelineEntry`, category, tone, dan icon serta field wajib `GameView.timeline`.
+- Menambahkan `game_runs.timeline: []` pada run baru dan fallback `[]` untuk dokumen prototype lama.
+- Menambahkan generator copy server-safe dari snapshot sebelum/sesudah dengan ID `${actionId}:${index}`.
+- Menyimpan timeline oldest-first secara atomik bersama state/revision dan seluruh side effect action.
+- Mengubah retry identik menjadi replay sukses `200`; payload berbeda tetap `ACTION_PAYLOAD_CONFLICT`.
+- Menambahkan entry surrender dan mempertahankan `continueFromReport` tanpa entry sesuai perilaku timeline yang ada.
+- Menambahkan runner `test:timeline` dan assertion timeline pada collection Postman.
+
+Commit:
+- `f77cf92 docs(backend): define persistent timeline contract`.
+- `5a05ae2 feat(game): expose persisted timeline in game views`.
+- `d56d3c1 feat(game): append idempotent action timeline`.
+- `4c2ac31 test(api): verify persistent action timeline`.
+- Commit dokumentasi closeout dibuat setelah pemeriksaan final.
+
+Validasi aktual:
+- `npm.cmd run test`: lulus, 16 file dan 52 test.
+- `npm.cmd run typecheck`: lulus.
+- `npm.cmd run lint`: lulus tanpa warning.
+- `npm.cmd run build`: lulus production build.
+- `npm.cmd run test:timeline`: lulus terhadap MongoDB development; empty, append, replay, conflict, rejected action, final replay, dan GET persistence terverifikasi.
+- `npm.cmd run test:surrender`: lulus sebagai regression.
+- `npm.cmd run test:campaign`: lulus 42 action sampai hari 20, revision 42, phase `victory`.
+
+Database, handoff, dan scope:
+- Smoke tests menambahkan user/run development dan mempertahankannya untuk audit; tidak ada reset atau penghapusan data.
+- Frontend harus mengerjakan tiket 03 dengan hydrate dari `initialGame.timeline` dan mengganti timeline lokal dari setiap response action.
+- Tidak mengubah `src/game/**`, `src/ui/**`, root `docs/**`, atau file engine.
+- Tidak mengubah `app/components/**`, `app/lib/**`, `app/app/(game)/**`, atau `app/proxy.ts` milik frontend.
+- `.env` lokal tidak diubah atau di-commit.
+- Push tidak dilakukan.

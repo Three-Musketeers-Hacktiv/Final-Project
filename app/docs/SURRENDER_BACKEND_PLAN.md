@@ -62,7 +62,7 @@ The existing frontend Settings placeholder remains owned by the frontend develop
 
 - Non-empty surrender payload → `400 VALIDATION_ERROR`.
 - Stale revision → `409 STALE_REVISION`.
-- Reused action ID with the same request → `409 DUPLICATE_ACTION`.
+- Reused action ID with the same request → replay `200` without another state/timeline write.
 - Reused action ID with another payload/type → `409 ACTION_PAYLOAD_CONFLICT`.
 - Surrender/action after the run ended → `409 GAME_ENDED`.
 - Inactive/replaced run → `409 SAVE_POINTER_MISMATCH`.

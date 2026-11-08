@@ -1,6 +1,6 @@
 # Backend Persistent Timeline Plan
 
-Status: **Approved plan; implementation pending**
+Status: **Implemented and verified**
 Owner: Backend
 Updated: 2026-11-08
 Source: `.scratch/game-runs-timeline/spec.md`, tickets 01–02
@@ -54,13 +54,13 @@ New runs start with `timeline: []`. Legacy documents without the field are read 
 
 This replaces the earlier `409 DUPLICATE_ACTION` behavior for an identical request.
 
-## 5. Implementation stages
+## 5. Completed implementation stages
 
-1. Document the contract, persistence shape, retry behavior, and test matrix.
-2. Add timeline types, empty initialization, legacy normalization, and `GameView.timeline`.
-3. Add a server-safe timeline author plus transactional append and idempotent replay.
-4. Add unit/API smoke coverage for empty, append, failed action, retry, GET persistence, and legacy fallback.
-5. Finalize backend/frontend handoff documentation and release checks.
+1. [x] Document the contract, persistence shape, retry behavior, and test matrix.
+2. [x] Add timeline types, empty initialization, legacy normalization, and `GameView.timeline`.
+3. [x] Add a server-safe timeline author plus transactional append and idempotent replay.
+4. [x] Add unit/API smoke coverage for empty, append, failed action, retry, GET persistence, and legacy fallback.
+5. [x] Finalize backend/frontend handoff documentation and release checks.
 
 ## 6. Ownership boundaries
 
@@ -77,12 +77,22 @@ Read-only/out of scope:
 - `app/components/**`, `app/lib/**`, `app/app/(game)/**`, and `app/proxy.ts`;
 - `.scratch/game-runs-timeline/issues/03-frontend-hydrate-timeline.md` implementation.
 
-## 7. Planned commits
+## 7. Commits and verification
 
-1. `docs(backend): define persistent timeline contract`
-2. `feat(game): expose persisted timeline in game views`
-3. `feat(game): append idempotent action timeline`
-4. `test(api): verify persistent action timeline`
-5. `docs(backend): finalize timeline handoff`
+1. `f77cf92 docs(backend): define persistent timeline contract`
+2. `5a05ae2 feat(game): expose persisted timeline in game views`
+3. `d56d3c1 feat(game): append idempotent action timeline`
+4. `4c2ac31 test(api): verify persistent action timeline`
+5. `docs(backend): finalize timeline handoff` (this closeout)
+
+Verified results:
+
+- lint and typecheck passed;
+- 16 test files / 52 tests passed;
+- production build passed;
+- timeline smoke passed against MongoDB development;
+- surrender regression smoke passed;
+- full 42-action campaign passed through day 20 and `victory`;
+- no frontend or game-engine source was modified.
 
 Push remains manual.

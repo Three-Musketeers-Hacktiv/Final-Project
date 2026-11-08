@@ -1,6 +1,6 @@
 # Backend Implementation Plan — Fantasy City Defense
 
-Status: **Implemented and synchronized with latest engine patch, including surrender**
+Status: **Implemented and synchronized with latest engine/frontend contracts, including surrender and persistent timeline**
 Target: prototipe 20 hari / 2 wave  
 Backend: Next.js Route Handlers + MongoDB  
 Kontrak engine: `../../docs/DEV1_CONTRACT.md` dan `../../src/game` (read-only)
@@ -508,7 +508,8 @@ Ketika state menjadi `gameOver` atau `victory`, backend:
 | Body tidak valid | 400 | `VALIDATION_ERROR` |
 | Belum login / session invalid | 401 | `UNAUTHENTICATED` |
 | Run bukan milik user | 404 | `RUN_NOT_FOUND` |
-| Action duplikat | 409 | `DUPLICATE_ACTION` |
+| Action ID sama, payload sama | 200 | Replay hasil commit tanpa write/timeline kedua |
+| Action ID sama, payload berbeda | 409 | `ACTION_PAYLOAD_CONFLICT` |
 | Action ID sama, payload berbeda | 409 | `ACTION_PAYLOAD_CONFLICT` |
 | Revision stale | 409 | `STALE_REVISION` |
 | Save version tidak didukung | 409 | `UNSUPPORTED_STATE_VERSION` |
