@@ -105,6 +105,7 @@ export type EventDataDocument = {
     choices: [{ id: string; label: string }, { id: string; label: string }];
   };
   source: "ai" | "fallback";
+  provider?: string;
   model?: string;
   promptVersion: string;
   schemaVersion: 1;

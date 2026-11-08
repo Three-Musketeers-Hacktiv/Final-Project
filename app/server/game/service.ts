@@ -128,6 +128,7 @@ export async function submitGameAction(
       day: result.state.activeEvent.day,
       narrative,
       source: narrativeResult.source,
+      ...(narrativeResult.provider ? { provider: narrativeResult.provider } : {}),
       ...(narrativeResult.model ? { model: narrativeResult.model } : {}),
       promptVersion: narrativeResult.promptVersion,
       schemaVersion: 1,
