@@ -708,3 +708,20 @@ Batas scope:
 - Tidak ada perubahan pada `app/components/**`, `app/app/(game)/**`, `app/lib/**`, atau `app/proxy.ts`.
 - `.env` lokal tidak diubah atau di-commit.
 - Push tidak dilakukan.
+
+## 2026-11-08 — Perencanaan integrasi backend surrender
+
+Tujuan:
+- Menindaklanjuti engine commit `a0cc71b` yang menambahkan transisi murni `surrender(state)`.
+- Menetapkan kontrak backend sebelum implementasi tanpa mengubah source engine atau frontend.
+
+Tindakan:
+- Membaca `.scratch/surrender-action/spec.md` dan tiket backend terkait.
+- Menambahkan `SURRENDER_BACKEND_PLAN.md`.
+- Menambahkan target `surrender` ke API contract, implementation plan, database action type, dan test plan.
+- Menetapkan payload publik harus `{}` dan finalisasi memakai jalur `gameOver` generik yang sudah ada.
+
+Batas scope:
+- Tidak mengubah `src/game/**`, komponen/halaman frontend, `app/lib/**`, `app/proxy.ts`, atau root `docs/**`.
+- Implementasi source belum dilakukan pada commit perencanaan ini.
+- Push tidak dilakukan.

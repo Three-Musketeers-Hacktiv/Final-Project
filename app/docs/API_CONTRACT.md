@@ -1,6 +1,6 @@
 # API Contract — Fantasy City Defense
 
-Status: **Implemented backend contract**
+Status: **Implemented baseline; surrender extension planned**
 Versi kontrak: `1`  
 Base path: `/api`  
 Transport: HTTPS + JSON  
@@ -311,7 +311,8 @@ type SubmitActionRequest =
   | BaseAction<"chooseEventOption", { choiceId: string }>
   | BaseAction<"startBattle", Record<string, never>>
   | BaseAction<"continueFromReport", Record<string, never>>
-  | BaseAction<"chooseReward", { rewardId: string }>;
+  | BaseAction<"chooseReward", { rewardId: string }>
+  | BaseAction<"surrender", Record<string, never>>;
 
 type BaseAction<TType extends string, TPayload> = {
   actionId: string;
@@ -364,8 +365,11 @@ Sukses: `200 OK`
 | `startBattle` | `{}` | `startBattle(state)` |
 | `continueFromReport` | `{}` | `continueFromReport(state)` |
 | `chooseReward` | `{ rewardId }` | `chooseReward(state, rewardId)` |
+| `surrender` | `{}` | `surrender(state)` |
 
 Frontend tidak dapat mengirim `attachActiveEvent`, `ensureLocalEvent`, state baru, cost, damage, effects, atau revision baru.
+
+`surrender` mengakhiri run aktif sebagai `gameOver`. Response sukses tetap membawa final `GameView`; backend mengisi `endedAt`, mencatat history, dan menghapus active-save pointer melalui jalur transaksi final-state yang sama. Frontend tidak mengirim alasan surrender atau nilai state tambahan.
 
 Untuk `chooseEventOption`, frontend wajib mengirim `choiceId` yang dibaca dari `game.eventNarrative.choices`. Legacy ID seperti `day3-skip` tidak menjadi kontrak dan tidak boleh diasumsikan tersedia pada run tertentu.
 

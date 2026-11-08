@@ -199,6 +199,7 @@ type GameActionType =
   | "startBattle"
   | "continueFromReport"
   | "chooseReward"
+  | "surrender"
   | "attachActiveEvent";
 
 type GameActionDocument = {
@@ -223,6 +224,7 @@ Aturan:
 - `payload` hanya field command aman; tidak menyimpan cookie, password, atau secret.
 - `payloadHash` mendeteksi reuse actionId dengan payload berbeda.
 - `attachActiveEvent` adalah helper internal backend/engine dan tidak diterima endpoint action publik.
+- `surrender` adalah action publik dengan payload kosong; action sukses menghasilkan final state `gameOver`.
 
 Indeks:
 

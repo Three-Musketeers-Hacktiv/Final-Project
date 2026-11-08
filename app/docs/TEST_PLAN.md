@@ -87,6 +87,10 @@ Dokumen ini mendefinisikan bukti yang harus tersedia sebelum fitur backend diang
 | Dua action paralel pada version sama | Concurrency | Hanya satu berhasil, lainnya conflict |
 | Engine melempar domain error | Adapter/API | Dipetakan ke error API stabil |
 | Engine state/version tidak didukung | Adapter | Gagal jelas tanpa memodifikasi data |
+| Surrender run aktif | Adapter/API | Revision naik satu dan final state `gameOver` tersimpan |
+| Surrender payload non-kosong | Schema/API | `400 VALIDATION_ERROR`, tidak ada write |
+| Surrender setelah run berakhir | Adapter/API | `GAME_ENDED`, tidak ada revision/action baru |
+| Finalisasi surrender | Integration | `endedAt` terisi, pointer aktif kosong, history `gameOver` tercatat |
 
 ### 5.4 Event AI
 

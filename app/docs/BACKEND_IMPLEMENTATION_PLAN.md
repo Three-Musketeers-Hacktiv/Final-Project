@@ -1,6 +1,6 @@
 # Backend Implementation Plan — Fantasy City Defense
 
-Status: **Implemented and synchronized with latest engine patch**
+Status: **Implemented baseline; surrender extension planned**
 Target: prototipe 20 hari / 2 wave  
 Backend: Next.js Route Handlers + MongoDB  
 Kontrak engine: `../../docs/DEV1_CONTRACT.md` dan `../../src/game` (read-only)
@@ -264,7 +264,7 @@ type SubmitActionRequest = {
 };
 ```
 
-Tipe action yang dapat dicatat pada `game_actions` adalah `upgradeWall`, `upgradeTroops`, `upgradeCity`, `repairCity`, `endPreparationDay`, `chooseEventOption`, `startBattle`, `continueFromReport`, `chooseReward`, dan helper internal `attachActiveEvent`.
+Tipe action yang dapat dicatat pada `game_actions` adalah `upgradeWall`, `upgradeTroops`, `upgradeCity`, `repairCity`, `endPreparationDay`, `chooseEventOption`, `startBattle`, `continueFromReport`, `chooseReward`, `surrender`, dan helper internal `attachActiveEvent`.
 
 Action publik dari frontend:
 
@@ -279,8 +279,11 @@ Action publik dari frontend:
 | `startBattle` | `{}` | `startBattle(state)` |
 | `continueFromReport` | `{}` | `continueFromReport(state)` |
 | `chooseReward` | `{ rewardId: string }` | `chooseReward(state, rewardId)` |
+| `surrender` | `{}` | `surrender(state)` |
 
 `attachActiveEvent` dan `ensureLocalEvent` adalah operasi internal backend/engine. Frontend tidak boleh mengirim event arbitrary untuk dipasang ke state.
+
+`surrender` adalah action publik tanpa payload tambahan. Backend tidak menghitung hasil surrender; adapter hanya meneruskan state ke engine. Finalisasi memakai jalur `gameOver` generik yang sudah ada.
 
 Aturan `actionId`:
 
