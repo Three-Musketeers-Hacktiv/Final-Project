@@ -9,7 +9,16 @@ type GameStateView = {
   cityLevel: number;
 };
 
-type GameView = { state: GameStateView };
+type EventNarrativeView = {
+  eventId: string;
+  packageId: string;
+  choices: [{ id: string; label: string }, { id: string; label: string }];
+};
+
+type GameView = {
+  state: GameStateView;
+  eventNarrative: EventNarrativeView | null;
+};
 type Success<T> = { ok: true; data: T };
 type Failure = { ok: false; error: { code: string; message: string } };
 type ApiResponse<T> = Success<T> | Failure;
@@ -57,6 +66,19 @@ function assertState(day: number, phase: string): void {
       `Expected day ${day}/${phase}, received day ${game.state.day}/${game.state.phase}`,
     );
   }
+}
+
+function activeChoiceId(index: 0 | 1): string {
+  const event = game.eventNarrative;
+  if (!event || game.state.phase !== "event") {
+    throw new Error(`Expected an active event before selecting choice index ${index}`);
+  }
+  const choice = event.choices[index];
+  if (!choice?.id) throw new Error(`Active event does not expose choice index ${index}`);
+  console.info(
+    `event=${event.eventId} package=${event.packageId} choice=${choice.id}`,
+  );
+  return choice.id;
 }
 
 async function action(type: string, payload: Record<string, unknown> = {}): Promise<void> {
@@ -115,7 +137,7 @@ async function main(): Promise<void> {
   await action("upgradeCity");
   await action("endPreparationDay");
   assertState(3, "event");
-  await action("chooseEventOption", { choiceId: "day3-skip" });
+  await action("chooseEventOption", { choiceId: activeChoiceId(1) });
   await action("endPreparationDay");
   await action("upgradeCity");
   await action("endPreparationDay");
@@ -124,7 +146,7 @@ async function main(): Promise<void> {
   await action("upgradeTroops");
   await action("endPreparationDay");
   assertState(7, "event");
-  await action("chooseEventOption", { choiceId: "day7-pay" });
+  await action("chooseEventOption", { choiceId: activeChoiceId(0) });
   await action("endPreparationDay");
   await action("upgradeTroops");
   await action("endPreparationDay");
@@ -142,7 +164,7 @@ async function main(): Promise<void> {
   await action("repairCity");
   await action("endPreparationDay");
   assertState(13, "event");
-  await action("chooseEventOption", { choiceId: "day13-discount" });
+  await action("chooseEventOption", { choiceId: activeChoiceId(1) });
   await action("repairCity");
   await action("endPreparationDay");
   await action("repairCity");
@@ -152,7 +174,7 @@ async function main(): Promise<void> {
   await action("upgradeWall");
   await action("endPreparationDay");
   assertState(17, "event");
-  await action("chooseEventOption", { choiceId: "day17-pay" });
+  await action("chooseEventOption", { choiceId: activeChoiceId(0) });
   await action("upgradeWall");
   await action("endPreparationDay");
   await action("upgradeTroops");
