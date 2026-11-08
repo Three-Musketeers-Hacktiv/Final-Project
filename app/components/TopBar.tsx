@@ -17,6 +17,7 @@ type TopBarProps = {
   clockRunning: boolean;
   onTogglePause: () => void;
   onSpeedChange: (speed: Speed) => void;
+  onOpenSettings: () => void;
 };
 
 export default function TopBar({
@@ -29,6 +30,7 @@ export default function TopBar({
   clockRunning,
   onTogglePause,
   onSpeedChange,
+  onOpenSettings,
 }: TopBarProps) {
   const progress = Math.min(100, (day / lastDay) * 100);
 
@@ -73,7 +75,8 @@ export default function TopBar({
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center gap-2 lg:ml-auto">
+      {/* Full width below lg so the toggle group can sit at the right edge, even when it wraps. */}
+      <div className="flex w-full flex-wrap items-center gap-2 lg:ml-auto lg:w-auto">
         <div className="overflow-hidden rounded-sm border-2 border-frame">
           <ControlButton active={paused} label={paused ? "Resume the game" : "Pause the game"} onClick={onTogglePause}>
             {paused ? "▶ Play" : "❚❚ Pause"}
@@ -91,18 +94,21 @@ export default function TopBar({
             </ControlButton>
           ))}
         </div>
-        <div className="flex gap-2">
+        <div className="ml-auto flex gap-2">
           <div className="overflow-hidden rounded-sm border-2 border-frame">
             <ThemeToggle />
           </div>
           <div className="overflow-hidden rounded-sm border-2 border-frame">
             <MusicToggle />
           </div>
-          {["SFX", "⚙"].map((label) => (
-            <div key={label} className="overflow-hidden rounded-sm border-2 border-frame">
-              <ControlButton>{label}</ControlButton>
-            </div>
-          ))}
+          <div className="overflow-hidden rounded-sm border-2 border-frame">
+            <ControlButton>SFX</ControlButton>
+          </div>
+          <div className="overflow-hidden rounded-sm border-2 border-frame">
+            <ControlButton label="Settings" onClick={onOpenSettings}>
+              ⚙
+            </ControlButton>
+          </div>
         </div>
       </div>
     </header>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { mockRun } from "@/app/(game)/play/mockData";
 import { gameConfig } from "../../src/game/config";
 import Actions from "./Actions";
@@ -12,6 +12,7 @@ import { PlayMusic } from "./MusicProvider";
 import PhaseDialogs from "./PhaseDialogs";
 import { useGame } from "./GameProvider";
 import Resources from "./Resources";
+import SettingsDialog, { SETTINGS_DIALOG } from "./SettingsDialog";
 import ThisWave from "./ThisWave";
 import Timeline from "./Timeline";
 import TopBar from "./TopBar";
@@ -28,6 +29,14 @@ export default function GameScreen() {
 
   const [paused, setPaused] = useState(false);
   const [speed, setSpeed] = useState<Speed>(1);
+  // The settings dialog pauses the game; closing it restores the pause state from before.
+  const pausedBeforeSettings = useRef(false);
+
+  function openSettings() {
+    pausedBeforeSettings.current = paused;
+    setPaused(true);
+    document.getElementById(SETTINGS_DIALOG)?.showPopover();
+  }
   // Only preparation days tick; events, battles and rewards wait for the player.
   const clockRunning = !paused && state.phase === "preparation" && !pending;
   const dayProgress = useDayTimer({
@@ -50,6 +59,7 @@ export default function GameScreen() {
         clockRunning={clockRunning}
         onTogglePause={() => setPaused((p) => !p)}
         onSpeedChange={setSpeed}
+        onOpenSettings={openSettings}
       />
 
       {/* 1 column on phones, play area + side stack on laptops, 3 columns on wide screens */}
@@ -122,6 +132,7 @@ export default function GameScreen() {
         </div>
       </main>
       <PhaseDialogs />
+      <SettingsDialog onClose={(resume) => setPaused(resume ? false : pausedBeforeSettings.current)} />
       <GameToast />
     </>
   );

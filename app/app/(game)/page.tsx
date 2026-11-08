@@ -2,10 +2,10 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import type { AuthResponse, RunResponse } from "@/contracts/api";
 import GameButton from "@/components/GameButton";
-import Icon from "@/components/Icon";
 import LogoutButton from "@/components/LogoutButton";
 import NewGameButton from "@/components/NewGameButton";
 import Panel from "@/components/Panel";
+import RunSummary from "@/components/RunSummary";
 import ScreenShell from "@/components/ScreenShell";
 import { ApiError } from "@/lib/api";
 import { serverApiRequest } from "@/lib/serverApi";
@@ -67,18 +67,7 @@ async function Menu() {
       <div className="flex flex-col gap-3">
         {state && (
           <>
-            <div className="flex flex-wrap items-center gap-x-5 gap-y-1 rounded-sm border-2 border-frame/60 bg-ink/40 px-3 py-2">
-              <span className="font-semibold">Saved run</span>
-              <span className="text-muted">Day {state.day}</span>
-              <span className="flex items-center gap-1.5">
-                <Icon name="cityHp" className="size-5" />
-                {state.cityHp} / {state.cityMaxHp}
-              </span>
-              <span className="flex items-center gap-1.5 text-gold">
-                <Icon name="gold" className="size-5" />
-                {state.gold}
-              </span>
-            </div>
+            <RunSummary label="Saved run" day={state.day} cityHp={state.cityHp} cityMaxHp={state.cityMaxHp} gold={state.gold} />
             <GameButton href="/play" variant="primary">
               Continue
             </GameButton>
