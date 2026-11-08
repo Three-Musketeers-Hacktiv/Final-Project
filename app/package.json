@@ -10,6 +10,7 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:campaign": "tsx scripts/run-campaign.ts",
+    "test:surrender": "tsx scripts/run-surrender.ts",
     "db:indexes": "tsx scripts/setup-indexes.ts"
   },
   "dependencies": {
