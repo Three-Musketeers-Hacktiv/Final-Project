@@ -1,4 +1,4 @@
-# 100 Nights — Sprite Assets (Updated Level Mapping)
+# Bastionfall — Sprite Assets (Updated Level Mapping)
 
 Individual sprite assets cropped from the supplied sprite sheet. PNG files retain their alpha channel.
 

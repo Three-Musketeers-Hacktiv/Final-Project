@@ -1,5 +1,6 @@
+import Image from "next/image";
 import type { ReactNode } from "react";
-import SpritePlaceholder from "./SpritePlaceholder";
+import mainLogo from "./assets/logo/main_logo.png";
 import ThemeToggle from "./ThemeToggle";
 
 /** Centered single-card layout for the menu, login and register screens. */
@@ -11,8 +12,10 @@ export default function ScreenShell({ children }: { children: ReactNode }) {
       </div>
 
       <div className="flex flex-col items-center gap-3 text-center">
-        <SpritePlaceholder label="Logo" className="size-20" />
-        <h1 className="text-4xl font-bold tracking-wide sm:text-5xl">100 NIGHTS</h1>
+        {/* The logo carries the game's name, so it is the page heading. */}
+        <h1>
+          <Image src={mainLogo} alt="Bastionfall" preload sizes="(min-width: 640px) 28rem, 90vw" className="h-auto w-[90vw] max-w-md" />
+        </h1>
         <p className="text-muted">Hold the walls. Survive the siege.</p>
       </div>
 
