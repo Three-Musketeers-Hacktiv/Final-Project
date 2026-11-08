@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: { default: "100 NIGHTS", template: "%s · 100 NIGHTS" },
+  title: { default: "Bastionfall", template: "%s · Bastionfall" },
   description: "Defend your city against waves of monsters.",
 };
 

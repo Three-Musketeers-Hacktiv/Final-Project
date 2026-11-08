@@ -1,6 +1,7 @@
+import Image from "next/image";
+import titleLogo from "./assets/logo/title_logo.png";
 import ControlButton from "./ControlButton";
 import MusicToggle from "./MusicToggle";
-import SpritePlaceholder from "./SpritePlaceholder";
 import ThemeToggle from "./ThemeToggle";
 import { SPEEDS, type Speed } from "./useDayTimer";
 
@@ -37,10 +38,9 @@ export default function TopBar({
   return (
     // Sticky so the day, clock and speed controls stay in view while scrolling; needs its own background.
     <header className="sticky top-0 z-30 flex flex-wrap items-center gap-x-8 gap-y-3 border-b-2 border-frame/60 bg-ink px-4 py-3">
-      <div className="flex items-center gap-3">
-        <SpritePlaceholder label="Logo" className="size-11" />
-        <h1 className="text-3xl font-bold tracking-wide text-parchment">100 NIGHTS</h1>
-      </div>
+      <h1>
+        <Image src={titleLogo} alt="Bastionfall" preload sizes="12rem" className="h-auto w-48" />
+      </h1>
 
       <div className="w-full max-w-xl sm:w-auto sm:min-w-80 sm:flex-1">
         <div className="flex flex-wrap items-baseline justify-between gap-x-6">
