@@ -1,5 +1,6 @@
-import { eventPackageForDay } from "./config";
+import { eventPackageById } from "./config";
 import { applyEffects } from "./effects";
+import { resolveEventPackage } from "./eventPlan";
 import { fail, isEnded, ok } from "./result";
 import type { ActiveEvent, ActionResult, EventPackage, GameState } from "./types";
 
@@ -34,7 +35,7 @@ export function attachActiveEvent(state: GameState, event: ActiveEvent): ActionR
 /** Attach the trusted local package when today has an unfinished scheduled event. */
 export function ensureLocalEvent(state: GameState): ActionResult {
   if (isEnded(state)) return fail("GAME_ENDED", "Game has ended");
-  const pkg = eventPackageForDay(state.day);
+  const pkg = resolveEventPackage(state.day, state.eventPlan);
   if (!pkg || state.completedEventIds.includes(pkg.eventId)) return ok(state);
   if (state.activeEvent?.eventId === pkg.eventId) return ok(state);
   return attachActiveEvent(state, toActiveEvent(pkg, "local"));
@@ -44,7 +45,8 @@ export function chooseEventOption(state: GameState, choiceId: string): ActionRes
   if (isEnded(state)) return fail("GAME_ENDED", "Game has ended");
   const event = state.activeEvent;
   if (!event) {
-    if (state.completedEventIds.some((id) => eventPackageForDay(state.day)?.eventId === id)) {
+    const scheduled = resolveEventPackage(state.day, state.eventPlan);
+    if (scheduled && state.completedEventIds.includes(scheduled.eventId)) {
       return fail("EVENT_ALREADY_RESOLVED", "Event already completed");
     }
     return fail("INVALID_PHASE", "No active event");
@@ -52,8 +54,9 @@ export function chooseEventOption(state: GameState, choiceId: string): ActionRes
   if (state.completedEventIds.includes(event.eventId)) {
     return fail("EVENT_ALREADY_RESOLVED", "Event already completed");
   }
-  const trusted = eventPackageForDay(event.day);
-  if (!trusted || trusted.packageId !== event.packageId) {
+  const trusted =
+    eventPackageById(event.packageId) ?? resolveEventPackage(event.day, state.eventPlan);
+  if (!trusted || trusted.packageId !== event.packageId || trusted.day !== event.day) {
     return fail("INVALID_CHOICE", "Event package is not trusted");
   }
   const choice = trusted.choices.find((entry) => entry.id === choiceId);

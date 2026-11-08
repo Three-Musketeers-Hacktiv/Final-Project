@@ -16,6 +16,8 @@ Defaults (supersede older PRD bits where they conflict):
 ## State schema (`version: 3`)
 
 ```ts
+type EventPlanEntry = { day: number; packageId: string; eventId: string };
+
 type GameState = {
   version: 3;          // save format version
   revision: number;    // starts at 0 after createInitialState
@@ -31,6 +33,7 @@ type GameState = {
   actionUsedToday: boolean;
   incomeGrantedDays: number[]; // unique preparation days that received income
   completedEventIds: string[];
+  eventPlan: EventPlanEntry[]; // one trusted package per scheduled event day
   activeEvent: ActiveEvent | null;
   effects: ActiveEffects;
   wavesCleared: number;
@@ -39,9 +42,11 @@ type GameState = {
 };
 ```
 
-- `version` is the **save format** identifier. This release uses `3`. Version `2` (`upgradeLevel`) is not migrated.
+- `version` is the **save format** identifier. This release uses `3`. Version `1` (`upgradeLevel`) and `2` are not migrated — see [Patch.md](../Patch.md).
 - `revision` is a separate monotonic counter. Every successful public gameplay action that changes state increments it **once** (including composite `chooseReward`). Errors and no-ops do not increment. `createInitialState` yields `revision: 0`.
 - `incomeGrantedDays` replaces the old single `incomeGrantedForDay` marker. Only valid preparation days appear in the list.
+- `eventPlan` is filled at create via `pickEventPlan(runId)` (stable hash). Each event day (3/7/13/17) has a pool of two packages; the plan picks one. Resolve with `resolveEventPackage(day, state.eventPlan)`. Do not hardcode legacy ids like `event-day-3` / `day3-pay`.
+- AI may overlay title/description/labels through `decorateActiveEvent`; costs and effects always come from the trusted package in `config.ts`.
 - Engine is pure: no React, DOM, `fetch`, `localStorage`, timers, or `process.env`.
 - State is JSON-serializable.
 
@@ -64,9 +69,12 @@ import {
   chooseReward,
   attachActiveEvent,
   ensureLocalEvent,
+  pickEventPlan,
+  resolveEventPackage,
+  decorateActiveEvent,
 } from "./game";
 
-const state = createInitialState();
+const state = createInitialState({ runId: "run-…" });
 const stats = getEffectiveStats(state);
 const troops = upgradeTroops(state); // { ok, state } | { ok:false, error:{code,message} }
 const wall = upgradeWall(state);

@@ -1,7 +1,8 @@
-import { eventPackageForDay, gameConfig } from "./config";
+import { gameConfig } from "./config";
 import { hasUnresolvedEvent, incomeAmountForDay, isBattleDay, isPreparationDay } from "./calendar";
 import { resolveBattle } from "./battle";
 import { clearEndOfCampaignEffects, clearWaveDefense } from "./effects";
+import { resolveEventPackage } from "./eventPlan";
 import { toActiveEvent } from "./events";
 import { fail, isEnded, ok } from "./result";
 import { getEffectiveAttack, getEffectiveDefense } from "./stats";
@@ -31,7 +32,7 @@ export function endPreparationDay(state: GameState): ActionResult {
       gold += incomeAmountForDay(state, nextDay);
       incomeGrantedDays.push(nextDay);
     }
-    const pkg = eventPackageForDay(nextDay);
+    const pkg = resolveEventPackage(nextDay, state.eventPlan);
     if (pkg && !state.completedEventIds.includes(pkg.eventId)) {
       phase = "event";
       activeEvent = toActiveEvent(pkg, "local");

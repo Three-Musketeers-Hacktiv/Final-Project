@@ -167,36 +167,58 @@ describe("events", () => {
     let state = createInitialState();
     state = must(endPreparationDay(state));
     state = must(endPreparationDay(state));
-    expect(state.activeEvent?.eventId).toBe("event-day-3");
-    const resolved = must(chooseEventOption(state, "day3-pay"));
+    expect(state.activeEvent?.day).toBe(3);
+    expect(state.eventPlan.some((entry) => entry.day === 3 && entry.packageId === state.activeEvent?.packageId)).toBe(
+      true,
+    );
+    const payId = state.activeEvent!.choices[0].id;
+    const skipId = state.activeEvent!.choices[1].id;
+    const resolved = must(chooseEventOption(state, payId));
     expect(resolved.phase).toBe("preparation");
     expect(resolved.gold).toBe(state.gold - 20);
     expect(resolved.effects.defenseByWave[1]).toBe(4);
     expect(resolved.actionUsedToday).toBe(false);
     expect(resolved.incomeGrantedDays).toEqual(state.incomeGrantedDays);
-    const again = chooseEventOption(resolved, "day3-skip");
+    const again = chooseEventOption(resolved, skipId);
     expect(again.ok).toBe(false);
     if (!again.ok) expect(again.error.code).toBe("EVENT_ALREADY_RESOLVED");
 
+    const day7 = gameConfig.events.find((event) => event.day === 7)!;
     const dying: GameState = {
       ...createInitialState(),
       day: 7,
       phase: "event",
       cityHp: 5,
       activeEvent: {
-        eventId: "event-day-7",
-        packageId: "event-day-7",
+        eventId: day7.eventId,
+        packageId: day7.packageId,
         day: 7,
         title: "x",
         description: "x",
         source: "local",
-        choices: gameConfig.events[1].choices,
+        choices: day7.choices,
       },
     };
-    const dead = must(chooseEventOption(dying, "day7-hurt"));
+    const hurtId = day7.choices[1].id;
+    const dead = must(chooseEventOption(dying, hurtId));
     expect(dead.phase).toBe("gameOver");
     expect(dead.cityHp).toBe(0);
     expect(upgradeTroops(dead).ok).toBe(false);
+  });
+
+  it("assigns a deterministic event plan and varies packages across run ids", () => {
+    const first = createInitialState({ runId: "run-alpha" });
+    const again = createInitialState({ runId: "run-alpha" });
+    expect(first.eventPlan).toEqual(again.eventPlan);
+    expect(first.eventPlan).toHaveLength(4);
+    expect(first.eventPlan.map((entry) => entry.day)).toEqual([3, 7, 13, 17]);
+
+    let other = createInitialState({ runId: "run-0" });
+    for (let index = 0; index < 64; index += 1) {
+      other = createInitialState({ runId: `run-${index}` });
+      if (JSON.stringify(other.eventPlan) !== JSON.stringify(first.eventPlan)) break;
+    }
+    expect(other.eventPlan).not.toEqual(first.eventPlan);
   });
 });
 
@@ -297,15 +319,17 @@ describe("20-day campaign", () => {
     const skip = () => {
       state = must(endPreparationDay(state));
     };
-    const choose = (id: string) => {
-      state = must(chooseEventOption(state, id));
+    const choose = (index: 0 | 1) => {
+      const event = state.activeEvent;
+      if (!event) throw new Error(`No active event on day ${state.day}`);
+      state = must(chooseEventOption(state, event.choices[index].id));
     };
 
     spend(upgradeCity, "d1 city");
     skip();
     spend(upgradeCity, "d2 city");
     skip();
-    choose("day3-skip");
+    choose(1);
     skip();
     spend(upgradeCity, "d4 city");
     skip();
@@ -313,7 +337,7 @@ describe("20-day campaign", () => {
     skip();
     spend(upgradeTroops, "d6 troops");
     skip();
-    choose("day7-pay");
+    choose(0);
     skip();
     spend(upgradeTroops, "d8 troops");
     skip();
@@ -332,7 +356,7 @@ describe("20-day campaign", () => {
     skip();
     spend(repairCity, "d12 repair");
     skip();
-    choose("day13-discount");
+    choose(1);
     spend(repairCity, "d13 repair");
     skip();
     spend(repairCity, "d14 repair");
@@ -341,7 +365,7 @@ describe("20-day campaign", () => {
     skip();
     spend(upgradeWall, "d16 wall");
     skip();
-    choose("day17-pay");
+    choose(0);
     spend(upgradeWall, "d17 wall");
     skip();
     spend(upgradeTroops, "d18 troops");

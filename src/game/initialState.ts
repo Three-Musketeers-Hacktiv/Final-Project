@@ -1,14 +1,16 @@
 import { gameConfig } from "./config";
 import { incomeAmountForDay } from "./calendar";
 import { emptyEffects } from "./effects";
+import { pickEventPlan } from "./eventPlan";
 import type { GameState } from "./types";
 
 export function createInitialState(options?: { runId?: string }): GameState {
   const day = gameConfig.startingDay;
+  const runId = options?.runId ?? "run-1";
   const shell: GameState = {
     version: 3,
     revision: 0,
-    runId: options?.runId ?? "run-1",
+    runId,
     day,
     phase: "preparation",
     gold: gameConfig.startingGold,
@@ -20,6 +22,7 @@ export function createInitialState(options?: { runId?: string }): GameState {
     actionUsedToday: false,
     incomeGrantedDays: [],
     completedEventIds: [],
+    eventPlan: pickEventPlan(runId),
     activeEvent: null,
     effects: emptyEffects(),
     wavesCleared: 0,
