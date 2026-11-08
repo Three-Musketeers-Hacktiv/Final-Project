@@ -1,4 +1,4 @@
-import type { UpcomingWave } from "@/app/play/mockData";
+import type { UpcomingWave } from "@/app/(game)/play/mockData";
 import Icon from "./Icon";
 import Panel from "./Panel";
 import SpritePlaceholder from "./SpritePlaceholder";

@@ -1,0 +1,29 @@
+"use client";
+
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { apiRequest } from "@/lib/api";
+import GameButton from "./GameButton";
+
+/** Ends the session (the save stays on the server) and goes back to the login screen. */
+export default function LogoutButton() {
+  const router = useRouter();
+  const [pending, setPending] = useState(false);
+
+  async function logOut() {
+    setPending(true);
+    try {
+      await apiRequest<{ loggedOut: true }>("/api/auth/logout", { method: "POST" });
+    } catch {
+      // Logout is idempotent on the server; leave the menu either way.
+    }
+    router.replace("/login");
+    router.refresh();
+  }
+
+  return (
+    <GameButton onClick={logOut} disabled={pending}>
+      {pending ? "Logging out…" : "Log Out"}
+    </GameButton>
+  );
+}

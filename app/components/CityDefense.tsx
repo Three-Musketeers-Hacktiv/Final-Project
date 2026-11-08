@@ -38,7 +38,7 @@ export default function CityDefense({ cityLevel, wallLevel, troopLevel }: CityDe
   return (
     <div className="flex items-end" style={{ gap: units(16) }}>
       <div className="flex items-end">
-        <Sprite src={tower} alt={`Wall tower, level ${wallLevel}`} />
+        <Sprite src={tower} alt={`Wall tower, level ${wallLevel}`} flip />
 
         <div className="relative flex items-end" style={{ width: units(city.width) }}>
           <Image
@@ -57,7 +57,7 @@ export default function CityDefense({ cityLevel, wallLevel, troopLevel }: CityDe
           <Sprite src={city} alt={`City, level ${cityLevel}`} />
         </div>
 
-        <Sprite src={tower} alt="" flip />
+        <Sprite src={tower} alt="" />
       </div>
 
       <div className="flex items-end" style={{ gap: units(8) }}>

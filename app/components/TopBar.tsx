@@ -1,11 +1,13 @@
 import ControlButton from "./ControlButton";
+import MusicToggle from "./MusicToggle";
 import SpritePlaceholder from "./SpritePlaceholder";
 import ThemeToggle from "./ThemeToggle";
 
 type TopBarProps = {
   day: number;
   lastDay: number;
-  daysUntilInvasion: number;
+  /** null once no wave is left. */
+  daysUntilInvasion: number | null;
 };
 
 const SPEEDS = ["1×", "2×", "4×", "8×", "16×"];
@@ -26,7 +28,13 @@ export default function TopBar({ day, lastDay, daysUntilInvasion }: TopBarProps)
             DAY <span className="text-3xl font-bold">{String(day).padStart(2, "0")}</span>
             <span className="text-muted"> / {lastDay}</span>
           </p>
-          <p className="text-muted">Next invasion in {daysUntilInvasion} days</p>
+          {daysUntilInvasion !== null && (
+            <p className={daysUntilInvasion === 0 ? "font-semibold text-crimson day:text-red-700" : "text-muted"}>
+              {daysUntilInvasion === 0
+                ? "Invasion today!"
+                : `Next invasion in ${daysUntilInvasion} ${daysUntilInvasion === 1 ? "day" : "days"}`}
+            </p>
+          )}
         </div>
         <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-track">
           <div className="h-full bg-crimson" style={{ width: `${progress}%` }} />
@@ -48,7 +56,10 @@ export default function TopBar({ day, lastDay, daysUntilInvasion }: TopBarProps)
           <div className="overflow-hidden rounded-sm border-2 border-frame">
             <ThemeToggle />
           </div>
-          {["Music", "SFX", "⚙"].map((label) => (
+          <div className="overflow-hidden rounded-sm border-2 border-frame">
+            <MusicToggle />
+          </div>
+          {["SFX", "⚙"].map((label) => (
             <div key={label} className="overflow-hidden rounded-sm border-2 border-frame">
               <ControlButton>{label}</ControlButton>
             </div>
