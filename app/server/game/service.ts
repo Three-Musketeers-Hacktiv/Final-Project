@@ -7,6 +7,10 @@ import { hashPayload } from "@/server/game/hash";
 import { assertActionIdempotency } from "@/server/game/idempotency";
 import { assertLoadableRun } from "@/server/game/load";
 import {
+  toEventDay,
+  toPersistedNarrativeSource,
+} from "@/server/game/persisted-values";
+import {
   commitGameAction,
   createReportDocument,
   createRunTransaction,
@@ -145,13 +149,15 @@ export async function submitGameAction(
     nextState = decorateActiveEvent(result.state, narrativeResult);
     const eventDataId = new ObjectId();
     const narrative = narrativeResult.narrative;
+    const eventDay = toEventDay(result.state.activeEvent.day);
+    const narrativeSource = toPersistedNarrativeSource(narrativeResult.source);
     const eventData: EventDataDocument = {
       _id: eventDataId,
       gameRulesetId: currentRun.gameRulesetId,
       packageId: result.state.activeEvent.packageId,
-      day: result.state.activeEvent.day,
+      day: eventDay,
       narrative,
-      source: narrativeResult.source,
+      source: narrativeSource,
       ...(narrativeResult.provider ? { provider: narrativeResult.provider } : {}),
       ...(narrativeResult.model ? { model: narrativeResult.model } : {}),
       promptVersion: narrativeResult.promptVersion,
@@ -167,8 +173,8 @@ export async function submitGameAction(
         eventDataId,
         eventId: result.state.activeEvent.eventId,
         packageId: result.state.activeEvent.packageId,
-        day: result.state.activeEvent.day,
-        narrativeSnapshot: { ...narrative, source: narrativeResult.source },
+        day: eventDay,
+        narrativeSnapshot: { ...narrative, source: narrativeSource },
         chosenChoiceId: null,
         createdAt: now,
         resolvedAt: null,

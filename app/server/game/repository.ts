@@ -4,6 +4,7 @@ import type { UserDocument } from "@/server/auth/types";
 import { getDatabase, getMongoClient } from "@/server/db/mongodb";
 import { createGameState, getEngineRulesetMetadata } from "@/server/game-engine/adapter";
 import { createPropertyDocuments } from "@/server/game/properties";
+import { toBattleDay } from "@/server/game/persisted-values";
 import type {
   GameActionDocument,
   EventDataDocument,
@@ -266,7 +267,7 @@ export function createReportDocument(
     gameRunId: run._id,
     userId: run.userId,
     wave: result.wave,
-    day: result.day,
+    day: toBattleDay(result.day),
     actionId: action.actionId,
     gameActionId: action._id,
     sourceRevision: action.revisionAfter,

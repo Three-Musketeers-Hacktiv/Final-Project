@@ -10,7 +10,7 @@ type IndexDefinition = {
   };
 };
 
-const indexDefinitions: IndexDefinition[] = [
+export const databaseIndexDefinitions: IndexDefinition[] = [
   { collection: "users", keys: { username: 1 }, options: { name: "users_username_unique", unique: true } },
   { collection: "sessions", keys: { userId: 1 }, options: { name: "sessions_user_unique", unique: true } },
   { collection: "sessions", keys: { jti: 1 }, options: { name: "sessions_jti_unique", unique: true } },
@@ -34,14 +34,29 @@ const indexDefinitions: IndexDefinition[] = [
     options: { name: "actions_revision_unique", unique: true },
   },
   {
+    collection: "game_actions",
+    keys: { gameRunId: 1, createdAt: 1 },
+    options: { name: "actions_run_created" },
+  },
+  {
     collection: "game_properties",
     keys: { gameRunId: 1, revision: 1, statKey: 1 },
     options: { name: "properties_revision_stat_unique", unique: true },
   },
   {
+    collection: "game_properties",
+    keys: { gameActionId: 1 },
+    options: { name: "properties_action" },
+  },
+  {
     collection: "runs_event",
     keys: { gameRunId: 1, eventId: 1 },
     options: { name: "run_events_unique", unique: true },
+  },
+  {
+    collection: "runs_event",
+    keys: { gameRunId: 1, day: 1 },
+    options: { name: "run_events_day" },
   },
   {
     collection: "game_reports",
@@ -55,8 +70,8 @@ const indexDefinitions: IndexDefinition[] = [
   },
   {
     collection: "event_data",
-    keys: { gameRulesetId: 1, packageId: 1, day: 1 },
-    options: { name: "events_ruleset_package_day" },
+    keys: { gameRulesetId: 1, packageId: 1, day: 1, createdAt: -1 },
+    options: { name: "events_ruleset_package_day_created" },
   },
   {
     collection: "auth_rate_limits",
@@ -71,7 +86,7 @@ const indexDefinitions: IndexDefinition[] = [
 ];
 
 export async function ensureDatabaseIndexes(database: Db): Promise<void> {
-  for (const definition of indexDefinitions) {
+  for (const definition of databaseIndexDefinitions) {
     await database
       .collection(definition.collection)
       .createIndex(definition.keys, definition.options);

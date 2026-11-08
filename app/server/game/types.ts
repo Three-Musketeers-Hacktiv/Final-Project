@@ -1,6 +1,11 @@
 import type { ObjectId } from "mongodb";
 
 import type { GameState } from "@/server/game-engine/adapter";
+import type {
+  BattleDay,
+  EventDay,
+  PersistedNarrativeSource,
+} from "@/server/game/persisted-values";
 
 export type GameRulesetDocument = {
   _id: ObjectId;
@@ -74,7 +79,7 @@ export type GameReportDocument = {
   gameRunId: ObjectId;
   userId: ObjectId;
   wave: 1 | 2;
-  day: number;
+  day: BattleDay;
   actionId: string;
   gameActionId: ObjectId;
   sourceRevision: number;
@@ -96,13 +101,13 @@ export type EventDataDocument = {
   _id: ObjectId;
   gameRulesetId: ObjectId;
   packageId: string;
-  day: number;
+  day: EventDay;
   narrative: {
     title: string;
     description: string;
     choices: [{ id: string; label: string }, { id: string; label: string }];
   };
-  source: "ai" | "fallback";
+  source: PersistedNarrativeSource;
   provider?: string;
   model?: string;
   promptVersion: string;
@@ -117,8 +122,8 @@ export type RunEventDocument = {
   eventDataId: ObjectId;
   eventId: string;
   packageId: string;
-  day: number;
-  narrativeSnapshot: EventDataDocument["narrative"] & { source: "ai" | "fallback" };
+  day: EventDay;
+  narrativeSnapshot: EventDataDocument["narrative"] & { source: PersistedNarrativeSource };
   chosenChoiceId: string | null;
   createdAt: Date;
   resolvedAt: Date | null;
