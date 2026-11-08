@@ -106,10 +106,12 @@ export async function submitGameAction(
 ) {
   const runId = parseRunId(runIdValue);
   const payloadHash = hashPayload({ type: input.type, payload: input.payload });
+  const currentRun = await findRunForUser(runId, userId);
+  if (!currentRun) throw new ApiError(404, "RUN_NOT_FOUND", "Game run was not found");
+  if (currentRun.endedAt) throw new ApiError(409, "GAME_ENDED", "Game run has ended");
+
   const duplicate = await findAction(runId, input.actionId);
   if (duplicate) {
-    const currentRun = await findRunForUser(runId, userId);
-    if (!currentRun) throw new ApiError(404, "RUN_NOT_FOUND", "Game run was not found");
     const pointer = await findSavePointer(userId);
     if (!pointer) {
       throw new ApiError(409, "SAVE_POINTER_MISMATCH", "Game run is not the active save");
@@ -118,14 +120,11 @@ export async function submitGameAction(
     assertActionIdempotency(duplicate, payloadHash, currentRun.state.revision);
   }
 
-  const currentRun = await findRunForUser(runId, userId);
-  if (!currentRun) throw new ApiError(404, "RUN_NOT_FOUND", "Game run was not found");
   const pointer = await findSavePointer(userId);
   if (!pointer) {
     throw new ApiError(409, "SAVE_POINTER_MISMATCH", "Game run is not the active save");
   }
   await validateRun(currentRun, pointer);
-  if (currentRun.endedAt) throw new ApiError(409, "GAME_ENDED", "Game run has ended");
   if (currentRun.state.revision !== input.expectedRevision) {
     throw new ApiError(409, "STALE_REVISION", "Game state has changed; reload the current game", {
       currentRevision: currentRun.state.revision.toString(),

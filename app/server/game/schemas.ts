@@ -29,6 +29,7 @@ export const submitActionSchema = z.discriminatedUnion("type", [
     type: z.literal("chooseReward"),
     payload: z.object({ rewardId: z.string().min(1).max(100) }).strict(),
   }).strict(),
+  z.object({ ...baseAction, type: z.literal("surrender"), payload: emptyPayload }).strict(),
 ]);
 
 export type CreateRunInput = z.infer<typeof createRunSchema>;

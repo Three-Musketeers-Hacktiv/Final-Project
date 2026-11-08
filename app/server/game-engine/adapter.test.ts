@@ -68,4 +68,29 @@ describe("game engine adapter", () => {
       error: { code: "NO_ACTION_LEFT", message: "Daily economic action already used" },
     });
   });
+
+  it("delegates surrender and preserves the engine result", () => {
+    const state = createGameState("run-surrender");
+    const result = applyGameAction(state, { type: "surrender", payload: {} });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.state).toEqual({
+      ...state,
+      phase: "gameOver",
+      revision: state.revision + 1,
+    });
+  });
+
+  it("passes GAME_ENDED through when surrender is repeated", () => {
+    const state = createGameState("run-surrender-ended");
+    const first = applyGameAction(state, { type: "surrender", payload: {} });
+    expect(first.ok).toBe(true);
+    if (!first.ok) return;
+
+    expect(applyGameAction(first.state, { type: "surrender", payload: {} })).toEqual({
+      ok: false,
+      error: { code: "GAME_ENDED", message: "Game has ended" },
+    });
+  });
 });

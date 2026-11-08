@@ -10,6 +10,7 @@ import {
   getEffectiveStats,
   getWavePreview,
   repairCity,
+  surrender,
   startBattle,
   upgradeCity,
   upgradeTroops,
@@ -106,7 +107,8 @@ export type EngineGameAction =
   | { type: "chooseEventOption"; payload: { choiceId: string } }
   | { type: "startBattle"; payload: Record<string, never> }
   | { type: "continueFromReport"; payload: Record<string, never> }
-  | { type: "chooseReward"; payload: { rewardId: string } };
+  | { type: "chooseReward"; payload: { rewardId: string } }
+  | { type: "surrender"; payload: Record<string, never> };
 
 export function applyGameAction(state: GameState, action: EngineGameAction): ActionResult {
   assertSupportedState(state);
@@ -121,6 +123,7 @@ export function applyGameAction(state: GameState, action: EngineGameAction): Act
     case "startBattle": return startBattle(state);
     case "continueFromReport": return continueFromReport(state);
     case "chooseReward": return chooseReward(state, action.payload.rewardId);
+    case "surrender": return surrender(state);
   }
 }
 

@@ -39,6 +39,7 @@ export type GameActionType =
   | "startBattle"
   | "continueFromReport"
   | "chooseReward"
+  | "surrender"
   | "attachActiveEvent";
 
 export type GameActionDocument = {

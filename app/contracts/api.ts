@@ -80,7 +80,8 @@ export type SubmitActionRequest =
   | BaseAction<"chooseEventOption", { choiceId: string }>
   | BaseAction<"startBattle", EmptyPayload>
   | BaseAction<"continueFromReport", EmptyPayload>
-  | BaseAction<"chooseReward", { rewardId: string }>;
+  | BaseAction<"chooseReward", { rewardId: string }>
+  | BaseAction<"surrender", EmptyPayload>;
 
 export type RunResponse = { runId: string; game: GameView };
 export type CreateRunResponse = RunResponse & { replayed: boolean };
