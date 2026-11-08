@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import type { AuthResponse, RunResponse } from "@/contracts/api";
 import GameButton from "@/components/GameButton";
@@ -41,11 +40,24 @@ async function loadOrNull<T>(path: string, expected: string): Promise<T | null> 
   }
 }
 
-/** Main menu after login. "Continue" only shows when the player has an active save. */
+/**
+ * Home screen. Logged out (no session, or an expired one): a Play button that leads to login, which
+ * comes back here. Logged in: the main menu, where "Continue" only shows with an active save.
+ */
 async function Menu() {
-  // proxy.ts only checks that a cookie exists; an expired or revoked session lands here as 401.
   const me = await loadOrNull<AuthResponse>("/api/auth/me", "UNAUTHENTICATED");
-  if (!me) redirect("/login");
+  if (!me) {
+    return (
+      <Panel title="Welcome, Lord">
+        <div className="flex flex-col gap-3">
+          <p className="text-muted">Defend your city for 20 days against waves of monsters.</p>
+          <GameButton href="/login" variant="primary">
+            Play
+          </GameButton>
+        </div>
+      </Panel>
+    );
+  }
 
   const save = me.user.hasActiveSave ? await loadOrNull<RunResponse>("/api/runs/current", "NO_ACTIVE_SAVE") : null;
   const state = save?.game.state;

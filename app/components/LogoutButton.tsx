@@ -5,7 +5,7 @@ import { useState } from "react";
 import { apiRequest } from "@/lib/api";
 import GameButton from "./GameButton";
 
-/** Ends the session (the save stays on the server) and goes back to the login screen. */
+/** Ends the session (the save stays on the server) and goes back to the home screen. */
 export default function LogoutButton() {
   const router = useRouter();
   const [pending, setPending] = useState(false);
@@ -17,7 +17,7 @@ export default function LogoutButton() {
     } catch {
       // Logout is idempotent on the server; leave the menu either way.
     }
-    router.replace("/login");
+    router.replace("/");
     router.refresh();
   }
 
