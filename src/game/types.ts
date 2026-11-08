@@ -53,6 +53,13 @@ export type EventPackage = {
   choices: [EventChoice, EventChoice];
 };
 
+/** One trusted package chosen for a scheduled event day in this run. */
+export type EventPlanEntry = {
+  day: number;
+  packageId: string;
+  eventId: string;
+};
+
 export type ActiveEvent = {
   eventId: string;
   packageId: string;
@@ -122,6 +129,8 @@ export type GameState = {
   actionUsedToday: boolean;
   incomeGrantedDays: number[];
   completedEventIds: string[];
+  /** Trusted packages selected for this run (one per scheduled event day). */
+  eventPlan: EventPlanEntry[];
   activeEvent: ActiveEvent | null;
   effects: ActiveEffects;
   wavesCleared: number;

@@ -1,4 +1,5 @@
-import { eventPackageForDay, gameConfig } from "./config";
+import { gameConfig } from "./config";
+import { resolveEventPackage } from "./eventPlan";
 import type { GameState } from "./types";
 
 export function isPreparationDay(day: number): boolean {
@@ -16,7 +17,7 @@ export function incomeAmountForDay(state: GameState, day: number): number {
 
 /** Scheduled event for today is not finished, or an active event is still open. */
 export function hasUnresolvedEvent(state: GameState): boolean {
-  const scheduled = eventPackageForDay(state.day);
+  const scheduled = resolveEventPackage(state.day, state.eventPlan);
   if (scheduled && !state.completedEventIds.includes(scheduled.eventId)) return true;
   if (state.activeEvent && !state.completedEventIds.includes(state.activeEvent.eventId)) return true;
   return false;
