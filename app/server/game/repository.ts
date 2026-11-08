@@ -87,6 +87,7 @@ export async function createRunTransaction(
     startRequestId,
     startRequestPayloadHash: payloadHash,
     state,
+    timeline: [],
     createdAt: now,
     updatedAt: now,
     endedAt: null,

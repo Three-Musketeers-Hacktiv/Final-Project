@@ -7,6 +7,7 @@ export function toGameView(run: GameRunDocument, report: GameReportDocument | nu
     stats: readEffectiveStats(run.state),
     wavePreview: readWavePreview(run.state),
     eventNarrative: run.state.activeEvent,
+    timeline: run.timeline ?? [],
     report: report
       ? {
           id: report._id.toHexString(),

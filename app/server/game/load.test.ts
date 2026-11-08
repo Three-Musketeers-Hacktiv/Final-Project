@@ -24,6 +24,7 @@ function fixture() {
     startRequestId: crypto.randomUUID(),
     startRequestPayloadHash: "hash",
     state: createGameState(runId.toHexString()),
+    timeline: [],
     createdAt: now,
     updatedAt: now,
     endedAt: null,

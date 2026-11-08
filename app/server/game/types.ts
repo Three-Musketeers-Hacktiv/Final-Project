@@ -1,5 +1,6 @@
 import type { ObjectId } from "mongodb";
 
+import type { TimelineEntry } from "@/contracts/api";
 import type { GameState } from "@/server/game-engine/adapter";
 import type {
   BattleDay,
@@ -24,6 +25,7 @@ export type GameRunDocument = {
   startRequestId: string;
   startRequestPayloadHash: string;
   state: GameState;
+  timeline: TimelineEntry[];
   createdAt: Date;
   updatedAt: Date;
   endedAt: Date | null;
