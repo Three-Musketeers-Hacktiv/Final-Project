@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 
-import { applyGameAction, createGameState, getEngineCompatibility, getEngineRulesetMetadata } from "./adapter";
+import {
+  applyGameAction,
+  assertPatchedGameState,
+  createGameState,
+  getEngineCompatibility,
+  getEngineRulesetMetadata,
+} from "./adapter";
 
 describe("game engine adapter", () => {
   it("reports the committed engine compatibility", () => {
@@ -13,9 +19,30 @@ describe("game engine adapter", () => {
 
   it("fingerprints the engine-owned ruleset", () => {
     const metadata = getEngineRulesetMetadata();
-    expect(metadata.rulesetId).toBe("prototype-v3");
+    expect(metadata.rulesetId).toBe("prototype-v3-event-plan-v1");
     expect(metadata.stateVersion).toBe(3);
     expect(metadata.configFingerprint).toMatch(/^[a-f\d]{64}$/);
+  });
+
+  it("rejects a version 3 save without the deterministic event plan", () => {
+    const state = createGameState("run-legacy");
+    const legacy = { ...state, eventPlan: undefined };
+
+    expect(() => assertPatchedGameState(legacy as unknown as typeof state, state.runId)).toThrow(
+      "eventPlan",
+    );
+  });
+
+  it("rejects an event plan copied from another run", () => {
+    const state = createGameState("run-one");
+    let other = createGameState("run-two");
+    for (let index = 3; JSON.stringify(other.eventPlan) === JSON.stringify(state.eventPlan); index += 1) {
+      other = createGameState(`run-${index}`);
+    }
+
+    expect(() => assertPatchedGameState({ ...state, eventPlan: other.eventPlan }, state.runId)).toThrow(
+      "eventPlan",
+    );
   });
 
   it("delegates an upgrade without recalculating its result", () => {

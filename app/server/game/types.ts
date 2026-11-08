@@ -2,8 +2,6 @@ import type { ObjectId } from "mongodb";
 
 import type { GameState } from "@/server/game-engine/adapter";
 
-export const RULESET_ID = "prototype-v3";
-
 export type GameRulesetDocument = {
   _id: ObjectId;
   rulesetId: string;

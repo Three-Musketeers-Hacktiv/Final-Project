@@ -12,7 +12,6 @@ import type {
   GameRunDocument,
   RunEventDocument,
 } from "@/server/game/types";
-import { RULESET_ID } from "@/server/game/types";
 import { ApiError } from "@/server/http/api-error";
 
 async function ensureRuleset(): Promise<GameRulesetDocument> {
@@ -20,11 +19,24 @@ async function ensureRuleset(): Promise<GameRulesetDocument> {
   const collection = database.collection<GameRulesetDocument>("game_rulesets");
   const now = new Date();
   const metadata = getEngineRulesetMetadata();
+  const existing = await collection.findOne({ rulesetId: metadata.rulesetId });
+  if (
+    existing &&
+    (
+      existing.engineVersion !== metadata.engineVersion ||
+      existing.stateVersion !== metadata.stateVersion ||
+      existing.configFingerprint !== metadata.configFingerprint
+    )
+  ) {
+    throw new ApiError(409, "RUN_INTEGRITY_ERROR", "Ruleset metadata does not match the engine");
+  }
+
   await collection.updateOne(
-    { rulesetId: RULESET_ID },
+    { rulesetId: metadata.rulesetId },
     {
       $setOnInsert: {
         _id: new ObjectId(),
+        rulesetId: metadata.rulesetId,
         engineVersion: metadata.engineVersion,
         stateVersion: metadata.stateVersion,
         configFingerprint: metadata.configFingerprint,
@@ -34,8 +46,15 @@ async function ensureRuleset(): Promise<GameRulesetDocument> {
     },
     { upsert: true },
   );
-  const ruleset = await collection.findOne({ rulesetId: RULESET_ID });
+  const ruleset = await collection.findOne({ rulesetId: metadata.rulesetId });
   if (!ruleset) throw new Error("Ruleset metadata could not be created");
+  if (
+    ruleset.engineVersion !== metadata.engineVersion ||
+    ruleset.stateVersion !== metadata.stateVersion ||
+    ruleset.configFingerprint !== metadata.configFingerprint
+  ) {
+    throw new ApiError(409, "RUN_INTEGRITY_ERROR", "Ruleset metadata does not match the engine");
+  }
   return ruleset;
 }
 
@@ -110,11 +129,20 @@ export async function findRunForUser(runId: ObjectId, userId: ObjectId): Promise
   return database.collection<GameRunDocument>("game_runs").findOne({ _id: runId, userId });
 }
 
-export async function findCurrentRun(userId: ObjectId): Promise<GameRunDocument | null> {
+export async function findRulesetById(rulesetId: ObjectId): Promise<GameRulesetDocument | null> {
+  const database = await getDatabase();
+  return database.collection<GameRulesetDocument>("game_rulesets").findOne({ _id: rulesetId });
+}
+
+export async function findCurrentRun(userId: ObjectId): Promise<{
+  run: GameRunDocument | null;
+  pointer: NonNullable<UserDocument["saveGame"]>;
+} | null> {
   const database = await getDatabase();
   const user = await database.collection<UserDocument>("users").findOne({ _id: userId });
   if (!user?.saveGame) return null;
-  return findRunForUser(user.saveGame.gameRunId, userId);
+  const run = await findRunForUser(user.saveGame.gameRunId, userId);
+  return { run, pointer: user.saveGame };
 }
 
 export async function findAction(runId: ObjectId, actionId: string): Promise<GameActionDocument | null> {
