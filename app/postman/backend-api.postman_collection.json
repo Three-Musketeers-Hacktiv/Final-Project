@@ -71,7 +71,8 @@
           "exec": [
             "pm.test('run created', () => pm.expect(pm.response.code).to.eql(201));",
             "const body = pm.response.json();",
-            "if (body.ok) { pm.environment.set('runId', body.data.runId); pm.environment.set('revision', body.data.game.state.revision); }"
+            "if (body.ok) { pm.environment.set('runId', body.data.runId); pm.environment.set('revision', body.data.game.state.revision); }",
+            "pm.test('new run has empty timeline', () => pm.expect(body.data.game.timeline).to.eql([]));"
           ]
         }
       }]
@@ -91,7 +92,8 @@
           "exec": [
             "pm.test('action applied', () => pm.expect(pm.response.code).to.eql(200));",
             "const body = pm.response.json();",
-            "if (body.ok) pm.environment.set('revision', body.data.game.state.revision);"
+            "if (body.ok) pm.environment.set('revision', body.data.game.state.revision);",
+            "pm.test('action returns persisted timeline', () => pm.expect(body.data.game.timeline).to.be.an('array').that.is.not.empty);"
           ]
         }
       }]
