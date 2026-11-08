@@ -13,6 +13,7 @@ import {
   upgradeCity,
   upgradeTroops,
   upgradeWall,
+  surrender,
   type ActionResult,
   type GameState,
 } from "./index";
@@ -386,5 +387,30 @@ describe("20-day campaign", () => {
     expect(state.cityLevel).toBe(3);
     expect(upgradeCity(state).ok).toBe(false);
     expect(endPreparationDay(state).ok).toBe(false);
+  });
+});
+
+describe("surrender", () => {
+  it("ends an active run as gameOver without changing other fields", () => {
+    const before = createInitialState({ runId: "run-surrender" });
+    const ended = must(surrender(before));
+    expect(ended.phase).toBe("gameOver");
+    expect(ended.revision).toBe(before.revision + 1);
+    expect(ended.gold).toBe(before.gold);
+    expect(ended.cityHp).toBe(before.cityHp);
+    expect(ended.day).toBe(before.day);
+    expect(ended.actionUsedToday).toBe(before.actionUsedToday);
+
+    const again = surrender(ended);
+    expect(again.ok).toBe(false);
+    if (!again.ok) expect(again.error.code).toBe("GAME_ENDED");
+    expect(upgradeTroops(ended).ok).toBe(false);
+  });
+
+  it("rejects surrender after victory", () => {
+    const victory: GameState = { ...createInitialState(), phase: "victory" };
+    const result = surrender(victory);
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error.code).toBe("GAME_ENDED");
   });
 });

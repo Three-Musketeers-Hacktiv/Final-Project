@@ -110,3 +110,8 @@ export function continueFromReport(state: GameState): ActionResult {
     revision: state.revision + 1,
   });
 }
+
+export function surrender(state: GameState): ActionResult {
+  if (isEnded(state)) return fail("GAME_ENDED", "Game has ended");
+  return ok({ ...state, phase: "gameOver", revision: state.revision + 1 });
+}
