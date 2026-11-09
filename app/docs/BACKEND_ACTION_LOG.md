@@ -921,7 +921,7 @@ Implementasi backend:
 - Mengubah immutable ruleset menjadi `campaign-v4-100-day-v2` agar config fingerprint terbaru tidak bertabrakan dengan run v1.
 - Mengganti strict consequence package equality dengan `isTrustedConsequencePackage` dan menambah regression untuk seed `late-3` serta package asing.
 - Menyesuaikan timeline wall upgrade dengan bonus defense terbaru (`2 → 5`).
-- Memvalidasi ulang narasi tersimpan, menjaga effective gold cost engine, dan memakai trusted-label policy untuk menolak nominal mata uang pada label AI.
+- Memvalidasi ulang narasi tersimpan, menjaga effective gold cost engine, dan memakai trusted-label policy untuk menolak istilah mata uang pada label AI.
 - Menambahkan reuse snapshot `runs_event`; setelah Gemini tidak tersedia/gagal, backend mencoba katalog `event_data` AI valid sebelum fallback lokal.
 - Menambahkan recovery `ensureLocalEvent` pada load/action boundary. Recovery dilipat ke public action tanpa revision tambahan; same-day successor event dapat dipersistenkan dalam transaksi yang sama.
 - Memperbarui kontrak API, AI runtime, schema database, test plan, implementation plan, panduan frontend/Postman, dan dokumen integrasi v4.
@@ -945,4 +945,35 @@ Scope dan operasional:
 - Tidak ada perubahan pada root `src/**`, root `docs/**`, atau file frontend.
 - `.env` tidak diubah. Campaign memakai override proses `CAMPAIGN_ORIGIN` yang sama dengan `APP_ORIGIN`.
 - Server development yang dipakai smoke test sudah dihentikan.
+- Push tidak dilakukan.
+
+## 2026-11-09 — Sinkronisasi patch currency-term narrative
+
+Integrasi remote:
+- Menjalankan `git fetch origin --prune` dan menemukan branch lokal 5 commit lebih maju serta remote 1 commit berbeda.
+- Merge `origin/development-backend-v3` dilakukan dengan strategi `ort` tanpa conflict. Commit rekan `7b555be` masuk utuh pada root `src/game/**` dan `docs/**`; file tersebut tidak diedit backend.
+- Patch tidak mengubah `GameState.version`, `gameConfig`, balancing, atau fingerprint ruleset. Ruleset backend tetap `campaign-v4-100-day-v2`.
+
+Penyesuaian backend:
+- Prompt Gemini sekarang melarang semua istilah mata uang yang didukung engine (`gold`, `coin(s)`, `treasury`, `gp`), bukan hanya nominal/harga.
+- Regression AI memakai label tanpa angka `Protect the treasury` dan membuktikan fallback ke label engine untuk narasi baru maupun tersimpan.
+- Regression consequence `late-3` memastikan successor tepat `c-raid-wave2`, serta menolak package asing, duplicate pending ID, dan reverse successor chain.
+- Dokumentasi AI, API, implementation plan, integration contract, dan test plan diselaraskan dengan aturan terbaru.
+
+Validasi sebelum closeout:
+- Root `npm.cmd run typecheck`: lulus.
+- Root `npm.cmd test`: lulus, 2 file / 56 test.
+- Backend `npm.cmd run typecheck:backend`: lulus.
+- Backend targeted test: lulus, 2 file / 17 test.
+- Backend full test: lulus, 16 file / 61 test.
+- Backend lint: lulus.
+- Live campaign terbaru: lulus sampai `victory` hari 100 melalui 215 action, 21 event, dan 10 battle. Data development Atlas dipertahankan untuk audit.
+
+Commit backend:
+- `6bb5695 fix(events): reject currency terms in AI labels`
+
+Scope:
+- Implementasi backend hanya mengubah `app/**`.
+- Root engine/docs yang terlihat pada merge berasal dari commit rekan dan tidak dimodifikasi backend.
+- Server development untuk smoke test sudah dihentikan dan `.env` tidak diubah.
 - Push tidak dilakukan.

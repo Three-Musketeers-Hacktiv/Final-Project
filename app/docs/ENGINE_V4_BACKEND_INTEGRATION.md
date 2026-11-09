@@ -26,7 +26,7 @@ This document records the backend changes required by game-engine patch v4. Back
 
 - Trusted balancing now uses wall defense `+3`, city maximum HP `+35`, hard monster HP multiplier `1.20`, and hard monster attack multiplier `1.12`. Backend obtains these values and its fingerprint from engine config.
 - `activeEvent.choices[].goldCost` is already difficulty-scaled. It is the effective cost; backend and frontend must not scale it again.
-- AI labels may not state any currency amount. Backend supplies effective costs as prompt context, but labels are accepted only through the engine trusted-label policy.
+- AI choice labels may not mention supported currency terms (`gold`, `coin(s)`, `treasury`, `gp`), even without an amount. Backend supplies effective costs as prompt context, but labels are accepted only through the engine trusted-label policy. Descriptions remain narrative-only and are not scanned.
 - A consequence may move to a trusted successor package when its original window is occupied. Backend uses `isTrustedConsequencePackage`, not strict package equality.
 - Choosing an event can immediately activate another consequence on the same day. The response must decorate that new active event.
 - Narrative recovery order is: same run/event, configured Gemini generation, shared valid AI narrative for the ruleset/package/day after generation failure, then trusted local fallback.
@@ -58,6 +58,6 @@ The v4 ruleset uses a new immutable ruleset ID and config fingerprint. Existing 
 
 - Backend-focused typecheck is clean.
 - Backend unit/contract tests pass, including dynamic days, 2–4 choices, trusted successor consequences, stored narrative validation, and missing-event recovery.
-- Campaign runner reaches `victory` through 217 normal API actions, 22 events, 100 days, and ten battles against MongoDB Atlas.
-- Root engine typecheck and all 52 root tests pass; all 61 backend tests and backend typecheck pass; backend lint passes.
+- Latest campaign runner reaches `victory` through 215 normal API actions, 21 events, 100 days, and ten battles against MongoDB Atlas.
+- Root engine typecheck and all 56 root tests pass; all 61 backend tests and backend typecheck pass; backend lint passes.
 - Production build compiles, then fails only on existing frontend v3 assumptions: missing create-run difficulty and outdated reward config/kinds. These frontend-owned files were not changed.

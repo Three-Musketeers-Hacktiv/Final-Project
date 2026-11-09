@@ -62,7 +62,7 @@ The provider receives only:
 
 Prompt intent:
 
-> Provide the narrative and choices in English as a loyal city advisor recommending options to his lord. Preserve every supplied choice ID, do not create or change gameplay rules, choices, costs, or effects, and do not state any currency amount in a choice label.
+> Provide the narrative and choices in English as a loyal city advisor recommending options to his lord. Preserve every supplied choice ID, do not create or change gameplay rules, choices, costs, or effects, and do not mention currency terms such as gold, coin(s), treasury, or gp in a choice label.
 
 Do not send username, password, cookie, JWT, IP address, MongoDB URI, full save state, secrets, or unsanitized player input.
 
@@ -90,7 +90,7 @@ Post-schema validation requires:
 - no numeric gameplay authority from provider output;
 - merge by choice ID, never by array position.
 
-Backend restores trusted costs/effects after validation. Labels pass through the engine trusted-label policy; a label containing a currency amount falls back to the engine label even if its choice ID is valid. Event and choice IDs are dynamic and come from the selected engine package.
+Backend restores trusted costs/effects after validation. Labels pass through the engine trusted-label policy; any supported currency term (`gold`, `coin`/`coins`, `treasury`, or `gp`) makes the label fall back to the engine label even without a numeric amount. Descriptions are not scanned because they have no gameplay authority.
 
 ## 6. On-demand flow
 
@@ -139,7 +139,7 @@ Final values are verified in Vercel Preview and remain configurable through the 
 - Missing, duplicate, invented, or dynamic-ID mismatch falls back.
 - Missing key, timeout, network error, refusal, and invalid schema fall back.
 - Provider failure reuses a valid shared AI catalog entry before local fallback.
-- Stored narrative IDs are revalidated and currency-bearing labels fall back to trusted engine labels.
+- Stored narrative IDs are revalidated and labels mentioning supported currency terms fall back to trusted engine labels.
 - Same-day successor events and missing-active-event recovery do not duplicate effects or revision increments.
 - Fallback and AI responses expose the same API shape.
 - On-demand generation occurs once for the successfully committed event transition.

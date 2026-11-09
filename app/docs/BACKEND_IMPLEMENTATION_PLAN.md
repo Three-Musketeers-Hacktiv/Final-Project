@@ -469,7 +469,7 @@ Ketika action engine menghasilkan event aktif, backend boleh melakukan dekorasi 
 
 Implementasi membekukan narasi per `runId + eventId`. Backend memakai snapshot run yang sudah ada lebih dahulu. Jika Gemini tersedia, output valid dipakai; bila provider tidak tersedia/gagal, backend mencari narasi AI valid untuk ruleset/package/day yang sama sebelum fallback lokal. Semua teks tersimpan divalidasi ulang dan didekorasikan melalui gameplay fields tepercaya dari engine.
 
-`activeEvent.choices[].goldCost` sudah merupakan biaya efektif setelah difficulty scaling. Backend tidak melakukan scaling ulang. Label AI yang menyebut nominal mata uang diganti dengan label engine oleh trusted-label policy.
+`activeEvent.choices[].goldCost` sudah merupakan biaya efektif setelah difficulty scaling. Backend tidak melakukan scaling ulang. Label AI yang menyebut istilah mata uang (`gold`, `coin(s)`, `treasury`, `gp`) diganti dengan label engine oleh trusted-label policy, termasuk ketika tidak ada angka.
 
 Consequence dapat memakai successor package yang disetujui engine. Backend memakai `isTrustedConsequencePackage` dan tetap memverifikasi ID deterministik, origin event/choice, trigger day, duplikasi, serta active/pending identity.
 
@@ -834,7 +834,7 @@ Satu entri log minimal berisi tanggal/waktu Asia/Jakarta, tujuan, tindakan, file
 Tahap lanjutan setelah engine v4 awal:
 
 1. Gunakan ruleset immutable `campaign-v4-100-day-v2` karena fingerprint konfigurasi engine berubah.
-2. Perlakukan `activeEvent.choices[].goldCost` sebagai biaya efektif final dan larang label AI menyebut nominal mata uang.
+2. Perlakukan `activeEvent.choices[].goldCost` sebagai biaya efektif final dan larang label AI menyebut istilah mata uang apa pun yang didukung engine.
 3. Validasi consequence yang digeser melalui rantai package tepercaya dari engine, termasuk antrean event pada hari yang sama.
 4. Gunakan ulang narasi run yang tersimpan; jika Gemini gagal, cari katalog AI bersama sebelum fallback lokal.
 5. Jalankan campaign 100 hari dan seluruh pemeriksaan backend tanpa mengubah source engine atau frontend.
