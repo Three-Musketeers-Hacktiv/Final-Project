@@ -7,35 +7,19 @@ export type EventNarrativeOverlay = {
   source: ActiveEvent["source"];
 };
 
-const CURRENCY_WORD = "(?:gold|coins?|treasury|gp)";
-const DIGIT_THEN_CURRENCY = new RegExp(`\\d+\\s*[+:\\-]?\\s*${CURRENCY_WORD}\\b`, "i");
-const CURRENCY_THEN_DIGIT = new RegExp(`\\b${CURRENCY_WORD}\\b\\s*[+:\\-]?\\s*\\d+`, "i");
+const CURRENCY_TERM = /\b(?:gold|coins?|treasury|gp)\b/i;
 
-const WRITTEN_AMOUNTS = new Set([
-  "zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine",
-  "ten", "eleven", "twelve", "thirteen", "fourteen", "fifteen", "sixteen", "seventeen",
-  "eighteen", "nineteen", "twenty", "thirty", "forty", "fifty", "sixty", "seventy",
-  "eighty", "ninety", "hundred",
-]);
-
-/** True when an overlay label states a currency amount (any order, digits, or written number). */
+/**
+ * True when an overlay label mentions a supported currency term.
+ * Any mention falls back to the engine label; price stays on `goldCost`.
+ */
 export function labelStatesCurrencyAmount(label: string): boolean {
-  if (DIGIT_THEN_CURRENCY.test(label) || CURRENCY_THEN_DIGIT.test(label)) return true;
-  const tokens = label.toLowerCase().replace(/-/g, " ").split(/[^a-z]+/).filter(Boolean);
-  for (let index = 0; index < tokens.length; index += 1) {
-    if (!/^(gold|coin|coins|treasury|gp)$/.test(tokens[index]!)) continue;
-    const start = Math.max(0, index - 4);
-    const end = Math.min(tokens.length, index + 5);
-    for (let near = start; near < end; near += 1) {
-      if (near !== index && WRITTEN_AMOUNTS.has(tokens[near]!)) return true;
-    }
-  }
-  return false;
+  return CURRENCY_TERM.test(label);
 }
 
 /**
- * Overlay labels must not state a currency amount. The client shows `goldCost`.
- * `goldCost` is unused for matching: a matching number is still a price claim.
+ * Overlay labels must not mention a supported currency term. The client shows `goldCost`.
+ * `goldCost` is unused: a matching number is still not trusted inside the label.
  */
 export function choiceLabelRespectsGoldCost(label: string, _goldCost: number): boolean {
   return !labelStatesCurrencyAmount(label);

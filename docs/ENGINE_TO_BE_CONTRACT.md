@@ -18,6 +18,8 @@ import {
 
 A skip choice stores `consequence.packageId` as the **origin** package (example `c-raid-wave1`). If no prep day remains before that package’s target wave, `scheduleConsequence` walks `CONSEQUENCE_SUCCESSOR` and persists the **scheduled** package (example `c-raid-wave2` on run `late-3`).
 
+The validator **must** call `isTrustedConsequencePackage(originChoice.consequence.packageId, pending.packageId)`. Do **not** require `pending.packageId === originChoice.consequence.packageId`. Equality rejects a legal successor.
+
 `isTrustedConsequencePackage(origin, scheduled)` is true when `scheduled === origin` or `scheduled` is reached by walking `CONSEQUENCE_SUCCESSOR` forward, with a cycle guard. Reverse links and other families are false:
 
 ```ts
@@ -48,7 +50,7 @@ Do not replace this with “any known package id”. A known package that is not
 ## Narrative adapter
 
 - Ask the model for title, description, and labels only. Tell it not to put a currency amount in choice labels. The effective price is `activeEvent.choices[].goldCost`.
-- Merge with `decorateActiveEvent`. It keeps costs and effects and replaces a label when `labelStatesCurrencyAmount(label)` is true (`trustedChoiceLabel` falls back to the engine label).
+- Merge with `decorateActiveEvent`. `labelStatesCurrencyAmount` is true for any supported currency term (`gold`, `coin`/`coins`, `treasury`, `gp`), not only a parsed price. `trustedChoiceLabel` then keeps the engine label. That fallback is normal, not an error.
 - Do not scan description text. Do not regex-replace prices yourself. Do not write `goldCost` from the model.
 - Local engine labels may still contain the materialized `{goldCost}` number. That string is produced by `scaleChoicesForDifficulty`, not by the model.
 
@@ -68,12 +70,12 @@ Stored text is narrative only. Ignore any gold, HP, or effect numbers in the dat
 
 ## Integration test the backend should add
 
-Do not change the engine for this test. Suggested flow:
+Do not change the engine for this test. Reproduce run `late-3`:
 
-1. `createInitialState({ runId: "late-3" })`.
-2. On event days 6 and 8, `chooseEventOption` the free choice that has `consequence`.
-3. Assert a `pendingConsequences` entry whose `packageId` is not the origin `c-raid-wave1` and `isTrustedConsequencePackage("c-raid-wave1", entry.packageId)` is true.
-4. Persist the state blob, load it back, and run the adapter trust gate (`assertSupportedState` or the load path that calls it).
-5. Expect accept. The same gate must still reject a pending id whose package is `c-foreign` or whose id is duplicated.
+1. `createInitialState({ runId: "late-3" })`. Decade-1 event days are 6 and 8.
+2. On each of those days, `chooseEventOption` the free choice that has `consequence` (origin package `c-raid-wave1`).
+3. Assert one `pendingConsequences` entry has `packageId === "c-raid-wave2"` and `isTrustedConsequencePackage("c-raid-wave1", "c-raid-wave2")` is true. An equality check against `c-raid-wave1` must not be what accepts it.
+4. Persist the state blob, load it, and run the adapter trust gate (`assertSupportedState` or the load path). Expect success: action → persist → load.
+5. The same gate must still reject a pending package `c-foreign`, a reverse chain such as scheduled `c-raid-wave1` from origin `c-raid-wave2`, and a duplicated pending id.
 
 Until the adapter uses `isTrustedConsequencePackage`, step 4 fails on a valid engine save. That is an adapter bug, not an engine bug.
