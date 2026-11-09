@@ -56,7 +56,9 @@ type Success<T> = { ok: true; data: T };
 type Failure = { ok: false; error: { code: string; message: string } };
 type ApiResponse<T> = Success<T> | Failure;
 
-const baseUrl = (process.env.CAMPAIGN_BASE_URL ?? "http://localhost:3000").replace(/\/$/, "");
+const baseUrl = (
+  process.env.CAMPAIGN_BASE_URL ?? process.env.APP_ORIGIN ?? "http://localhost:3000"
+).replace(/\/$/, "");
 const origin = process.env.CAMPAIGN_ORIGIN ?? new URL(baseUrl).origin;
 const username = `campaign_v4_${Date.now().toString(36)}`;
 const password = `Campaign-${randomUUID()}`;

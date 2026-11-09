@@ -49,10 +49,10 @@ describe("game engine adapter", () => {
           expect(() => assertPatchedGameState(state, state.runId)).not.toThrow();
           return;
         }
-        const choice = !scheduled
+        const consequenceChoice: NonNullable<typeof state.activeEvent>["choices"][number] | undefined = !scheduled
           ? state.activeEvent.choices.find((candidate) => candidate.consequence)
           : undefined;
-        const selected = choice ?? state.activeEvent.choices.find(
+        const selected = consequenceChoice ?? state.activeEvent.choices.find(
           (candidate) => candidate.goldCost === 0 && !candidate.consequence,
         ) ?? state.activeEvent.choices.find((candidate) => candidate.goldCost === 0)!;
         const chosen = applyGameAction(state, {
@@ -62,7 +62,7 @@ describe("game engine adapter", () => {
         expect(chosen.ok).toBe(true);
         if (!chosen.ok) return;
         state = chosen.state;
-        scheduled ||= Boolean(choice?.consequence);
+        scheduled ||= Boolean(consequenceChoice?.consequence);
       } else {
         const advanced = applyGameAction(state, { type: "endPreparationDay", payload: {} });
         expect(advanced.ok).toBe(true);
