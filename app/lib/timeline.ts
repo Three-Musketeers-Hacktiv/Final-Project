@@ -107,6 +107,12 @@ export function describeAction(action: SubmitActionRequest, before: GameView, af
         text: goldChange(b.gold, a.gold).trim(),
       });
       break;
+    case "surrender":
+      entries.push({
+        category: "battle", tone: "loss", icon: "thisWave", highlight: "City surrendered.",
+        text: `The defense ended on day ${b.day}.`,
+      });
+      break;
     case "continueFromReport":
       break;
   }

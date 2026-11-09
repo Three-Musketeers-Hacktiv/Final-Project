@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useLayoutEffect, useState } from "react";
 import { apiRequest } from "@/lib/api";
 import GameButton from "./GameButton";
 
@@ -9,6 +9,8 @@ import GameButton from "./GameButton";
 export default function LogoutButton() {
   const router = useRouter();
   const [pending, setPending] = useState(false);
+  // The menu is kept when you leave it (cacheComponents): don't come back to "Logging out…".
+  useLayoutEffect(() => () => setPending(false), []);
 
   async function logOut() {
     setPending(true);

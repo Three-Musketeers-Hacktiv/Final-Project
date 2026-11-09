@@ -5,6 +5,7 @@ import type { RunResponse } from "@/contracts/api";
 import GameProvider from "@/components/GameProvider";
 import GameScreen from "@/components/GameScreen";
 import { ApiError } from "@/lib/api";
+import { isUnloadableSave } from "@/lib/errorMessages";
 import { serverApiRequest } from "@/lib/serverApi";
 
 export const metadata: Metadata = {
@@ -27,7 +28,8 @@ async function LoadedGame() {
   } catch (error) {
     // proxy.ts only checks the cookie exists; an expired session lands here as 401.
     if (error instanceof ApiError && error.code === "UNAUTHENTICATED") redirect("/login");
-    if (error instanceof ApiError && error.code === "NO_ACTIVE_SAVE") redirect("/");
+    // No save, or one the server can't load: the home screen explains it and offers a new game.
+    if (error instanceof ApiError && (error.code === "NO_ACTIVE_SAVE" || isUnloadableSave(error.code))) redirect("/");
     throw error;
   }
 

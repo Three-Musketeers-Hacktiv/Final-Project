@@ -25,6 +25,9 @@ const MESSAGES: Record<string, string> = {
   DUPLICATE_ACTION: "That action was already done.",
   STALE_REVISION: "The game changed in another tab, so it was reloaded.",
   UNSUPPORTED_STATE_VERSION: "This save is from an older version and can't be loaded.",
+  RUN_INTEGRITY_ERROR: "This save was made with an older version of the game and can't be continued.",
+  SAVE_POINTER_MISMATCH: "Your save couldn't be found. Start a new game to keep playing.",
+  ACTION_PAYLOAD_CONFLICT: "That action clashed with an earlier one. Reload the page and try again.",
 
   // Engine
   INVALID_PHASE: "You can't do that right now.",
@@ -41,6 +44,14 @@ const MESSAGES: Record<string, string> = {
   BATTLE_ALREADY_RESOLVED: "This battle is already over.",
   GAME_ENDED: "This game is over.",
 };
+
+// The server refuses to load the active save with these codes; the only way on is a new game.
+const UNLOADABLE_SAVE_CODES = new Set(["UNSUPPORTED_STATE_VERSION", "RUN_INTEGRITY_ERROR", "SAVE_POINTER_MISMATCH"]);
+
+/** True when `code` means the active save can't be loaded at all (not a temporary failure). */
+export function isUnloadableSave(code: string): boolean {
+  return UNLOADABLE_SAVE_CODES.has(code);
+}
 
 export function errorMessage(code: string): string {
   return MESSAGES[code] ?? MESSAGES.INTERNAL_ERROR;
