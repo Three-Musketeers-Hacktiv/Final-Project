@@ -34,10 +34,10 @@ const REWARDS: RewardOption[] = gameConfig.rewards.map((reward) => ({
 }));
 
 /** Opens the screen the current `state.phase` asks for. The player can't close it without answering. */
-export default function PhaseDialogs() {
+export default function PhaseDialogs({ hidden = false }: { hidden?: boolean }) {
   const { game, pending, act } = useGame();
   const { state, wavePreview, eventNarrative, report } = game;
-  const dialogId = DIALOG_FOR_PHASE[state.phase];
+  const dialogId = hidden ? undefined : DIALOG_FOR_PHASE[state.phase];
 
   useEffect(() => {
     const dialog = dialogId ? document.getElementById(dialogId) : null;
@@ -47,6 +47,7 @@ export default function PhaseDialogs() {
     };
   }, [dialogId]);
 
+  if (hidden) return null;
   switch (state.phase) {
     case "event":
       return (
