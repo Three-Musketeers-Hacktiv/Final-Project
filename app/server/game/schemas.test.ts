@@ -6,8 +6,16 @@ const actionId = "5a9d7be4-1c56-4bf4-99e0-12ca9e6efbb9";
 
 describe("game request schemas", () => {
   it("defaults replaceActiveSave to false", () => {
-    const input = createRunSchema.parse({ startRequestId: actionId });
+    const input = createRunSchema.parse({ startRequestId: actionId, difficulty: "normal" });
     expect(input.replaceActiveSave).toBe(false);
+    expect(input.difficulty).toBe("normal");
+  });
+
+  it("accepts only engine-supported difficulties", () => {
+    for (const difficulty of ["easy", "normal", "hard"] as const) {
+      expect(createRunSchema.parse({ startRequestId: actionId, difficulty }).difficulty).toBe(difficulty);
+    }
+    expect(() => createRunSchema.parse({ startRequestId: actionId, difficulty: "nightmare" })).toThrow();
   });
 
   it("accepts a trusted event choice command", () => {

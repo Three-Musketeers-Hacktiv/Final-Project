@@ -9,6 +9,7 @@ const baseAction = {
 export const createRunSchema = z.object({
   startRequestId: z.uuid(),
   replaceActiveSave: z.boolean().default(false),
+  difficulty: z.enum(["easy", "normal", "hard"]),
 }).strict();
 
 export const submitActionSchema = z.discriminatedUnion("type", [

@@ -7,12 +7,13 @@ import {
 } from "./persisted-values";
 
 describe("persisted game value guards", () => {
-  it("accepts only scheduled event and battle days", () => {
+  it("accepts v4 preparation event days and configured battle days", () => {
     expect(toEventDay(3)).toBe(3);
-    expect(toEventDay(17)).toBe(17);
+    expect(toEventDay(99)).toBe(99);
     expect(toBattleDay(10)).toBe(10);
-    expect(toBattleDay(20)).toBe(20);
-    expect(() => toEventDay(4)).toThrow("event day");
+    expect(toBattleDay(100)).toBe(100);
+    expect(() => toEventDay(10)).toThrow("event day");
+    expect(() => toEventDay(101)).toThrow("event day");
     expect(() => toBattleDay(19)).toThrow("battle day");
   });
 

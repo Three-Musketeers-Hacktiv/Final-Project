@@ -52,7 +52,10 @@ async function validateRun(
 }
 
 export async function createRun(user: UserDocument, input: CreateRunInput) {
-  const payloadHash = hashPayload({ replaceActiveSave: input.replaceActiveSave });
+  const payloadHash = hashPayload({
+    replaceActiveSave: input.replaceActiveSave,
+    difficulty: input.difficulty,
+  });
   const existing = await findRunByStartRequest(user._id, input.startRequestId);
   if (existing) {
     if (existing.startRequestPayloadHash !== payloadHash) {
@@ -71,6 +74,7 @@ export async function createRun(user: UserDocument, input: CreateRunInput) {
     input.startRequestId,
     payloadHash,
     input.replaceActiveSave,
+    input.difficulty,
   );
   if (run.startRequestPayloadHash !== payloadHash) {
     throw new ApiError(409, "START_REQUEST_CONFLICT", "startRequestId was already used with another payload");

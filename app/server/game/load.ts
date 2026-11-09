@@ -32,7 +32,7 @@ export function assertLoadableRun(
   ruleset: GameRulesetDocument | null,
   pointer?: SaveGamePointer,
 ): void {
-  if (run.state.version !== 3) {
+  if (run.state.version !== 4) {
     throw new ApiError(
       409,
       "UNSUPPORTED_STATE_VERSION",

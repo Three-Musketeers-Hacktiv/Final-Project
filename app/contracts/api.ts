@@ -1,4 +1,12 @@
-import type { ActiveEvent, BattleResult, EffectiveStats, GameState } from "../../src/game";
+import type {
+  ActiveEvent,
+  BattleResult,
+  Difficulty,
+  EffectiveStats,
+  GameState,
+  RewardOption,
+  WaveRole,
+} from "../../src/game";
 
 export type ApiMeta = {
   requestId: string;
@@ -20,9 +28,10 @@ export type PublicUserView = {
 };
 
 export type WavePreviewView = {
-  wave: 1 | 2;
+  wave: number;
   day: number;
   name: string;
+  role: WaveRole;
   hp: number;
   attack: number;
   cityAttack: number;
@@ -32,7 +41,7 @@ export type WavePreviewView = {
 export type BattleReportView = {
   id: string;
   runId: string;
-  wave: 1 | 2;
+  wave: number;
   day: number;
   sourceRevision: number;
   battleResult: BattleResult;
@@ -67,6 +76,7 @@ export type GameView = {
   stats: EffectiveStats;
   wavePreview: WavePreviewView;
   eventNarrative: ActiveEvent | null;
+  rewardOptions: RewardOption[];
   report: BattleReportView | null;
   timeline: TimelineEntry[];
 };
@@ -85,6 +95,7 @@ export type AuthResponse = {
 export type CreateRunRequest = {
   startRequestId: string;
   replaceActiveSave: boolean;
+  difficulty: Difficulty;
 };
 
 type BaseAction<TType extends string, TPayload> = {

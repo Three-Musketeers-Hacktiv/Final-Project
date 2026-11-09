@@ -5,10 +5,14 @@ import {
   chooseReward,
   continueFromReport,
   createInitialState,
+  eventPackageById,
+  GAME_STATE_VERSION,
   endPreparationDay,
   gameConfig,
   getEffectiveStats,
   getWavePreview,
+  isDifficulty,
+  isPreparationDay,
   repairCity,
   surrender,
   startBattle,
@@ -16,11 +20,12 @@ import {
   upgradeTroops,
   upgradeWall,
   type ActionResult,
+  type Difficulty,
   type GameState,
 } from "../../../src/game";
 
-const SUPPORTED_STATE_VERSION = 3 as const;
-const RULESET_ID = "prototype-v3-event-plan-v1";
+const SUPPORTED_STATE_VERSION = GAME_STATE_VERSION;
+const RULESET_ID = "campaign-v4-100-day-v1";
 
 export type EngineCompatibility = {
   stateVersion: typeof SUPPORTED_STATE_VERSION;
@@ -39,24 +44,87 @@ export function assertPatchedGameState(state: GameState, expectedRunId: string):
   if (state.runId !== expectedRunId) {
     throw new Error("Game state runId does not match the persisted run");
   }
-
-  const trustedPlan = createInitialState({ runId: expectedRunId }).eventPlan;
-  if (!Array.isArray(state.eventPlan) || JSON.stringify(state.eventPlan) !== JSON.stringify(trustedPlan)) {
+  if (!isDifficulty(state.difficulty)) {
+    throw new Error("Game state difficulty is invalid");
+  }
+  if (!Array.isArray(state.eventPlan)) {
     throw new Error("Game state eventPlan is missing or incompatible with this engine revision");
   }
 
-  const plannedEventIds = new Set(trustedPlan.map((entry) => entry.eventId));
-  if (state.completedEventIds.some((eventId) => !plannedEventIds.has(eventId))) {
+  const trustedPlan = createInitialState({
+    runId: expectedRunId,
+    difficulty: state.difficulty,
+  }).eventPlan;
+  const trustedIdentities = new Set(
+    trustedPlan.map((entry) => `${entry.eventId}:${entry.packageId}`),
+  );
+  const actualIdentities = new Set(
+    state.eventPlan.map((entry) => `${entry.eventId}:${entry.packageId}`),
+  );
+  const eventDays = new Set(state.eventPlan.map((entry) => entry.day));
+  const invalidPlanEntry = state.eventPlan.some((entry) => {
+    const pkg = eventPackageById(entry.packageId);
+    return !pkg || pkg.eventId !== entry.eventId || pkg.decade !== Math.ceil(entry.day / 10) ||
+      !isPreparationDay(entry.day);
+  });
+  if (
+    state.eventPlan.length !== trustedPlan.length ||
+    actualIdentities.size !== trustedIdentities.size ||
+    eventDays.size !== state.eventPlan.length ||
+    invalidPlanEntry ||
+    [...actualIdentities].some((identity) => !trustedIdentities.has(identity))
+  ) {
+    throw new Error("Game state eventPlan is missing or incompatible with this engine revision");
+  }
+
+  const plannedEventIds = new Set(state.eventPlan.map((entry) => entry.eventId));
+  const isTrustedConsequenceId = (eventId: string): boolean => {
+    const [packageId, originEventId, originChoiceId, triggerDayText, ...extra] = eventId.split("::");
+    if (extra.length > 0 || !packageId || !originEventId || !originChoiceId || !triggerDayText) return false;
+    const triggerDay = Number(triggerDayText);
+    const consequencePackage = eventPackageById(packageId);
+    const originPackage = state.eventPlan
+      .map((entry) => eventPackageById(entry.packageId))
+      .find((pkg) => pkg?.eventId === originEventId);
+    const originChoice = originPackage?.choices.find((choice) => choice.id === originChoiceId);
+    return Boolean(
+      consequencePackage &&
+      originChoice?.consequence?.packageId === packageId &&
+      Number.isInteger(triggerDay) &&
+      isPreparationDay(triggerDay),
+    );
+  };
+  if (
+    new Set(state.completedEventIds).size !== state.completedEventIds.length ||
+    state.completedEventIds.some(
+      (eventId) => !plannedEventIds.has(eventId) && !isTrustedConsequenceId(eventId),
+    )
+  ) {
     throw new Error("Game state contains an event outside its trusted eventPlan");
   }
 
-  if (state.activeEvent) {
-    const entry = trustedPlan.find((candidate) => candidate.day === state.activeEvent?.day);
+  const pendingIds = new Set<string>();
+  for (const pending of state.pendingConsequences) {
     if (
-      !entry ||
-      entry.eventId !== state.activeEvent.eventId ||
-      entry.packageId !== state.activeEvent.packageId
+      pendingIds.has(pending.id) ||
+      pending.id !== `${pending.packageId}::${pending.originEventId}::${pending.originChoiceId}::${pending.triggerDay}` ||
+      !isTrustedConsequenceId(pending.id)
     ) {
+      throw new Error("Game state contains an invalid pending consequence");
+    }
+    pendingIds.add(pending.id);
+  }
+
+  if (state.activeEvent) {
+    const entry = state.eventPlan.find((candidate) => candidate.day === state.activeEvent?.day);
+    const pending = state.pendingConsequences.find((candidate) => candidate.id === state.activeEvent?.eventId);
+    const scheduledMatches = !state.activeEvent.isConsequence && entry &&
+      entry.eventId === state.activeEvent.eventId && entry.packageId === state.activeEvent.packageId;
+    const consequenceMatches = state.activeEvent.isConsequence && pending &&
+      pending.packageId === state.activeEvent.packageId && pending.triggerDay === state.activeEvent.day &&
+      pending.originEventId === state.activeEvent.originEventId &&
+      pending.originChoiceId === state.activeEvent.originChoiceId;
+    if (!scheduledMatches && !consequenceMatches) {
       throw new Error("Active event does not match the trusted eventPlan");
     }
   }
@@ -82,8 +150,8 @@ export function getEngineRulesetMetadata() {
   };
 }
 
-export function createGameState(runId: string): GameState {
-  const state = createInitialState({ runId });
+export function createGameState(runId: string, difficulty: Difficulty = "normal"): GameState {
+  const state = createInitialState({ runId, difficulty });
   assertPatchedGameState(state, runId);
   return state;
 }

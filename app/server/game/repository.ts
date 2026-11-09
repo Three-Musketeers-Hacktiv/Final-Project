@@ -14,6 +14,7 @@ import type {
   RunEventDocument,
 } from "@/server/game/types";
 import { ApiError } from "@/server/http/api-error";
+import type { Difficulty } from "../../../src/game";
 
 async function ensureRuleset(): Promise<GameRulesetDocument> {
   const database = await getDatabase();
@@ -72,6 +73,7 @@ export async function createRunTransaction(
   startRequestId: string,
   payloadHash: string,
   replaceActiveSave: boolean,
+  difficulty: Difficulty,
 ): Promise<GameRunDocument> {
   const ruleset = await ensureRuleset();
   const client = await getMongoClient();
@@ -79,7 +81,7 @@ export async function createRunTransaction(
   const mongoSession = client.startSession();
   const now = new Date();
   const runId = new ObjectId();
-  const state = createGameState(runId.toHexString());
+  const state = createGameState(runId.toHexString(), difficulty);
   const run: GameRunDocument = {
     _id: runId,
     userId: user._id,

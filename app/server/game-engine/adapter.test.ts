@@ -11,26 +11,31 @@ import {
 describe("game engine adapter", () => {
   it("reports the committed engine compatibility", () => {
     expect(getEngineCompatibility()).toEqual({
-      stateVersion: 3,
-      lastDay: 20,
-      battleDays: [10, 20],
+      stateVersion: 4,
+      lastDay: 100,
+      battleDays: [10, 20, 30, 40, 50, 60, 70, 80, 90, 100],
     });
   });
 
   it("fingerprints the engine-owned ruleset", () => {
     const metadata = getEngineRulesetMetadata();
-    expect(metadata.rulesetId).toBe("prototype-v3-event-plan-v1");
-    expect(metadata.stateVersion).toBe(3);
+    expect(metadata.rulesetId).toBe("campaign-v4-100-day-v1");
+    expect(metadata.stateVersion).toBe(4);
     expect(metadata.configFingerprint).toMatch(/^[a-f\d]{64}$/);
   });
 
-  it("rejects a version 3 save without the deterministic event plan", () => {
+  it("rejects a version 4 save without the deterministic event plan", () => {
     const state = createGameState("run-legacy");
     const legacy = { ...state, eventPlan: undefined };
 
     expect(() => assertPatchedGameState(legacy as unknown as typeof state, state.runId)).toThrow(
       "eventPlan",
     );
+  });
+
+  it("preserves the selected difficulty", () => {
+    expect(createGameState("run-easy", "easy").difficulty).toBe("easy");
+    expect(createGameState("run-hard", "hard").difficulty).toBe("hard");
   });
 
   it("rejects an event plan copied from another run", () => {
