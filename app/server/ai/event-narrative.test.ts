@@ -4,6 +4,7 @@ import { applyGameAction, createGameState } from "@/server/game-engine/adapter";
 import {
   decorateActiveEvent,
   generateEventNarrative,
+  restoreEventNarrative,
   type EventNarrativeGenerator,
 } from "./event-narrative";
 
@@ -16,12 +17,14 @@ beforeAll(() => {
 });
 
 function stateAtFirstEvent() {
-  const initial = createGameState("run-ai-test");
-  const dayTwo = applyGameAction(initial, { type: "endPreparationDay", payload: {} });
-  if (!dayTwo.ok) throw new Error("Could not advance to day two");
-  const dayThree = applyGameAction(dayTwo.state, { type: "endPreparationDay", payload: {} });
-  if (!dayThree.ok || !dayThree.state.activeEvent) throw new Error("Could not enter event day");
-  return dayThree.state;
+  let state = createGameState("run-ai-test");
+  while (!state.activeEvent && state.day < 10) {
+    const advanced = applyGameAction(state, { type: "endPreparationDay", payload: {} });
+    if (!advanced.ok) throw new Error("Could not enter event day");
+    state = advanced.state;
+  }
+  if (!state.activeEvent) throw new Error("Could not enter event day");
+  return state;
 }
 
 describe("event narrative runtime", () => {
@@ -35,10 +38,10 @@ describe("event narrative runtime", () => {
         return {
           title: "An Urgent Counsel",
           description: "My lord, the city awaits your decision.",
-          choices: [
-            { id: original.choices[1].id, label: "Choose the second counsel" },
-            { id: original.choices[0].id, label: "Choose the first counsel" },
-          ],
+          choices: [...original.choices].reverse().map((choice, index) => ({
+            id: choice.id,
+            label: `Trusted counsel ${index + 1}`,
+          })),
         };
       },
     };
@@ -51,7 +54,33 @@ describe("event narrative runtime", () => {
     expect(decorated.title).toBe("An Urgent Counsel");
     expect(decorated.choices[0].goldCost).toBe(original.choices[0].goldCost);
     expect(decorated.choices[0].effects).toEqual(original.choices[0].effects);
-    expect(decorated.choices[0].label).toBe("Choose the first counsel");
+    expect(decorated.choices).toHaveLength(original.choices.length);
+    expect(decorated.choices.every((choice) => choice.label.startsWith("Trusted counsel"))).toBe(true);
+  });
+
+  it("keeps the engine label when AI mentions a currency term", async () => {
+    const state = stateAtFirstEvent();
+    const original = state.activeEvent!;
+    const paid = original.choices.find((choice) => choice.goldCost > 0);
+    expect(paid).toBeTruthy();
+    const generator: EventNarrativeGenerator = {
+      provider: "test",
+      model: "test-model",
+      async generate() {
+        return {
+          title: original.title,
+          description: original.description,
+          choices: original.choices.map((choice) => ({
+            id: choice.id,
+            label: choice.id === paid!.id ? "Protect the treasury" : "Hold position",
+          })),
+        };
+      },
+    };
+    const narrative = await generateEventNarrative(original, generator);
+    const decorated = decorateActiveEvent(state, narrative).activeEvent!;
+    expect(decorated.choices.find((choice) => choice.id === paid!.id)!.label).toBe(paid!.label);
+    expect(decorated.choices.find((choice) => choice.id === paid!.id)!.goldCost).toBe(paid!.goldCost);
   });
 
   it("falls back when generated choice ids are untrusted", async () => {
@@ -64,10 +93,10 @@ describe("event narrative runtime", () => {
         return {
           title: "Invalid",
           description: "Invalid",
-          choices: [
-            { id: "invented-one", label: "Invalid" },
-            { id: "invented-two", label: "Invalid" },
-          ],
+          choices: event.choices.map((_, index) => ({
+            id: `invented-${index}`,
+            label: "Invalid",
+          })),
         };
       },
     };
@@ -81,5 +110,44 @@ describe("event narrative runtime", () => {
       event.choices.map((choice) => choice.id),
     );
     warning.mockRestore();
+  });
+
+  it("restores stored text through trusted ids and label decoration", () => {
+    const state = stateAtFirstEvent();
+    const event = state.activeEvent!;
+    const paid = event.choices.find((choice) => choice.goldCost > 0)!;
+    const restored = restoreEventNarrative(event, {
+      title: "Stored counsel",
+      description: "My lord, this advice was generated earlier.",
+      choices: event.choices.map((choice) => ({
+        id: choice.id,
+        label: choice.id === paid.id ? "Protect the treasury" : "Wait and observe",
+      })),
+    }, {
+      source: "ai",
+      provider: "gemini",
+      model: "stored-model",
+      promptVersion: "stored-v1",
+    });
+
+    const decorated = decorateActiveEvent(state, restored).activeEvent!;
+    expect(restored.source).toBe("ai");
+    expect(decorated.title).toBe("Stored counsel");
+    expect(decorated.choices.find((choice) => choice.id === paid.id)?.label).toBe(paid.label);
+    expect(decorated.choices.find((choice) => choice.id === paid.id)?.goldCost).toBe(paid.goldCost);
+  });
+
+  it("rejects a stored narrative with untrusted choice ids", () => {
+    const event = stateAtFirstEvent().activeEvent!;
+    expect(() => restoreEventNarrative(event, {
+      title: "Invalid stored counsel",
+      description: "Invalid",
+      choices: event.choices.map((_, index) => ({ id: `forged-${index}`, label: "Invalid" })),
+    }, {
+      source: "ai",
+      provider: "gemini",
+      model: null,
+      promptVersion: "stored-v1",
+    })).toThrow("untrusted choice ids");
   });
 });

@@ -1,16 +1,23 @@
-import { gameConfig } from "./config";
+import { GAME_STATE_VERSION, gameConfig } from "./config";
 import { incomeAmountForDay } from "./calendar";
+import { isDifficulty } from "./difficulty";
 import { emptyEffects } from "./effects";
 import { pickEventPlan } from "./eventPlan";
-import type { GameState } from "./types";
+import type { Difficulty, GameState } from "./types";
 
-export function createInitialState(options?: { runId?: string }): GameState {
+export function createInitialState(options?: {
+  runId?: string;
+  difficulty?: Difficulty;
+}): GameState {
   const day = gameConfig.startingDay;
   const runId = options?.runId ?? "run-1";
+  const difficulty =
+    options?.difficulty && isDifficulty(options.difficulty) ? options.difficulty : "normal";
   const shell: GameState = {
-    version: 3,
+    version: GAME_STATE_VERSION,
     revision: 0,
     runId,
+    difficulty,
     day,
     phase: "preparation",
     gold: gameConfig.startingGold,
@@ -23,11 +30,12 @@ export function createInitialState(options?: { runId?: string }): GameState {
     incomeGrantedDays: [],
     completedEventIds: [],
     eventPlan: pickEventPlan(runId),
+    pendingConsequences: [],
     activeEvent: null,
     effects: emptyEffects(),
     wavesCleared: 0,
     battleResult: null,
-    rewardChosenId: null,
+    rewardsChosenByWave: {},
   };
   return {
     ...shell,

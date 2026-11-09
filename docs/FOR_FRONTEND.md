@@ -1,45 +1,56 @@
-# Frontend — wire UI to Game Engine v3
+# Frontend — wire UI to Game Engine v4
 
-Baseline for this contract: engine after the patch from `development-game-engine` → current `src/game`.  
-See [Patch.md](../Patch.md) for the full delta and [DEV1_CONTRACT.md](./DEV1_CONTRACT.md) for state schema.
+Baseline: 100-day / 10-wave engine in `src/game`.  
+See [CAMPAIGN_100_DAY_CONTRACT.md](./CAMPAIGN_100_DAY_CONTRACT.md), [DEV1_CONTRACT.md](./DEV1_CONTRACT.md), [Patch.md](../Patch.md).
 
 ## Role
 
-- Render `GameState` from the **backend** (or local engine only in a dedicated harness).
+- Render `GameState` from the **backend** (or local engine in a harness).
 - Send gameplay actions; never recompute costs, damage, income, or rewards in the UI.
 - Map `error.code` → user-facing copy.
 
 ## Do not
 
-- Call removed APIs: `enterDay`, single-track `upgradeCity` (old ATK+DEF), `applyReward`.
-- Hardcode event/choice IDs from the old engine (`event-day-3`, `event-day-3-a`, `day3-pay`, …).
+- Call removed / internal APIs: `enterDay`, `enterCalendarDay`, old single-track ATK+DEF `upgradeCity`, `applyReward`.
+- Hardcode event days (`3/7/13/17`) or legacy choice/reward ids.
 - Trust AI numbers; only display narrative and submit choice **IDs** from `activeEvent`.
+- Assume `rewardChosenId` still exists — use `rewardsChosenByWave`.
+- Re-scale `activeEvent.choices[].goldCost` in the UI (engine already applied difficulty).
+- Assume at most one mandatory event per day.
+
+## New game
+
+- Collect `difficulty: "easy" | "normal" | "hard"` and send on create-run.
+- Show campaign as **100 days / 10 waves**.
 
 ## Display fields
 
 | State | UI |
 |---|---|
+| `difficulty` | City record / HUD |
 | `day`, `phase` | Calendar / screen router |
 | `gold`, `cityHp`, `cityMaxHp` | Resources |
-| `wallLevel`, `troopLevel`, `cityLevel` | Three upgrade tracks |
+| `wallLevel`, `troopLevel`, `cityLevel` | Three upgrade tracks (cap 18) |
 | `actionUsedToday` | Disable economic buttons when true |
-| `activeEvent` | Event modal (title, description, 2 choices) |
+| `activeEvent` | Event modal — **2–4** choices; badge if `isConsequence` |
+| `pendingConsequences` | Optional “upcoming fallout” debug |
 | `effects` | Defense-by-wave, discount %, prep income bonus |
 | `battleResult` | Report / replay log only (no re-sim) |
-| `eventPlan` | Optional debug (“which packages this run”) |
+| `rewardsChosenByWave` | Debug / history |
+| `eventPlan` | Optional debug (“which days this run”) |
 
 ## Phase → screen
 
 | `phase` | Controls |
 |---|---|
 | `preparation` | Upgrade wall / troops / city, repair, end day |
-| `event` | Two choices → `chooseEventOption` |
+| `event` | 2–4 choices → `chooseEventOption` |
 | `battleReady` | Start battle |
 | `battleReport` | Continue (play log locally) |
-| `reward` | Three rewards (wave 1 only) |
+| `reward` | Three rewards for **current** cleared wave (1–9) |
 | `gameOver` / `victory` | End screen; new game only |
 
-## Actions to POST (names must match BE router)
+## Actions to POST
 
 ```ts
 type ClientAction =
@@ -51,68 +62,31 @@ type ClientAction =
   | { type: "startBattle" }
   | { type: "continueFromReport" }
   | { type: "chooseEventOption"; choiceId: string }
-  | { type: "chooseReward"; rewardId: string };
+  | { type: "chooseReward"; rewardId: string }
+  | { type: "surrender" };
 ```
 
-Each click should send a unique `actionId` (UUID); retries reuse the same id. Prefer sending `expectedRevision` if BE supports stale detection.
+Prefer `actionId` + `expectedRevision` if BE supports them.
 
-Response shape:
+## Event / reward wiring
 
-```ts
-{ ok: true, state: GameState }
-// or
-{ ok: false, error: { code: string, message: string } }
-```
-
-On `ok: false`, keep previous UI state.
-
-## Event wiring
-
-1. When `phase === "event"`, read choices from `state.activeEvent.choices`.
-2. Button value = `choice.id` (e.g. `day3-scouts-pay`) — **from state**, not a static map by day.
-3. Optional AI labels may already be merged server-side; if FE merges, only overwrite `title` / `description` / `label` for matching ids.
-
-## Reward wiring
-
-Trusted ids: `reward-gold` | `reward-income` | `reward-discount`.  
-Kinds in state/config: `grantGold` | `prepIncomeBonus` | `upgradeDiscount` (not the old `gold` / `income_bonus` names).
-
-## Read-only selectors (optional client preview)
-
-If the FE bundle can import `src/game` for display only:
-
-```ts
-import {
-  getEffectiveStats,
-  getUpgradeCost,
-  getRepairCost,
-  getWavePreview,
-} from "../game"; // path per app layout
-```
-
-Mutations still go through the API. `getEffectiveStats` returns `wallCost`, `troopCost`, `cityCost` (no single `upgradeCost`).
+1. Read `activeEvent.choices` (length 2–4). Button value = `choice.id`.
+2. Show `choice.goldCost` as the gold that will be charged (`0` = free). Values are **effective** (difficulty-scaled); do not multiply again.
+3. Consequence events: same modal; optional copy that this is a continuation (`isConsequence`).
+4. After every successful `chooseEventOption`, re-read `phase` + `activeEvent`. If still `event`, keep/open the modal for the **next** mandatory event (same-day chain). Do not auto-advance the day.
+5. Rewards: ids like `w1-income`, `w2-gold`, … — **from current wave’s set**, never the old `reward-gold` trio alone.
+6. Optional selectors: `getEffectiveStats`, `getWavePreview`, `rewardsForWave`.
 
 ## Error codes → UI
 
-| Code | Hint |
-|---|---|
-| `INVALID_PHASE` | Wrong screen / disabled control |
-| `INVALID_TRANSITION` | Illegal calendar move |
-| `EVENT_REQUIRED` | Force event modal |
-| `NO_ACTION_LEFT` | Already acted today |
-| `INSUFFICIENT_GOLD` | Not enough gold |
-| `MAX_UPGRADE` | Track at cap |
-| `HP_FULL` | Repair useless |
-| `INVALID_CHOICE` | Stale choice id |
-| `EVENT_ALREADY_RESOLVED` | Close event UI |
-| `REWARD_ALREADY_CHOSEN` | Leave reward screen |
-| `BATTLE_INVALID` / `BATTLE_ALREADY_RESOLVED` | Battle gate |
-| `GAME_ENDED` | Lock gameplay |
+Same engine codes as [DEV1_CONTRACT.md](./DEV1_CONTRACT.md). Notable: `EVENT_REQUIRED` must force the event modal / refresh even if the UI thought the phase was `preparation`.
 
 ## Smoke checklist
 
-1. New game → day 1 gold includes income; three upgrade costs visible.  
-2. Day 3/7/13/17 → choice ids match `activeEvent` (vary by `runId`).  
-3. Wave 1 report → reward → day 11.  
-4. Refresh on `battleReport` does not change HP again.  
-5. Old single-upgrade control removed from product UI.
+1. New game with difficulty → day 1 income applied; costs reflect difficulty.  
+2. First event day comes from `eventPlan` (not hardcoded 3).  
+3. Skip choice can later open a consequence event.  
+4. Same-day chain: resolving one consequence can immediately open another `event` without ending the day.  
+5. Easy vs hard: paid event choices show different gold amounts for the same choice id.  
+6. Wave 1–9 → reward → next prep day; wave 10 → victory.  
+7. Refresh on `battleReport` does not change HP again.

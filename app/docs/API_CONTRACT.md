@@ -1,6 +1,6 @@
 # API Contract — Fantasy City Defense
 
-Status: **Implemented backend contract, including surrender and persistent timeline**
+Status: **Engine v4 backend contract**
 Versi kontrak: `1`  
 Base path: `/api`  
 Transport: HTTPS + JSON  
@@ -71,27 +71,19 @@ type EventNarrativeView = {
   title: string;
   description: string;
   source: "ai" | "fallback" | "mock" | "local";
-  choices: [
-    {
-      id: string;
-      label: string;
-      goldCost: number;
-      effects: Effect[];
-    },
-    {
-      id: string;
-      label: string;
-      goldCost: number;
-      effects: Effect[];
-    },
-  ];
+  choices: Array<{
+    id: string;
+    label: string;
+    goldCost: number;
+    effects: Effect[];
+  }>; // 2-4 trusted engine choices
 };
 
 type BattleReportView = {
   id: string;
   runId: string;
-  wave: 1 | 2;
-  day: 10 | 20;
+  wave: number; // 1-10
+  day: number; // 10, 20, ..., 100
   sourceRevision: number;
   battleResult: BattleResult;
   createdAt: string;
@@ -115,6 +107,7 @@ type GameView = {
   stats: EffectiveStats;
   wavePreview: ReturnType<typeof getWavePreview>;
   eventNarrative: EventNarrativeView | null;
+  rewardOptions: RewardOption[]; // exactly 3 in reward phase, otherwise []
   report: BattleReportView | null;
   timeline: TimelineEntry[];
 };
@@ -122,9 +115,12 @@ type GameView = {
 
 Catatan:
 
-- `state` berasal dari snapshot MongoDB yang sudah divalidasi sebagai patched version 3, termasuk `runId` dan empat entry `eventPlan`.
+- `state` berasal dari snapshot MongoDB yang sudah divalidasi sebagai version 4, termasuk `runId`, `difficulty`, 20-entry `eventPlan`, dan `pendingConsequences`.
 - `stats` dan `wavePreview` selalu berasal dari selector engine.
 - `eventNarrative` hanya mendekorasi teks/label; cost dan effects tetap dari package engine terpercaya.
+- `eventNarrative.choices[].goldCost` adalah biaya efektif final yang sudah diskalakan engine berdasarkan difficulty; client tidak melakukan scaling ulang.
+- Label pilihan narasi tidak boleh menyebut istilah mata uang `gold`, `coin(s)`, `treasury`, atau `gp`, meskipun tanpa angka. Jika output AI melanggar, backend mengembalikan label engine tepercaya; description tidak dipindai.
+- Setelah `chooseEventOption`, response dapat tetap berada pada phase `event` dengan `eventId` baru ketika consequence berikutnya antre pada hari yang sama; frontend harus merender event dari response terbaru.
 - Source persisten setelah dekorasi adalah `ai`, `fallback`, atau `mock`; `local` hanya boleh muncul sementara dari engine sebelum backend mendekorasi event.
 - `report` hanya tersedia jika battle terkait sudah diselesaikan.
 - `timeline` selalu tersedia dalam urutan kronologis. Run baru dan dokumen lama tanpa field timeline dibaca sebagai `[]`.
@@ -256,7 +252,8 @@ Request:
 ```json
 {
   "startRequestId": "f749f4a6-e7bd-45de-b563-b5ae27c50d49",
-  "replaceActiveSave": false
+  "replaceActiveSave": false,
+  "difficulty": "normal"
 }
 ```
 
@@ -267,7 +264,7 @@ Aturan:
 - Jika save aktif ada dan `replaceActiveSave` false, server menolak.
 - Jika true, pointer save berpindah ke run baru; run lama tetap tersimpan dan tidak dianggap selesai.
 - Create run hanya menyimpan state awal, delapan properties revision 0, metadata ruleset, dan pointer save.
-- Narasi event baru dibuat ketika action engine pertama kali memasuki hari event (3, 7, 13, atau 17). Jika AI tidak tersedia/gagal, fallback lokal digunakan pada action yang sama.
+- Narasi event dibuat ketika action engine memasuki scheduled/consequence event yang dipilih engine. Jika AI tidak tersedia/gagal, fallback lokal digunakan pada action yang sama.
 - Create run mengembalikan `state.eventPlan`; setiap entry berisi `day`, `packageId`, dan `eventId` yang dipilih engine secara deterministik dari `runId`.
 
 Sukses run baru: `201 Created`. Retry run yang sudah sukses: `200 OK` dengan run yang sama.

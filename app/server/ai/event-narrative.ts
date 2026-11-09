@@ -3,22 +3,17 @@ import { z } from "zod";
 
 import { getServerEnv } from "@/server/config/env";
 import type { GameState } from "@/server/game-engine/adapter";
+import { trustedChoiceLabel } from "../../../src/game/narrative";
 
 type ActiveEvent = NonNullable<GameState["activeEvent"]>;
 
 export const generatedEventNarrativeSchema = z.object({
   title: z.string().min(1).max(120),
   description: z.string().min(1).max(1200),
-  choices: z.tuple([
-    z.object({
-      id: z.string().min(1),
-      label: z.string().min(1).max(240),
-    }).strict(),
-    z.object({
-      id: z.string().min(1),
-      label: z.string().min(1).max(240),
-    }).strict(),
-  ]),
+  choices: z.array(z.object({
+    id: z.string().min(1),
+    label: z.string().min(1).max(240),
+  }).strict()).min(2).max(4),
 }).strict();
 
 const generatedEventNarrativeJsonSchema = {
@@ -31,7 +26,7 @@ const generatedEventNarrativeJsonSchema = {
     choices: {
       type: "array",
       minItems: 2,
-      maxItems: 2,
+      maxItems: 4,
       items: {
         type: "object",
         additionalProperties: false,
@@ -48,7 +43,7 @@ const generatedEventNarrativeJsonSchema = {
 export type GeneratedEventNarrative = z.infer<typeof generatedEventNarrativeSchema>;
 export type NarrativeResult = {
   narrative: GeneratedEventNarrative;
-  source: "ai" | "fallback";
+  source: "ai" | "fallback" | "mock";
   provider: string | null;
   model: string | null;
   promptVersion: string;
@@ -93,6 +88,9 @@ export class GeminiEventNarrativeGenerator implements EventNarrativeGenerator {
         day: event.day,
         eventId: event.eventId,
         packageId: event.packageId,
+        isConsequence: event.isConsequence ?? false,
+        originEventId: event.originEventId ?? null,
+        originChoiceId: event.originChoiceId ?? null,
         originalTitle: event.title,
         originalDescription: event.description,
         trustedChoices: event.choices.map((choice) => ({
@@ -103,7 +101,7 @@ export class GeminiEventNarrativeGenerator implements EventNarrativeGenerator {
       }),
       config: {
         systemInstruction:
-          "Provide the narrative and choices as if a loyal city advisor is recommending options to his lord, using English. Address the player as \"my lord\". Preserve every supplied choice id exactly. Do not invent choices, change gold costs, invent effects, or invent gameplay rules. Choice labels may be rephrased, but their mechanical meaning must remain aligned with the trusted summaries.",
+          "Provide the narrative and choices as if a loyal city advisor is recommending options to his lord, using English. Address the player as \"my lord\". Preserve every supplied choice id exactly. Do not invent choices, change gold costs, invent effects, or invent gameplay rules. Choice labels may be rephrased, but must not mention any currency term such as gold, coin, coins, treasury, or gp. The effective cost is trustedChoices[].goldCost and is shown separately by the client.",
         responseMimeType: "application/json",
         responseJsonSchema: generatedEventNarrativeJsonSchema,
         maxOutputTokens: env.AI_MAX_OUTPUT_TOKENS,
@@ -119,10 +117,7 @@ function fallbackNarrative(event: ActiveEvent): GeneratedEventNarrative {
   return {
     title: event.title,
     description: event.description,
-    choices: [
-      { id: event.choices[0].id, label: event.choices[0].label },
-      { id: event.choices[1].id, label: event.choices[1].label },
-    ],
+    choices: event.choices.map((choice) => ({ id: choice.id, label: choice.label })),
   };
 }
 
@@ -136,6 +131,16 @@ function validateTrustedChoiceIds(event: ActiveEvent, narrative: GeneratedEventN
   ) {
     throw new Error("Generated event contains untrusted choice ids");
   }
+}
+
+export function restoreEventNarrative(
+  event: ActiveEvent,
+  narrative: unknown,
+  metadata: Omit<NarrativeResult, "narrative">,
+): NarrativeResult {
+  const parsed = generatedEventNarrativeSchema.parse(narrative);
+  validateTrustedChoiceIds(event, parsed);
+  return { narrative: parsed, ...metadata };
 }
 
 function defaultGenerator(): EventNarrativeGenerator | null {
@@ -193,10 +198,10 @@ export function decorateActiveEvent(state: GameState, result: NarrativeResult): 
       ...event,
       title: result.narrative.title,
       description: result.narrative.description,
-      choices: [
-        { ...event.choices[0], label: labels.get(event.choices[0].id) ?? event.choices[0].label },
-        { ...event.choices[1], label: labels.get(event.choices[1].id) ?? event.choices[1].label },
-      ],
+      choices: event.choices.map((choice) => ({
+        ...choice,
+        label: trustedChoiceLabel(choice.label, labels.get(choice.id), choice.goldCost),
+      })),
       source: result.source,
     },
   };

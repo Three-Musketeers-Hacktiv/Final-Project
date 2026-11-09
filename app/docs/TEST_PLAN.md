@@ -2,7 +2,7 @@
 
 Status: **Implemented and active**
 Pemilik: Backend  
-Terakhir diperbarui: 2026-11-08
+Terakhir diperbarui: 2026-11-09
 
 ## 1. Tujuan
 
@@ -64,8 +64,12 @@ Dokumen ini mendefinisikan bukti yang harus tersedia sebelum fitur backend diang
 | Retry `startRequestId` sama | Integration | Run yang sama dikembalikan |
 | `startRequestId` sama dengan payload beda | Integration | Conflict eksplisit |
 | Start run baru | Integration | Run lama tetap ada, pointer menunjuk run baru |
-| New run patched v3 | Adapter/Integration | Empat entry `eventPlan` valid untuk hari 3/7/13/17 |
-| Save v3 lama tanpa `eventPlan` | Integration | Ditolak sebagai incompatible; tidak ditafsir ulang diam-diam |
+| New run v4 | Adapter/Integration | Difficulty tersimpan dan 20 entry `eventPlan` valid |
+| Save v1-v3 | Integration | Ditolak sebagai incompatible; tidak ditafsir ulang diam-diam |
+| Difficulty berbeda pada request ID sama | Integration | `START_REQUEST_CONFLICT` |
+| Scheduled/consequence event | Adapter/Integration | Identitas dan package tervalidasi tanpa mempercayai gameplay dari AI |
+| Pilihan event 2-4 | Unit/Integration | Semua label didekorasi, ID/cost/effect tetap trusted |
+| Campaign v4 | API smoke | Action normal mencapai victory pada hari 100 setelah 10 battle |
 | Ruleset ID dengan fingerprint berbeda | Integration | Ditolak; metadata lama tidak ditimpa |
 | Pointer run/revision tidak cocok | Integration | `SAVE_POINTER_MISMATCH` tanpa write |
 | Resume setelah logout/login | API | Current run user yang sama dikembalikan |
@@ -131,12 +135,16 @@ Backend menyediakan contoh request/response dan koleksi API yang mengikuti [API_
 - cookie behavior sesuai environment;
 - response event source `ai` dan `fallback` memiliki bentuk identik.
 - event/choice ID pada contract test diambil dari response run/event aktif.
+- biaya event efektif tidak diskalakan ulang dan label AI yang menyebut istilah mata uang, dengan atau tanpa angka, memakai label engine;
+- consequence successor package sah diterima, sedangkan package asing dan ID rusak ditolak;
+- same-day event queue mengembalikan event berikutnya dan recovery active-event yang hilang tidak menggandakan revision/effect;
+- provider failure mencoba katalog AI valid sebelum fallback, dan stored narrative dengan choice ID asing ditolak.
 
 Postman CLI yang tersedia dapat digunakan untuk menjalankan collection pada local atau Preview URL. Collection dan environment file yang aman boleh disimpan di area backend; secret environment lokal tidak boleh di-commit.
 
 Artefak smoke test tersedia di `postman/backend-api.postman_collection.json` dan `postman/backend-api.postman_environment.json`. Collection mencakup register, login, `/auth/me`, create run, satu action, current run, dan logout. Jalankan hanya setelah server dan Atlas test siap.
 
-Runner `scripts/run-campaign.ts` menguji campaign API hari 1–20 terhadap server yang sedang berjalan. Runner membuat user/run unik, memakai cookie session, menjalankan seluruh event/battle/reward sampai victory, membaca ulang run dari MongoDB, memastikan save aktif sudah dibersihkan, lalu logout. Data test dipertahankan untuk audit dan tidak dihapus otomatis.
+Runner `scripts/run-campaign.ts` menguji campaign API engine v4 hari 1–100 terhadap server yang sedang berjalan. Runner membuat user/run easy unik, membaca event/reward dinamis dari response, menjalankan seluruh battle sampai victory, membaca ulang run dari MongoDB, memastikan save aktif sudah dibersihkan, lalu logout. Data test dipertahankan untuk audit dan tidak dihapus otomatis.
 
 ## 7. Pengujian keamanan minimum
 

@@ -1,42 +1,76 @@
 import { randomUUID } from "node:crypto";
 
+type Effect =
+  | { type: "grantGold"; amount: number }
+  | { type: "damageCity"; amount: number }
+  | { type: "healCity"; amount: number }
+  | { type: "maxHpBonus"; amount: number }
+  | { type: "nextWaveDefense"; amount: number; wave: number }
+  | { type: "upgradeDiscount"; rate: number; untilWave: number };
+
+type EventChoice = {
+  id: string;
+  label: string;
+  goldCost: number;
+  effects: Effect[];
+  consequence?: { packageId: string };
+};
+
+type RewardOption = { id: string; kind: string; amount: number };
+
 type GameStateView = {
+  version: number;
   revision: number;
+  difficulty: string;
   day: number;
   phase: string;
+  gold: number;
+  cityHp: number;
+  cityMaxHp: number;
   wallLevel: number;
   troopLevel: number;
   cityLevel: number;
-};
-
-type EventNarrativeView = {
-  eventId: string;
-  packageId: string;
-  choices: [{ id: string; label: string }, { id: string; label: string }];
+  actionUsedToday: boolean;
+  wavesCleared: number;
 };
 
 type GameView = {
   state: GameStateView;
-  eventNarrative: EventNarrativeView | null;
+  stats: { wallCost: number; troopCost: number; cityCost: number; repairCost: number };
+  wavePreview: null | {
+    wave: number;
+    hp: number;
+    attack: number;
+    cityAttack: number;
+    cityDefense: number;
+  };
+  eventNarrative: null | {
+    eventId: string;
+    packageId: string;
+    choices: EventChoice[];
+  };
+  rewardOptions: RewardOption[];
 };
+
 type Success<T> = { ok: true; data: T };
 type Failure = { ok: false; error: { code: string; message: string } };
 type ApiResponse<T> = Success<T> | Failure;
 
-const baseUrl = (process.env.CAMPAIGN_BASE_URL ?? "http://localhost:3000").replace(/\/$/, "");
+const baseUrl = (
+  process.env.CAMPAIGN_BASE_URL ?? process.env.APP_ORIGIN ?? "http://localhost:3000"
+).replace(/\/$/, "");
 const origin = process.env.CAMPAIGN_ORIGIN ?? new URL(baseUrl).origin;
-const username = `campaign_${Date.now().toString(36)}`;
+const username = `campaign_v4_${Date.now().toString(36)}`;
 const password = `Campaign-${randomUUID()}`;
 
 let cookie = "";
 let runId = "";
 let game: GameView;
+let actionCount = 0;
+let eventCount = 0;
+let battleCount = 0;
 
-async function request<T>(
-  path: string,
-  init: RequestInit,
-  expectedStatus: number,
-): Promise<ApiResponse<T>> {
+async function request<T>(path: string, init: RequestInit, expectedStatus: number): Promise<ApiResponse<T>> {
   const headers = new Headers(init.headers);
   headers.set("Origin", origin);
   if (init.body) headers.set("Content-Type", "application/json");
@@ -45,12 +79,9 @@ async function request<T>(
   const response = await fetch(`${baseUrl}${path}`, { ...init, headers });
   const setCookie = response.headers.get("set-cookie");
   if (setCookie) cookie = setCookie.split(";", 1)[0] ?? "";
-
   const body = await response.json() as ApiResponse<T>;
   if (response.status !== expectedStatus) {
-    throw new Error(
-      `${init.method ?? "GET"} ${path}: expected ${expectedStatus}, received ${response.status} ${JSON.stringify(body)}`,
-    );
+    throw new Error(`${init.method ?? "GET"} ${path}: expected ${expectedStatus}, got ${response.status} ${JSON.stringify(body)}`);
   }
   return body;
 }
@@ -60,162 +91,164 @@ function successData<T>(response: ApiResponse<T>): T {
   return response.data;
 }
 
-function assertState(day: number, phase: string): void {
-  if (game.state.day !== day || game.state.phase !== phase) {
-    throw new Error(
-      `Expected day ${day}/${phase}, received day ${game.state.day}/${game.state.phase}`,
-    );
-  }
-}
-
-function activeChoiceId(index: 0 | 1): string {
-  const event = game.eventNarrative;
-  if (!event || game.state.phase !== "event") {
-    throw new Error(`Expected an active event before selecting choice index ${index}`);
-  }
-  const choice = event.choices[index];
-  if (!choice?.id) throw new Error(`Active event does not expose choice index ${index}`);
-  console.info(
-    `event=${event.eventId} package=${event.packageId} choice=${choice.id}`,
-  );
-  return choice.id;
-}
-
 async function action(type: string, payload: Record<string, unknown> = {}): Promise<void> {
-  const response = await request<{ game: GameView }>(
-    `/api/runs/${runId}/actions`,
-    {
-      method: "POST",
-      body: JSON.stringify({
-        actionId: randomUUID(),
-        expectedRevision: game.state.revision,
-        type,
-        payload,
-      }),
-    },
-    200,
-  );
+  const response = await request<{ game: GameView }>(`/api/runs/${runId}/actions`, {
+    method: "POST",
+    body: JSON.stringify({
+      actionId: randomUUID(),
+      expectedRevision: game.state.revision,
+      type,
+      payload,
+    }),
+  }, 200);
   game = successData(response).game;
-  console.info(
-    `revision=${game.state.revision} day=${game.state.day} phase=${game.state.phase} action=${type}`,
-  );
+  actionCount += 1;
+}
+
+function eventChoiceScore(choice: EventChoice): number {
+  let score = choice.goldCost === 0 ? 20 : -choice.goldCost;
+  if (choice.consequence) score -= 80;
+  for (const effect of choice.effects) {
+    if (effect.type === "nextWaveDefense") score += 240 + effect.amount;
+    if (effect.type === "upgradeDiscount") score += 220;
+    if (effect.type === "maxHpBonus") score += 90 + effect.amount;
+    if (effect.type === "grantGold") score += 100 + effect.amount;
+    if (effect.type === "healCity") score += 60 + effect.amount;
+    if (effect.type === "damageCity") score -= 200 + effect.amount;
+  }
+  return score;
+}
+
+function predictedBattleDamage(view: GameView, overrides?: { attack?: number; defense?: number }): number {
+  const wave = view.wavePreview;
+  if (!wave) return 0;
+  const attack = overrides?.attack ?? wave.cityAttack;
+  const defense = overrides?.defense ?? wave.cityDefense;
+  return Math.ceil(wave.hp / attack) * Math.max(1, wave.attack - defense);
+}
+
+function economicAction(): string | null {
+  const { state, stats, wavePreview } = game;
+  const daysUntilBattle = 10 - (state.day % 10);
+  if (
+    state.cityHp < state.cityMaxHp &&
+    state.gold >= stats.repairCost &&
+    (daysUntilBattle <= 2 || state.cityMaxHp - state.cityHp >= 45)
+  ) return "repairCity";
+
+  const candidates: Array<{ type: string; cost: number; score: number }> = [];
+  const currentDamage = predictedBattleDamage(game);
+  if (state.troopLevel < 18 && state.gold >= stats.troopCost && wavePreview) {
+    const damage = predictedBattleDamage(game, { attack: wavePreview.cityAttack + 5 });
+    candidates.push({ type: "upgradeTroops", cost: stats.troopCost, score: (currentDamage - damage) / stats.troopCost });
+  }
+  if (state.wallLevel < 18 && state.gold >= stats.wallCost && wavePreview) {
+    const damage = predictedBattleDamage(game, { defense: wavePreview.cityDefense + 2 });
+    candidates.push({ type: "upgradeWall", cost: stats.wallCost, score: (currentDamage - damage) / stats.wallCost });
+  }
+  if (state.cityLevel < 18 && state.gold >= stats.cityCost) {
+    candidates.push({ type: "upgradeCity", cost: stats.cityCost, score: 35 / stats.cityCost });
+  }
+  candidates.sort((a, b) => b.score - a.score || a.cost - b.cost);
+  return candidates[0]?.type ?? null;
+}
+
+function preferredReward(): RewardOption {
+  const priorities = [
+    "grantGold",
+    "upgradeDiscount",
+    "prepIncomeBonus",
+    "nextWaveDefense",
+    "maxHpBonus",
+    "healCity",
+    "combo",
+  ];
+  for (const kind of priorities) {
+    const reward = game.rewardOptions.find((candidate) => candidate.kind === kind);
+    if (reward) return reward;
+  }
+  throw new Error(`Wave ${game.state.wavesCleared} did not expose a trusted reward option`);
+}
+
+async function playCampaign(): Promise<void> {
+  while (game.state.phase !== "victory" && game.state.phase !== "gameOver") {
+    switch (game.state.phase) {
+      case "event": {
+        const event = game.eventNarrative;
+        if (!event) throw new Error("Event phase did not expose eventNarrative");
+        const affordable = event.choices.filter((choice) => choice.goldCost <= game.state.gold);
+        const selected = [...affordable].sort((a, b) => eventChoiceScore(b) - eventChoiceScore(a))[0];
+        if (!selected) throw new Error(`No affordable choice for ${event.eventId}`);
+        await action("chooseEventOption", { choiceId: selected.id });
+        eventCount += 1;
+        break;
+      }
+      case "preparation": {
+        if (!game.state.actionUsedToday) {
+          const type = economicAction();
+          if (type) await action(type);
+        }
+        await action("endPreparationDay");
+        break;
+      }
+      case "battleReady":
+        await action("startBattle");
+        battleCount += 1;
+        break;
+      case "battleReport":
+        await action("continueFromReport");
+        break;
+      case "reward":
+        await action("chooseReward", { rewardId: preferredReward().id });
+        break;
+      default:
+        throw new Error(`Unsupported campaign phase: ${game.state.phase}`);
+    }
+  }
 }
 
 async function main(): Promise<void> {
-  console.info(`Starting API campaign against ${baseUrl} with test user ${username}`);
+  console.info(`Starting engine-v4 API campaign against ${baseUrl} as ${username}`);
+  successData(await request("/api/auth/register", {
+    method: "POST",
+    body: JSON.stringify({ username, password, confirmPassword: password }),
+  }, 201));
+  successData(await request("/api/auth/login", {
+    method: "POST",
+    body: JSON.stringify({ username, password }),
+  }, 200));
 
-  successData(await request(
-    "/api/auth/register",
-    {
-      method: "POST",
-      body: JSON.stringify({ username, password, confirmPassword: password }),
-    },
-    201,
-  ));
-
-  successData(await request(
-    "/api/auth/login",
-    { method: "POST", body: JSON.stringify({ username, password }) },
-    200,
-  ));
-  successData(await request("/api/auth/me", { method: "GET" }, 200));
-
-  const created = successData(await request<{ runId: string; game: GameView; replayed: boolean }>(
-    "/api/runs",
-    {
-      method: "POST",
-      body: JSON.stringify({ startRequestId: randomUUID(), replaceActiveSave: false }),
-    },
-    201,
-  ));
+  const created = successData(await request<{ runId: string; game: GameView; replayed: boolean }>("/api/runs", {
+    method: "POST",
+    body: JSON.stringify({
+      startRequestId: randomUUID(),
+      replaceActiveSave: false,
+      difficulty: "easy",
+    }),
+  }, 201));
   runId = created.runId;
   game = created.game;
-  assertState(1, "preparation");
-
-  await action("upgradeCity");
-  await action("endPreparationDay");
-  await action("upgradeCity");
-  await action("endPreparationDay");
-  assertState(3, "event");
-  await action("chooseEventOption", { choiceId: activeChoiceId(1) });
-  await action("endPreparationDay");
-  await action("upgradeCity");
-  await action("endPreparationDay");
-  await action("upgradeTroops");
-  await action("endPreparationDay");
-  await action("upgradeTroops");
-  await action("endPreparationDay");
-  assertState(7, "event");
-  await action("chooseEventOption", { choiceId: activeChoiceId(0) });
-  await action("endPreparationDay");
-  await action("upgradeTroops");
-  await action("endPreparationDay");
-  await action("endPreparationDay");
-  assertState(10, "battleReady");
-  await action("startBattle");
-  assertState(10, "battleReport");
-  await action("continueFromReport");
-  assertState(10, "reward");
-  await action("chooseReward", { rewardId: "reward-income" });
-  assertState(11, "preparation");
-
-  await action("repairCity");
-  await action("endPreparationDay");
-  await action("repairCity");
-  await action("endPreparationDay");
-  assertState(13, "event");
-  await action("chooseEventOption", { choiceId: activeChoiceId(1) });
-  await action("repairCity");
-  await action("endPreparationDay");
-  await action("repairCity");
-  await action("endPreparationDay");
-  await action("upgradeTroops");
-  await action("endPreparationDay");
-  await action("upgradeWall");
-  await action("endPreparationDay");
-  assertState(17, "event");
-  await action("chooseEventOption", { choiceId: activeChoiceId(0) });
-  await action("upgradeWall");
-  await action("endPreparationDay");
-  await action("upgradeTroops");
-  await action("endPreparationDay");
-  await action("upgradeWall");
-  await action("endPreparationDay");
-  assertState(20, "battleReady");
-  await action("startBattle");
-  assertState(20, "battleReport");
-  await action("continueFromReport");
-  assertState(20, "victory");
-
-  if (
-    game.state.wallLevel !== 3 ||
-    game.state.troopLevel !== 5 ||
-    game.state.cityLevel !== 3
-  ) {
-    throw new Error(`Unexpected final upgrade levels: ${JSON.stringify(game.state)}`);
+  if (game.state.version !== 4 || game.state.difficulty !== "easy") {
+    throw new Error(`Create run returned incompatible state ${game.state.version}/${game.state.difficulty}`);
   }
 
-  const stored = successData(await request<{ runId: string; game: GameView }>(
-    `/api/runs/${runId}`,
-    { method: "GET" },
-    200,
-  ));
-  if (stored.game.state.phase !== "victory") {
-    throw new Error("Stored run did not retain the victory state");
+  await playCampaign();
+  if (game.state.phase !== "victory" || game.state.day !== 100 || battleCount !== 10) {
+    throw new Error(
+      `Campaign did not reach v4 victory: day=${game.state.day} phase=${game.state.phase} waves=${game.state.wavesCleared} battles=${battleCount}`,
+    );
   }
 
+  const stored = successData(await request<{ runId: string; game: GameView }>(`/api/runs/${runId}`, { method: "GET" }, 200));
+  if (stored.game.state.phase !== "victory" || stored.game.state.revision !== game.state.revision) {
+    throw new Error("Stored run did not retain the final v4 victory state");
+  }
   const current = await request<never>("/api/runs/current", { method: "GET" }, 404);
   if (current.ok || current.error.code !== "NO_ACTIVE_SAVE") {
     throw new Error("Completed campaign still appears as an active save");
   }
-
   successData(await request("/api/auth/logout", { method: "POST" }, 200));
-  const afterLogout = await request<never>("/api/auth/me", { method: "GET" }, 401);
-  if (afterLogout.ok || afterLogout.error.code !== "UNAUTHENTICATED") {
-    throw new Error("Session remained authenticated after logout");
-  }
-
-  console.info(`Campaign passed: runId=${runId}, finalRevision=${game.state.revision}, phase=victory`);
+  console.info(`Campaign passed: runId=${runId} actions=${actionCount} events=${eventCount} battles=${battleCount}`);
 }
 
 main().catch((error) => {

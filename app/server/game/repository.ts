@@ -14,6 +14,7 @@ import type {
   RunEventDocument,
 } from "@/server/game/types";
 import { ApiError } from "@/server/http/api-error";
+import type { Difficulty } from "../../../src/game";
 
 async function ensureRuleset(): Promise<GameRulesetDocument> {
   const database = await getDatabase();
@@ -72,6 +73,7 @@ export async function createRunTransaction(
   startRequestId: string,
   payloadHash: string,
   replaceActiveSave: boolean,
+  difficulty: Difficulty,
 ): Promise<GameRunDocument> {
   const ruleset = await ensureRuleset();
   const client = await getMongoClient();
@@ -79,7 +81,7 @@ export async function createRunTransaction(
   const mongoSession = client.startSession();
   const now = new Date();
   const runId = new ObjectId();
-  const state = createGameState(runId.toHexString());
+  const state = createGameState(runId.toHexString(), difficulty);
   const run: GameRunDocument = {
     _id: runId,
     userId: user._id,
@@ -171,18 +173,38 @@ export async function findLatestReport(runId: ObjectId): Promise<GameReportDocum
   );
 }
 
+export async function findRunEvent(
+  runId: ObjectId,
+  eventId: string,
+): Promise<RunEventDocument | null> {
+  const database = await getDatabase();
+  return database.collection<RunEventDocument>("runs_event").findOne({ gameRunId: runId, eventId });
+}
+
+export async function findSharedAiEventData(
+  gameRulesetId: ObjectId,
+  packageId: string,
+  day: number,
+): Promise<EventDataDocument | null> {
+  const database = await getDatabase();
+  return database.collection<EventDataDocument>("event_data").findOne(
+    { gameRulesetId, packageId, day, source: "ai", validationStatus: "valid" },
+    { sort: { createdAt: -1 } },
+  );
+}
+
 export async function commitGameAction(input: {
   currentRun: GameRunDocument;
   nextRun: GameRunDocument;
   action: GameActionDocument;
   report: GameReportDocument | null;
-  generatedEvent: { eventData: EventDataDocument; runEvent: RunEventDocument } | null;
+  generatedEvents: Array<{ eventData: EventDataDocument | null; runEvent: RunEventDocument }>;
   resolvedEvent: { eventId: string; choiceId: string } | null;
 }): Promise<void> {
   const client = await getMongoClient();
   const database = await getDatabase();
   const session = client.startSession();
-  const { currentRun, nextRun, action, report, generatedEvent, resolvedEvent } = input;
+  const { currentRun, nextRun, action, report, generatedEvents, resolvedEvent } = input;
 
   try {
     await session.withTransaction(async () => {
@@ -210,8 +232,10 @@ export async function commitGameAction(input: {
       if (report) {
         await database.collection<GameReportDocument>("game_reports").insertOne(report, { session });
       }
-      if (generatedEvent) {
-        await database.collection<EventDataDocument>("event_data").insertOne(generatedEvent.eventData, { session });
+      for (const generatedEvent of generatedEvents) {
+        if (generatedEvent.eventData) {
+          await database.collection<EventDataDocument>("event_data").insertOne(generatedEvent.eventData, { session });
+        }
         await database.collection<RunEventDocument>("runs_event").insertOne(generatedEvent.runEvent, { session });
       }
       if (resolvedEvent) {

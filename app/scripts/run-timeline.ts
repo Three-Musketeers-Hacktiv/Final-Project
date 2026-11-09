@@ -113,7 +113,7 @@ async function main(): Promise<void> {
     "/api/runs",
     {
       method: "POST",
-      body: JSON.stringify({ startRequestId: randomUUID(), replaceActiveSave: false }),
+      body: JSON.stringify({ startRequestId: randomUUID(), replaceActiveSave: false, difficulty: "normal" }),
     },
     201,
   ));

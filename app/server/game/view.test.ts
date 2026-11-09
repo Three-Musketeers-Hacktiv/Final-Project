@@ -44,4 +44,16 @@ describe("game view timeline", () => {
 
     expect(toGameView(legacy).timeline).toEqual([]);
   });
+
+  it("exposes only the trusted reward options for the current reward wave", () => {
+    const run = runDocument();
+    run.state = { ...run.state, phase: "reward", wavesCleared: 1 };
+
+    const rewardView = toGameView(run);
+    expect(rewardView.rewardOptions).toHaveLength(3);
+    expect(rewardView.rewardOptions.every((reward) => reward.id.startsWith("w1-"))).toBe(true);
+
+    run.state = { ...run.state, phase: "preparation" };
+    expect(toGameView(run).rewardOptions).toEqual([]);
+  });
 });

@@ -1,8 +1,8 @@
-# Database Schema v3 — Fantasy City Defense
+# Database Schema — Engine State v4 — Fantasy City Defense
 
 Status: **Implemented for MongoDB Atlas**
 Database: MongoDB Atlas  
-State: `GameState.version === 3`  
+State: `GameState.version === 4`
 ID dokumen: `ObjectId`
 
 Dokumen terkait:
@@ -24,8 +24,7 @@ Dokumen terkait:
 - Timestamp disimpan sebagai BSON `Date` dalam UTC.
 - Semua document yang berubah memiliki `createdAt`; document mutable juga memiliki `updatedAt`.
 - Password plaintext, JWT lengkap, JWT signing secret, dan provider AI API key tidak pernah disimpan.
-- State lama dengan `version !== 3` ditolak; tidak dimigrasikan diam-diam.
-- State versi 3 sebelum patch `eventPlan` tidak otomatis dianggap kompatibel hanya karena angka versinya sama.
+- State lama dengan `version !== 4` ditolak; tidak dimigrasikan diam-diam.
 
 ### Catatan penerapan perubahan nama REF
 
@@ -121,7 +120,7 @@ type GameRulesetDocument = {
   _id: ObjectId;
   rulesetId: string;
   engineVersion: string;
-  stateVersion: 3;
+  stateVersion: 4;
   configFingerprint: string;
   status: "active" | "retired";
   createdAt: Date;
@@ -175,8 +174,10 @@ type GameRunDocument = {
 Aturan:
 
 - `state.runId === _id.toHexString()`.
-- `state.version === 3`.
-- `state.eventPlan` berisi tepat satu package tepercaya untuk hari 3, 7, 13, dan 17 sesuai hasil engine untuk `state.runId`.
+- `state.version === 4` dan `state.difficulty` adalah `easy`, `normal`, atau `hard`.
+- `state.eventPlan` berisi 20 scheduled event tepercaya yang direkonstruksi dari `state.runId` dan `state.difficulty`.
+- `state.pendingConsequences` serta active consequence event divalidasi terhadap package engine tepercaya.
+- `state.rewardsChosenByWave` menyimpan reward pilihan untuk wave 1-9; field legacy `rewardChosenId` tidak digunakan.
 - `state.revision` hanya dinaikkan engine.
 - `timeline` disimpan di top-level run, bukan di dalam `GameState`, dan berurutan paling lama ke paling baru.
 - Run baru memakai `timeline: []`; dokumen lama tanpa field dinormalisasi sebagai `[]` saat read.
@@ -299,16 +300,14 @@ type EventDataDocument = {
   _id: ObjectId;
   gameRulesetId: ObjectId;
   packageId: string;
-  day: 3 | 7 | 13 | 17;
+  day: number;
   narrative: {
     title: string;
     description: string;
-    choices: [
-      { id: string; label: string },
-      { id: string; label: string },
-    ];
+    choices: Array<{ id: string; label: string }>; // 2-4
   };
   source: "ai" | "fallback" | "mock";
+  provider?: string;
   model?: string;
   promptVersion: string;
   schemaVersion: 1;
@@ -322,6 +321,7 @@ Aturan:
 - Tidak menyimpan arbitrary cost/effects dari model.
 - `packageId`, day, dan choice IDs diverifikasi terhadap engine package.
 - Katalog valid dapat dipakai banyak run.
+- Reuse hanya mengambil document valid `source: "ai"` untuk `gameRulesetId + packageId + day` yang sama, terbaru lebih dahulu.
 - Document yang sudah dirujuk run tidak diedit; buat variasi baru.
 - Tidak menyimpan raw API key, username pemain, atau data pribadi.
 
@@ -342,14 +342,11 @@ type RunEventDocument = {
   eventDataId: ObjectId;
   eventId: string;
   packageId: string;
-  day: 3 | 7 | 13 | 17;
+  day: number;
   narrativeSnapshot: {
     title: string;
     description: string;
-    choices: [
-      { id: string; label: string },
-      { id: string; label: string },
-    ];
+    choices: Array<{ id: string; label: string }>; // 2-4
     source: "ai" | "fallback" | "mock";
   };
   chosenChoiceId: string | null;
@@ -361,6 +358,8 @@ type RunEventDocument = {
 Aturan:
 
 - Narrative snapshot membekukan cerita yang diterima run.
+- Snapshot `gameRunId + eventId` dipakai ulang sebelum memanggil provider agar refresh/recovery tidak menulis cerita kedua.
+- Reuse katalog membuat `runs_event` baru yang menunjuk `event_data` lama; document katalog tidak diduplikasi.
 - Resolusi pilihan hanya mengubah `runs_event` milik run tersebut.
 - Cost/effects tetap di engine/state; bukan sumber dari snapshot narasi.
 

@@ -1,9 +1,12 @@
 import { describe, expect, it } from "vitest";
 
+import { eventPackageById } from "../../../src/game";
+
 import {
   applyGameAction,
   assertPatchedGameState,
   createGameState,
+  ensureRequiredEvent,
   getEngineCompatibility,
   getEngineRulesetMetadata,
 } from "./adapter";
@@ -11,26 +14,168 @@ import {
 describe("game engine adapter", () => {
   it("reports the committed engine compatibility", () => {
     expect(getEngineCompatibility()).toEqual({
-      stateVersion: 3,
-      lastDay: 20,
-      battleDays: [10, 20],
+      stateVersion: 4,
+      lastDay: 100,
+      battleDays: [10, 20, 30, 40, 50, 60, 70, 80, 90, 100],
     });
   });
 
   it("fingerprints the engine-owned ruleset", () => {
     const metadata = getEngineRulesetMetadata();
-    expect(metadata.rulesetId).toBe("prototype-v3-event-plan-v1");
-    expect(metadata.stateVersion).toBe(3);
+    expect(metadata.rulesetId).toBe("campaign-v4-100-day-v2");
+    expect(metadata.stateVersion).toBe(4);
     expect(metadata.configFingerprint).toMatch(/^[a-f\d]{64}$/);
   });
 
-  it("rejects a version 3 save without the deterministic event plan", () => {
+  it("rejects a version 4 save without the deterministic event plan", () => {
     const state = createGameState("run-legacy");
     const legacy = { ...state, eventPlan: undefined };
 
     expect(() => assertPatchedGameState(legacy as unknown as typeof state, state.runId)).toThrow(
       "eventPlan",
     );
+  });
+
+  it("preserves the selected difficulty", () => {
+    expect(createGameState("run-easy", "easy").difficulty).toBe("easy");
+    expect(createGameState("run-hard", "hard").difficulty).toBe("hard");
+  });
+
+  it("accepts trusted pending and active consequence events", () => {
+    let state = createGameState("run-consequence-validation");
+    let scheduled = false;
+
+    while (state.day < 10) {
+      if (state.phase === "event" && state.activeEvent) {
+        if (state.activeEvent.isConsequence) {
+          expect(scheduled).toBe(true);
+          expect(() => assertPatchedGameState(state, state.runId)).not.toThrow();
+          return;
+        }
+        const consequenceChoice: NonNullable<typeof state.activeEvent>["choices"][number] | undefined = !scheduled
+          ? state.activeEvent.choices.find((candidate) => candidate.consequence)
+          : undefined;
+        const selected = consequenceChoice ?? state.activeEvent.choices.find(
+          (candidate) => candidate.goldCost === 0 && !candidate.consequence,
+        ) ?? state.activeEvent.choices.find((candidate) => candidate.goldCost === 0)!;
+        const chosen = applyGameAction(state, {
+          type: "chooseEventOption",
+          payload: { choiceId: selected.id },
+        });
+        expect(chosen.ok).toBe(true);
+        if (!chosen.ok) return;
+        state = chosen.state;
+        scheduled ||= Boolean(consequenceChoice?.consequence);
+      } else {
+        const advanced = applyGameAction(state, { type: "endPreparationDay", payload: {} });
+        expect(advanced.ok).toBe(true);
+        if (!advanced.ok) return;
+        state = advanced.state;
+      }
+      expect(() => assertPatchedGameState(state, state.runId)).not.toThrow();
+    }
+
+    throw new Error("Fixture did not produce a consequence event before wave one");
+  });
+
+  it("accepts a consequence moved to a trusted successor package", () => {
+    let state = createGameState("late-3");
+    const advanceTo = (targetDay: number) => {
+      while (state.day < targetDay) {
+        if (state.phase === "event" && state.activeEvent) {
+          const free = state.activeEvent.choices.find(
+            (choice) => choice.goldCost === 0 && !choice.consequence,
+          ) ?? state.activeEvent.choices.find((choice) => choice.goldCost === 0);
+          expect(free).toBeTruthy();
+          const result = applyGameAction(state, {
+            type: "chooseEventOption",
+            payload: { choiceId: free!.id },
+          });
+          expect(result.ok).toBe(true);
+          if (!result.ok) throw new Error(result.error.message);
+          state = result.state;
+          continue;
+        }
+        const result = applyGameAction(state, { type: "endPreparationDay", payload: {} });
+        expect(result.ok).toBe(true);
+        if (!result.ok) throw new Error(result.error.message);
+        state = result.state;
+      }
+    };
+
+    for (const eventDay of [6, 8]) {
+      advanceTo(eventDay);
+      const consequence = state.activeEvent?.choices.find(
+        (choice) => choice.goldCost === 0 && choice.consequence,
+      );
+      expect(consequence).toBeTruthy();
+      const result = applyGameAction(state, {
+        type: "chooseEventOption",
+        payload: { choiceId: consequence!.id },
+      });
+      expect(result.ok).toBe(true);
+      if (!result.ok) throw new Error(result.error.message);
+      state = result.state;
+    }
+
+    const deferred = state.pendingConsequences.find((entry) => entry.triggerDay > 10);
+    expect(deferred).toBeTruthy();
+    expect(deferred?.packageId).toBe("c-raid-wave2");
+    expect(() => assertPatchedGameState(state, state.runId)).not.toThrow();
+
+    const foreignPackageId = "c-unrest-mid";
+    const forged = {
+      ...deferred!,
+      packageId: foreignPackageId,
+      id: `${foreignPackageId}::${deferred!.originEventId}::${deferred!.originChoiceId}::${deferred!.triggerDay}`,
+    };
+    expect(() => assertPatchedGameState({
+      ...state,
+      pendingConsequences: state.pendingConsequences.map((entry) =>
+        entry.id === deferred!.id ? forged : entry),
+    }, state.runId)).toThrow("invalid pending consequence");
+
+    expect(() => assertPatchedGameState({
+      ...state,
+      pendingConsequences: [...state.pendingConsequences, deferred!],
+    }, state.runId)).toThrow("invalid pending consequence");
+
+    const reverseOrigin = state.eventPlan
+      .map((entry) => eventPackageById(entry.packageId))
+      .flatMap((pkg) => pkg ? pkg.choices.map((choice) => ({ pkg, choice })) : [])
+      .find(({ choice }) => choice.consequence?.packageId === "c-raid-wave2");
+    expect(reverseOrigin).toBeTruthy();
+    const reverseDay = 19;
+    const reverse = {
+      packageId: "c-raid-wave1",
+      originEventId: reverseOrigin!.pkg.eventId,
+      originChoiceId: reverseOrigin!.choice.id,
+      triggerDay: reverseDay,
+      id: `c-raid-wave1::${reverseOrigin!.pkg.eventId}::${reverseOrigin!.choice.id}::${reverseDay}`,
+    };
+    expect(() => assertPatchedGameState({
+      ...state,
+      pendingConsequences: [reverse],
+    }, state.runId)).toThrow("invalid pending consequence");
+  });
+
+  it("recovers a required event missing from a loaded state", () => {
+    let state = createGameState("run-event-recovery");
+    while (!state.activeEvent) {
+      const result = applyGameAction(state, { type: "endPreparationDay", payload: {} });
+      expect(result.ok).toBe(true);
+      if (!result.ok) throw new Error(result.error.message);
+      state = result.state;
+    }
+    const eventId = state.activeEvent.eventId;
+    const loaded = { ...state, phase: "preparation" as const, activeEvent: null };
+    const recovered = ensureRequiredEvent(loaded);
+
+    expect(recovered.ok).toBe(true);
+    if (!recovered.ok) return;
+    expect(recovered.state.activeEvent?.eventId).toBe(eventId);
+    expect(recovered.state.phase).toBe("event");
+    expect(recovered.state.revision).toBe(loaded.revision + 1);
   });
 
   it("rejects an event plan copied from another run", () => {

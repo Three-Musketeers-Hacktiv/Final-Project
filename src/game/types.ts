@@ -7,6 +7,8 @@ export type GamePhase =
   | "gameOver"
   | "victory";
 
+export type Difficulty = "easy" | "normal" | "hard";
+
 export type GameErrorCode =
   | "INVALID_PHASE"
   | "INVALID_TRANSITION"
@@ -34,30 +36,48 @@ export type ActionResult =
 export type Effect =
   | { type: "grantGold"; amount: number }
   | { type: "damageCity"; amount: number }
-  | { type: "nextWaveDefense"; amount: number; wave: 1 | 2 }
-  | { type: "upgradeDiscount"; rate: number; untilWave: 1 | 2 };
+  | { type: "healCity"; amount: number }
+  | { type: "maxHpBonus"; amount: number }
+  | { type: "nextWaveDefense"; amount: number; wave: number }
+  | { type: "upgradeDiscount"; rate: number; untilWave: number };
+
+export type ChoiceConsequence = {
+  packageId: string;
+  minDelayDays: number;
+  maxDelayDays: number;
+};
 
 export type EventChoice = {
   id: string;
   label: string;
   goldCost: number;
   effects: Effect[];
+  consequence?: ChoiceConsequence;
 };
 
 export type EventPackage = {
   packageId: string;
   eventId: string;
-  day: number;
+  /** Decade pool 1–10 (prep segment before that decade's battle). */
+  decade: number;
   title: string;
   description: string;
-  choices: [EventChoice, EventChoice];
+  /** Length 2–4; at least one choice must be free. */
+  choices: EventChoice[];
 };
 
-/** One trusted package chosen for a scheduled event day in this run. */
 export type EventPlanEntry = {
   day: number;
   packageId: string;
   eventId: string;
+};
+
+export type PendingConsequence = {
+  id: string;
+  originEventId: string;
+  originChoiceId: string;
+  packageId: string;
+  triggerDay: number;
 };
 
 export type ActiveEvent = {
@@ -66,18 +86,17 @@ export type ActiveEvent = {
   day: number;
   title: string;
   description: string;
-  choices: [EventChoice, EventChoice];
+  choices: EventChoice[];
   source: "local" | "mock" | "fallback" | "ai";
+  isConsequence?: boolean;
+  originEventId?: string;
+  originChoiceId?: string;
 };
 
 export type ActiveEffects = {
-  /** Additive defense bonus keyed by wave number. */
-  defenseByWave: { 1?: number; 2?: number };
-  /** Highest active upgrade discount rate in [0, 1]. */
+  defenseByWave: Record<number, number | undefined>;
   upgradeDiscountRate: number;
-  /** Clears after this wave resolves; null when no discount. */
-  upgradeDiscountUntilWave: 1 | 2 | null;
-  /** Extra gold on preparation days 11–19 while run is mid/late. */
+  upgradeDiscountUntilWave: number | null;
   prepIncomeBonus: number;
 };
 
@@ -90,7 +109,7 @@ export type BattleRoundLog = {
 };
 
 export type BattleResult = {
-  wave: 1 | 2;
+  wave: number;
   day: number;
   won: boolean;
   rounds: BattleRoundLog[];
@@ -105,19 +124,49 @@ export type BattleResult = {
   monsterHpLost: number;
 };
 
+export type RewardKind =
+  | "grantGold"
+  | "prepIncomeBonus"
+  | "upgradeDiscount"
+  | "healCity"
+  | "nextWaveDefense"
+  | "maxHpBonus"
+  | "combo";
+
 export type RewardOption = {
   id: string;
   label: string;
-  kind: "grantGold" | "prepIncomeBonus" | "upgradeDiscount";
+  kind: RewardKind;
   amount: number;
+  wave?: number;
+  rate?: number;
+  untilWave?: number;
+  effects?: Effect[];
+};
+
+export type WaveRewardSet = {
+  afterWave: number;
+  options: [RewardOption, RewardOption, RewardOption];
 };
 
 export type UpgradeTrack = "wall" | "troops" | "city";
 
+export type WaveRole = "tutorial" | "check" | "spike" | "tank" | "midboss" | "attrition" | "finale";
+
+export type WaveDefinition = {
+  wave: number;
+  day: number;
+  name: string;
+  role: WaveRole;
+  hp: number;
+  attack: number;
+};
+
 export type GameState = {
-  version: 3;
+  version: 4;
   revision: number;
   runId: string;
+  difficulty: Difficulty;
   day: number;
   phase: GamePhase;
   gold: number;
@@ -129,13 +178,13 @@ export type GameState = {
   actionUsedToday: boolean;
   incomeGrantedDays: number[];
   completedEventIds: string[];
-  /** Trusted packages selected for this run (one per scheduled event day). */
   eventPlan: EventPlanEntry[];
+  pendingConsequences: PendingConsequence[];
   activeEvent: ActiveEvent | null;
   effects: ActiveEffects;
   wavesCleared: number;
   battleResult: BattleResult | null;
-  rewardChosenId: string | null;
+  rewardsChosenByWave: Record<string, string>;
 };
 
 export type EffectiveStats = {
@@ -145,6 +194,5 @@ export type EffectiveStats = {
   troopCost: number;
   cityCost: number;
   repairCost: number;
-  /** Gold granted when this calendar day is a preparation day. */
   dailyIncome: number;
 };

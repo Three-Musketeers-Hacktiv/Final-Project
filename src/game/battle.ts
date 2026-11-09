@@ -2,7 +2,7 @@ import { gameConfig } from "./config";
 import type { BattleResult, BattleRoundLog } from "./types";
 
 export type BattleSnapshot = {
-  wave: 1 | 2;
+  wave: number;
   day: number;
   cityHp: number;
   cityAttack: number;
@@ -22,7 +22,7 @@ function isValidBattleSnapshot(snapshot: BattleSnapshot): boolean {
     snapshot.monsterAttack,
   ];
   if (!numericFields.every((value) => Number.isFinite(value))) return false;
-  if (snapshot.wave !== 1 && snapshot.wave !== 2) return false;
+  if (!Number.isInteger(snapshot.wave) || snapshot.wave < 1) return false;
   if (!gameConfig.waves.some((wave) => wave.wave === snapshot.wave && wave.day === snapshot.day)) {
     return false;
   }

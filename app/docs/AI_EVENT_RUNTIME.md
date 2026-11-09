@@ -1,8 +1,8 @@
 # AI Event Runtime Specification
 
-Status: **Implemented (BE-R06)**
+Status: **Implemented and synchronized with latest engine patch**
 Owner: Backend
-Updated: 2026-11-08
+Updated: 2026-11-09
 
 ## 1. Purpose and authority
 
@@ -11,7 +11,7 @@ The AI runtime decorates a trusted engine event when an action first enters an e
 - The game engine owns `eventPlan`, event/choice IDs, costs, effects, rules, damage, and state transitions.
 - Backend sends trusted event copy to a provider, validates the response, and persists the decorated narrative with the action.
 - AI may change only the title, description, and choice labels.
-- Provider failure must not fail a valid gameplay action; backend uses the trusted engine copy as fallback.
+- Provider failure must not fail a valid gameplay action; backend first checks the shared valid AI catalog, then uses the trusted engine copy as fallback.
 - Frontend displays the backend response and never calls Gemini directly.
 
 The active backend runtime uses the official Google Gen AI SDK. The former OpenAI dependency and hardcoded runtime path have been removed.
@@ -57,12 +57,12 @@ The provider receives only:
 - `locale: "en-US"`;
 - day, `eventId`, and `packageId` from the active engine event;
 - trusted title and description;
-- each trusted choice ID and its original label;
-- concise trusted cost/effect summaries when needed for coherent wording.
+- each trusted choice ID;
+- effective `goldCost` from `activeEvent.choices` and trusted effect summaries when needed for coherent wording.
 
 Prompt intent:
 
-> Provide the narrative and choices in English as a loyal city advisor recommending options to his lord. Preserve every supplied choice ID and do not create or change gameplay rules, choices, costs, or effects.
+> Provide the narrative and choices in English as a loyal city advisor recommending options to his lord. Preserve every supplied choice ID, do not create or change gameplay rules, choices, costs, or effects, and do not mention currency terms such as gold, coin(s), treasury, or gp in a choice label.
 
 Do not send username, password, cookie, JWT, IP address, MongoDB URI, full save state, secrets, or unsanitized player input.
 
@@ -79,28 +79,32 @@ const GeneratedEventNarrativeSchema = z.object({
       id: z.string().min(1),
       label: z.string().min(1),
     }).strict(),
-  ).length(2),
+  ).min(2).max(4),
 }).strict();
 ```
 
 Post-schema validation requires:
 
-- exactly the trusted choice-ID set, with no duplicate, missing, or invented ID;
+- exactly the trusted 2–4 choice-ID set, with no duplicate, missing, or invented ID;
 - English text within configured length limits;
 - no numeric gameplay authority from provider output;
 - merge by choice ID, never by array position.
 
-Backend restores trusted costs/effects after validation. Event and choice IDs are dynamic and come from the selected engine package; no prompt or client may assume legacy day-based IDs.
+Backend restores trusted costs/effects after validation. Labels pass through the engine trusted-label policy; any supported currency term (`gold`, `coin`/`coins`, `treasury`, or `gp`) makes the label fall back to the engine label even without a numeric amount. Descriptions are not scanned because they have no gameplay authority.
 
 ## 6. On-demand flow
 
 1. The client submits an ordinary game action.
 2. The engine returns a next state whose `activeEvent` is newly present.
-3. Backend derives input from that trusted event and selected `eventPlan` package.
-4. Backend calls Gemini before opening the MongoDB transaction.
-5. Backend parses with Zod and applies business validation.
-6. Valid narrative fields decorate the trusted event; otherwise fallback copies trusted engine text.
-7. The action transaction persists state, logs, properties, `event_data`, and `runs_event` atomically.
+3. Backend derives input from that trusted scheduled/consequence event, including origin IDs when present.
+4. Backend reuses an existing `runs_event` snapshot for the same run/event when present.
+5. Otherwise backend calls Gemini before opening the MongoDB transaction and validates with Zod plus trusted choice IDs.
+6. If generation is unavailable or fails, backend tries the newest valid `source: "ai"` catalog entry for the same ruleset/package/day; invalid catalog text is ignored.
+7. Valid narrative fields decorate the trusted event; otherwise fallback copies trusted engine text.
+8. The action transaction persists state, logs, properties, any new `event_data`, and `runs_event` atomically. Shared catalog reuse creates only the run allocation.
+9. If resolving one event activates another on the same day, backend repeats this flow for the successor event in the same action response.
+
+On load, `ensureLocalEvent` recovers an unfinished required event whose active copy is missing. The backend neutralizes the helper's standalone revision increment when folding recovery into a player action, so one public action still advances exactly one revision.
 
 An idempotent retry detected before generation does not call the provider. Concurrent requests may briefly issue more than one provider call, but revision checks and unique indexes permit only one committed transition.
 
@@ -134,6 +138,9 @@ Final values are verified in Vercel Preview and remain configurable through the 
 - Reordered valid choices merge by ID.
 - Missing, duplicate, invented, or dynamic-ID mismatch falls back.
 - Missing key, timeout, network error, refusal, and invalid schema fall back.
+- Provider failure reuses a valid shared AI catalog entry before local fallback.
+- Stored narrative IDs are revalidated and labels mentioning supported currency terms fall back to trusted engine labels.
+- Same-day successor events and missing-active-event recovery do not duplicate effects or revision increments.
 - Fallback and AI responses expose the same API shape.
 - On-demand generation occurs once for the successfully committed event transition.
 - Default unit/integration/campaign tests use a mock or fallback and never call live Gemini.

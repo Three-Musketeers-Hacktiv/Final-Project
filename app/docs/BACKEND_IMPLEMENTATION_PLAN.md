@@ -1,7 +1,7 @@
 # Backend Implementation Plan — Fantasy City Defense
 
-Status: **Implemented and synchronized with latest engine/frontend contracts, including surrender and persistent timeline**
-Target: prototipe 20 hari / 2 wave  
+Status: **Backend engine v4 synchronization implemented; frontend/victory gates pending**
+Target: campaign 100 hari / 10 wave
 Backend: Next.js Route Handlers + MongoDB  
 Kontrak engine: `../../docs/DEV1_CONTRACT.md` dan `../../src/game` (read-only)
 
@@ -25,7 +25,7 @@ Keputusan berikut telah dikonfirmasi oleh pemilik backend dan menjadi default im
 | Model AI | Model dikonfigurasi melalui `GEMINI_MODEL`; provider/model lain hanya melalui adapter dan konfigurasi server eksplisit |
 | Credential AI | `GEMINI_API_KEY` server-only; tidak pernah memakai prefix public |
 | Runtime validation | Zod untuk request API, environment, state boundary, dan output AI |
-| Database schema | Mengikuti state versi 3 dan delapan game properties |
+| Database schema | Mengikuti state versi 4 dan delapan game properties |
 | Identitas MongoDB | `_id` dan referensi dokumen memakai `ObjectId` |
 | Save aktif | Satu save aktif; run lama tetap tersimpan/read-only ketika pointer diganti dan tidak otomatis dianggap selesai |
 | File ownership | Mengikuti pembagian backend/frontend/shared pada dokumen ini |
@@ -85,7 +85,9 @@ Konsekuensinya:
 - Backend tidak menghitung harga, income, damage, bonus, atau transisi fase sendiri.
 - Frontend tidak mengirim nilai akhir gold/HP/level yang dipercaya server.
 - Backend tidak melakukan migrasi diam-diam dari state versi lama.
-- `GameState.version` yang diterima untuk MVP adalah `3`.
+- `GameState.version` yang diterima adalah `4`; state v1-v3 ditolak tanpa migrasi implisit.
+- Run dibuat dengan difficulty `easy`, `normal`, atau `hard`; nilai ini ikut fingerprint idempotency create-run.
+- Hari/event/wave dibaca dinamis dari state/config engine v4 (100 hari, 10 wave, 20 scheduled event), bukan konstanta backend lama.
 
 ### Dokumen turunan backend
 
@@ -305,7 +307,7 @@ Aturan `expectedRevision`:
 1. Parse dan validasi body.
 2. Verifikasi session.
 3. Load run dan periksa ownership.
-4. Tolak GameState version selain 3.
+4. Tolak GameState version selain 4.
 5. Periksa actionId yang sudah tercatat; request identik menjadi replay sukses tanpa write kedua, payload berbeda ditolak.
 6. Cocokkan expectedRevision.
 7. Dispatch action ke satu fungsi public engine.
@@ -440,7 +442,7 @@ Create run tidak memanggil provider AI. Narasi dibuat ketika action engine memas
 
 1. Baca pointer save user.
 2. Load run menggunakan `runId + userId`.
-3. Validasi `version === 3`, `runId`, ruleset fingerprint, `eventPlan`, dan bentuk state.
+3. Validasi `version === 4`, `runId`, ruleset fingerprint, `eventPlan`, consequence successor, dan bentuk state.
 4. Untuk current save, pastikan pointer `gameRunId` dan `savedRevision` cocok dengan run.
 5. Baca event/report yang relevan.
 6. Bentuk selector dan GameView tanpa menjalankan action engine.
@@ -465,11 +467,15 @@ AI, mock, atau fallback hanya boleh menyediakan:
 
 Ketika action engine menghasilkan event aktif, backend boleh melakukan dekorasi narasi dalam transaksi yang sama setelah memvalidasi `eventId`, `packageId`, hari, dan choice IDs. Backend tidak boleh mengganti cost/effects dari engine.
 
-Implementasi saat ini membuat satu dokumen `event_data` ketika event pertama kali aktif pada run. Narasi AI yang lolos validator dipakai bila provider terkonfigurasi; selain itu backend memakai fallback lokal terpercaya. Reuse katalog lintas-run belum diterapkan.
+Implementasi membekukan narasi per `runId + eventId`. Backend memakai snapshot run yang sudah ada lebih dahulu. Jika Gemini tersedia, output valid dipakai; bila provider tidak tersedia/gagal, backend mencari narasi AI valid untuk ruleset/package/day yang sama sebelum fallback lokal. Semua teks tersimpan divalidasi ulang dan didekorasikan melalui gameplay fields tepercaya dari engine.
+
+`activeEvent.choices[].goldCost` sudah merupakan biaya efektif setelah difficulty scaling. Backend tidak melakukan scaling ulang. Label AI yang menyebut istilah mata uang (`gold`, `coin(s)`, `treasury`, `gp`) diganti dengan label engine oleh trusted-label policy, termasuk ketika tidak ada angka.
+
+Consequence dapat memakai successor package yang disetujui engine. Backend memakai `isTrustedConsequencePackage` dan tetap memverifikasi ID deterministik, origin event/choice, trigger day, duplikasi, serta active/pending identity.
 
 Event dan choice ID bersifat dinamis. Backend, campaign runner, Postman, dan frontend harus membaca ID dari `activeEvent.choices`; legacy ID tidak boleh dikirim berdasarkan hari saja.
 
-Untuk vertical slice awal, fallback harus bekerja tanpa provider AI. Integrasi AI tidak boleh menjadi blocker happy path 20 hari.
+Fallback harus bekerja tanpa provider AI. Integrasi AI tidak boleh menjadi blocker campaign 100 hari.
 
 ### Gemini runtime adapter
 
@@ -596,8 +602,8 @@ register
 → hari 3 event
 → wave 1
 → reward
-→ wave 2
-→ victory atau game over
+→ wave 2–10 dan reward wave 2–9
+→ victory setelah wave 10 atau game over
 → refresh dan continue pada beberapa fase
 ```
 
@@ -637,7 +643,7 @@ Output: frontend dapat membangun halaman auth terhadap API nyata.
 - Seed/fallback event minimal.
 - Create run idempotent.
 - Continue/current run.
-- Validasi save version 3.
+- Validasi save version 4 dan difficulty.
 - Replace-save confirmation contract.
 
 Output: user dapat membuat dan memuat state awal yang persisted.
@@ -659,7 +665,7 @@ Output vertical slice: login → new game → upgrade → reload dengan state sa
 - Continue report dan choose reward.
 - Victory/game over history.
 
-Output: alur hari 1–20 lengkap melalui API.
+Output: alur hari 1–100 lengkap melalui API.
 
 ### Phase 6 — Hardening dan integrasi frontend
 
@@ -714,12 +720,12 @@ Pada setiap slice, backend memberikan kepada frontend:
 | MongoDB tidak mendukung transaction | Pastikan replica set/Atlas sebelum repository dibuat |
 | Klik ganda menyebabkan biaya ganda | Unique actionId + expectedRevision + conditional update |
 | AI lambat/gagal | Fallback valid tersedia; jangan membuka transaction saat call provider |
-| Save v3 lama tidak memiliki `eventPlan` | Bedakan ruleset/fingerprint; jangan migrasi event aktif secara diam-diam |
+| Save v1-v3 tidak kompatibel | Bedakan ruleset/fingerprint; jangan migrasi state secara diam-diam |
 | Run lama mengubah pointer baru | Conditional pointer update dan active-run guard dalam transaksi |
-| Schema database drift dari state v3 | Runtime validation + test snapshot properties |
+| Schema database drift dari state v4 | Runtime validation + test snapshot properties |
 | Battle dihitung ulang setelah refresh | Persist report saat startBattle; load hanya membaca |
 | Secret/password bocor | Server-only env, redacted log, response allow-list |
-| Scope melebar ke campaign 50 hari | Selesaikan acceptance MVP 20 hari terlebih dahulu |
+| Campaign v4 berubah lagi | Pin ruleset/fingerprint dan audit delta sebelum implementasi |
 
 ## 21. Definition of done backend MVP
 
@@ -732,12 +738,12 @@ Backend dianggap selesai ketika:
 - New game dan continue persisted di MongoDB.
 - Semua action publik memanggil engine, bukan rumus backend.
 - `actionId` dan `expectedRevision` mencegah duplikasi/stale write.
-- State version selain 3 ditolak dengan jelas.
+- State version selain 4 ditolak dengan jelas.
 - Event fallback dapat menyelesaikan alur tanpa AI.
 - Battle report tidak dihitung dua kali.
 - Victory/game over dan save pointer konsisten.
 - Unit test, integration test, Postman test, typecheck, lint, dan build lulus.
-- Frontend berhasil memainkan satu alur 20 hari melalui API.
+- Frontend berhasil memainkan satu alur 100 hari melalui API.
 
 ## 22. Readiness checklist sebelum Phase 1
 
@@ -822,3 +828,15 @@ Yang tidak boleh dicatat:
 - log mentah yang mengandung credential.
 
 Satu entri log minimal berisi tanggal/waktu Asia/Jakarta, tujuan, tindakan, file terdampak, validasi, hasil, dan status commit. Push tetap dilakukan manual oleh pemilik repository dan tidak dijalankan otomatis.
+
+## 25. Sinkronisasi patch balancing dan event terbaru
+
+Tahap lanjutan setelah engine v4 awal:
+
+1. Gunakan ruleset immutable `campaign-v4-100-day-v2` karena fingerprint konfigurasi engine berubah.
+2. Perlakukan `activeEvent.choices[].goldCost` sebagai biaya efektif final dan larang label AI menyebut istilah mata uang apa pun yang didukung engine.
+3. Validasi consequence yang digeser melalui rantai package tepercaya dari engine, termasuk antrean event pada hari yang sama.
+4. Gunakan ulang narasi run yang tersimpan; jika Gemini gagal, cari katalog AI bersama sebelum fallback lokal.
+5. Jalankan campaign 100 hari dan seluruh pemeriksaan backend tanpa mengubah source engine atau frontend.
+
+Output: backend mengikuti kontrak engine terbaru dan menyimpan narasi secara deterministik tanpa menduplikasi aturan gameplay.

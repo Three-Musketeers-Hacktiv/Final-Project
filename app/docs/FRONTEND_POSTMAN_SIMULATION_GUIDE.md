@@ -16,7 +16,7 @@ Jangan mengirim URI, password database, JWT secret, atau API key melalui Git. Fi
 
 Gemini key tidak diperlukan untuk pengujian ini. Jika `GEMINI_API_KEY` dan `GEMINI_MODEL` kosong, backend memakai narasi fallback terpercaya dan gameplay tetap berjalan.
 
-Game engine dan backend sudah memakai `eventPlan` serta choice ID dinamis. Panduan ini telah diverifikasi melalui campaign API 42 action sampai `victory` dan smoke test surrender sampai `gameOver`.
+Game engine v4 dan backend memakai campaign 100 hari, difficulty, `eventPlan` dinamis, consequence event, dan reward per wave. Choice/reward ID wajib dibaca dari response API.
 
 ## 2. Prasyarat laptop
 
@@ -152,9 +152,9 @@ Runner akan otomatis:
 
 - membuat akun unik dan login;
 - membuat run baru;
-- menyelesaikan event hari 3, 7, 13, dan 17;
-- menyelesaikan battle hari 10 beserta reward;
-- menyelesaikan battle hari 20 sampai `victory`;
+- membaca seluruh scheduled/consequence event dari response, tanpa hard-code hari atau ID;
+- menyelesaikan battle hari 10–100 dan reward setelah wave 1–9;
+- memverifikasi `victory` setelah wave 10;
 - membaca ulang final run dari MongoDB;
 - memastikan save aktif sudah kosong setelah victory;
 - logout dan memastikan sesi tidak lagi berlaku.
@@ -162,22 +162,24 @@ Runner akan otomatis:
 Hasil akhir yang diharapkan:
 
 ```text
-Campaign passed: runId=<id>, finalRevision=42, phase=victory
+Campaign passed: runId=<id> actions=<jumlah> events=<jumlah> battles=10
 ```
 
 Jika backend dijalankan pada URL atau origin lain:
 
 ```bash
 CAMPAIGN_BASE_URL=http://localhost:3000 \
-CAMPAIGN_ORIGIN=http://localhost:3000 \
+CAMPAIGN_ORIGIN=http://localhost:3001 \
 npm run test:campaign
 ```
+
+`CAMPAIGN_ORIGIN` harus sama persis dengan `APP_ORIGIN` server. Contoh di atas dipakai ketika API berjalan pada port 3000 tetapi frontend/origin yang diizinkan pada `.env` adalah port 3001.
 
 Setiap eksekusi membuat akun dan run test baru. Data tersebut tidak dihapus otomatis karena dipertahankan untuk audit development.
 
 ## 7. Simulasi campaign penuh secara manual di Postman
 
-Collection bawaan hanya menyediakan smoke flow. Untuk menjalankan 20 hari secara manual, lakukan `Register`, `Login`, dan `Create Run`, tetapi jangan logout. Sebaiknya mulai dari run baru tanpa menjalankan `Upgrade Wall` pada smoke flow.
+Collection bawaan hanya menyediakan smoke flow. Untuk menjalankan 100 hari secara manual, lakukan `Register`, `Login`, dan `Create Run`, tetapi jangan logout. Payload create-run wajib menyertakan `difficulty` (`easy`, `normal`, atau `hard`).
 
 Duplicate request `Upgrade Wall`, ubah namanya menjadi `Campaign Action`, dan gunakan body dasar berikut:
 
@@ -200,32 +202,18 @@ if (body.ok) {
 }
 ```
 
-Untuk setiap baris berikut, ubah `type` dan `payload`, lalu klik **Send**. Jangan menggunakan ulang `actionId`; dynamic variable `{{$guid}}` akan membuat ID baru.
+Pada setiap response, baca `data.game.state.phase` lalu pilih action berikut. Jangan menggunakan ulang `actionId`; dynamic variable `{{$guid}}` membuat ID baru.
 
-| Hari | Urutan action | Payload khusus / hasil fase |
-|---:|---|---|
-| 1 | `upgradeCity`, `endPreparationDay` | masuk hari 2 |
-| 2 | `upgradeCity`, `endPreparationDay` | masuk event hari 3 |
-| 3 | `chooseEventOption`, `endPreparationDay` | pilih ID choice kedua dari response event aktif |
-| 4 | `upgradeCity`, `endPreparationDay` | masuk hari 5 |
-| 5 | `upgradeTroops`, `endPreparationDay` | masuk hari 6 |
-| 6 | `upgradeTroops`, `endPreparationDay` | masuk event hari 7 |
-| 7 | `chooseEventOption`, `endPreparationDay` | pilih ID choice pertama dari response event aktif |
-| 8 | `upgradeTroops`, `endPreparationDay` | masuk hari 9 |
-| 9 | `endPreparationDay` | masuk `battleReady` hari 10 |
-| 10 | `startBattle`, `continueFromReport`, `chooseReward` | reward: `{ "rewardId": "reward-income" }`; masuk hari 11 |
-| 11 | `repairCity`, `endPreparationDay` | masuk hari 12 |
-| 12 | `repairCity`, `endPreparationDay` | masuk event hari 13 |
-| 13 | `chooseEventOption`, `repairCity`, `endPreparationDay` | pilih ID choice kedua dari response event aktif |
-| 14 | `repairCity`, `endPreparationDay` | masuk hari 15 |
-| 15 | `upgradeTroops`, `endPreparationDay` | masuk hari 16 |
-| 16 | `upgradeWall`, `endPreparationDay` | masuk event hari 17 |
-| 17 | `chooseEventOption`, `upgradeWall`, `endPreparationDay` | pilih ID choice pertama dari response event aktif |
-| 18 | `upgradeTroops`, `endPreparationDay` | masuk hari 19 |
-| 19 | `upgradeWall`, `endPreparationDay` | masuk `battleReady` hari 20 |
-| 20 | `startBattle`, `continueFromReport` | fase akhir `victory` |
+| Phase | Action berikut | Sumber payload |
+|---|---|---|
+| `preparation` | opsional satu upgrade/repair, lalu `endPreparationDay` | biaya dan status dari `game.stats`/`game.state` |
+| `event` | `chooseEventOption` | `choiceId` dari `game.eventNarrative.choices` (2–4 pilihan) |
+| `battleReady` | `startBattle` | `{}` |
+| `battleReport` | `continueFromReport` | `{}` |
+| `reward` | `chooseReward` | `rewardId` dari `game.rewardOptions` (3 pilihan) |
+| `victory` / `gameOver` | berhenti | state terminal |
 
-Gunakan `{}` untuk action tanpa payload khusus. Saat masuk hari event, buka response action sebelumnya, periksa `data.game.eventNarrative.choices`, lalu salin `id` pada posisi yang disebutkan tabel. ID berbeda menurut package yang dipilih engine dan tidak boleh ditebak dari nomor hari.
+Battle terjadi setiap hari kelipatan 10 sampai hari 100. Scheduled event berjumlah 20, tetapi harinya dinamis dan consequence event tambahan dapat muncul. Karena itu frontend/Postman tidak boleh menebak hari event, choice ID, atau reward ID.
 
 Contoh event action setelah ID disalin:
 
@@ -247,7 +235,7 @@ Setelah setiap response, periksa minimal:
 - event menyediakan title, description, choices, cost, dan effects;
 - nilai cost/effects berasal dari engine dan tidak bergantung pada teks AI.
 
-Sesudah final action hari 20:
+Sesudah final action hari 100:
 
 1. Pastikan `data.game.state.phase` adalah `victory` dan revision `42`.
 2. Kirim `GET {{baseUrl}}/api/runs/{{runId}}`; hasil harus `200` dengan state victory.
@@ -257,7 +245,7 @@ Sesudah final action hari 20:
 
 ## 8. Simulasi surrender
 
-Surrender dapat diuji segera setelah `Create Run`; campaign tidak perlu dijalankan sampai hari 20. Pastikan `runId` dan `revision` berasal dari response run aktif, lalu kirim:
+Surrender dapat diuji segera setelah `Create Run`; campaign tidak perlu dijalankan sampai hari 100. Pastikan `runId` dan `revision` berasal dari response run aktif, lalu kirim:
 
 ```http
 POST {{baseUrl}}/api/runs/{{runId}}/actions

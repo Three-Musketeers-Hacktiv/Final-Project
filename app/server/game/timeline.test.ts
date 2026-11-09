@@ -50,7 +50,7 @@ describe("action timeline author", () => {
         tone: "city",
         icon: "wallLevel",
         highlight: "Upgraded Wall",
-        text: "to Lv.1. Defense 2 → 4.",
+        text: "to Lv.1. Defense 2 → 5.",
       },
     ]);
   });

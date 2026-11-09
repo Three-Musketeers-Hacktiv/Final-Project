@@ -61,7 +61,7 @@
       "request": {
         "method": "POST",
         "header": [{ "key": "Content-Type", "value": "application/json" }],
-        "body": { "mode": "raw", "raw": "{\n  \"startRequestId\": \"{{$guid}}\",\n  \"replaceActiveSave\": true\n}" },
+        "body": { "mode": "raw", "raw": "{\n  \"startRequestId\": \"{{$guid}}\",\n  \"replaceActiveSave\": true,\n  \"difficulty\": \"normal\"\n}" },
         "url": "{{baseUrl}}/api/runs"
       },
       "event": [{

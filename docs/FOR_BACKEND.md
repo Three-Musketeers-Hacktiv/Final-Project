@@ -1,62 +1,46 @@
-# Backend — wire API to Game Engine v3
+# Backend — wire API to Game Engine v4
 
-Baseline for this contract: engine after the patch from `development-game-engine` → current `src/game`.  
-See [Patch.md](../Patch.md) for the full delta and [DEV1_CONTRACT.md](./DEV1_CONTRACT.md) for state schema.
+Baseline: 100-day / 10-wave engine in `src/game`.  
+See [CAMPAIGN_100_DAY_CONTRACT.md](./CAMPAIGN_100_DAY_CONTRACT.md), [DEV1_CONTRACT.md](./DEV1_CONTRACT.md), [Patch.md](../Patch.md).
 
 ## Role
 
 - Own auth, persistence, action log, and AI **narrative** generation.
 - Apply gameplay **only** through pure functions from `src/game`.
-- Persist JSON-serializable `GameState` with `version: 3`.
+- Persist JSON-serializable `GameState` with **`version: 4`**.
 
 ## Do not
 
-- Reimplement economy, battle, or reward math outside the engine.
+- Reimplement economy, battle, reward, or consequence math outside the engine.
 - Accept client-supplied costs, bonuses, or effect payloads.
-- Call removed APIs: `enterDay`, old single-track `upgradeCity`, `applyReward`.
-- Treat Dev1 mock harness as production backend.
+- Call removed / internal APIs: `enterDay`, `enterCalendarDay`, old single-track `upgradeCity`, `applyReward`.
+- Expose `enterCalendarDay` on any client-facing route.
+- Hardcode event day unions `[3,7,13,17]` or battle days `[10,20]` only — validate against engine config / days 1–100.
+- Invent mechanical effects from AI responses.
+- Re-scale or overwrite `activeEvent.choices[].goldCost` when decorating narrative.
 
 ## Create run
 
 ```ts
-import { createInitialState, pickEventPlan } from "../game"; // adjust path
+import { createInitialState } from "../game"; // adjust path
 
-const runId = crypto.randomUUID(); // BE generates id
-const state = createInitialState({ runId });
-// state.eventPlan is already set; equals pickEventPlan(runId)
-// state.revision === 0; day-1 income already applied
+const runId = crypto.randomUUID();
+const difficulty = body.difficulty ?? "normal"; // validate enum
+const state = createInitialState({ runId, difficulty });
+// version 4, eventPlan length 20, revision 0, day-1 income applied
 ```
 
-Persist `state` atomically. Optionally pre-generate narratives for each `eventPlan` entry (title/description/labels only) keyed by `runId` + `eventId` / `packageId`.
-
-**Legacy:** documents with `version: 1` and `upgradeLevel` are unsupported — reject with `UNSUPPORTED_STATE_VERSION` (or recreate). Do not auto-migrate.
+Reject stored runs with `version !== 4` (`UNSUPPORTED_STATE_VERSION`). Do not auto-migrate v3.
 
 ## Apply action pattern
 
 ```ts
-import {
-  upgradeWall,
-  upgradeTroops,
-  upgradeCity,
-  repairCity,
-  endPreparationDay,
-  startBattle,
-  continueFromReport,
-  chooseEventOption,
-  chooseReward,
-  ensureLocalEvent,
-  decorateActiveEvent,
-} from "../game";
-
-// 1. Load latest GameState for runId (+ lock / transaction)
-// 2. Optional: if expectedRevision != state.revision → STALE_REVISION
-// 3. Optional: if actionId already committed → return stored result (dedupe)
-// 4. Dispatch one engine function
-// 5. ok:false → return error, no write
-// 6. ok:true → save state + action log (include new revision)
+// 1. Load latest GameState (+ lock)
+// 2. Optional expectedRevision / actionId dedupe
+// 3. Dispatch one engine function
+// 4. ok:false → no write
+// 5. ok:true → persist state + action log
 ```
-
-### Action → engine
 
 | Client `type` | Call |
 |---|---|
@@ -69,68 +53,44 @@ import {
 | `continueFromReport` | `continueFromReport(state)` |
 | `chooseEventOption` | `chooseEventOption(state, choiceId)` |
 | `chooseReward` | `chooseReward(state, rewardId)` |
+| `surrender` | `surrender(state)` |
 
-`ensureLocalEvent(state)` when entering/serving an event day if `activeEvent` is missing but the plan still has an unfinished package.
+`ensureLocalEvent(state)` when serving a day if `activeEvent` is missing but a scheduled plan entry or unresolved `pendingConsequences` entry for that day is unfinished (save/load recovery). Normal play after `chooseEventOption` should already chain the next same-day event inside the engine.
 
 ## Events & AI
 
-1. Resolve package with `resolveEventPackage(day, state.eventPlan)` or trust `state.activeEvent.packageId` against `eventPackageById`.
-2. AI request may include `packageId`, `eventId`, `day`, city summary — **not** free-form effect numbers.
-3. Validate response choice ids ⊆ trusted package choice ids.
-4. Merge narrative with:
-
-```ts
-const next = decorateActiveEvent(state, {
-  title,
-  description,
-  choices: [
-    { id: trusted.choices[0].id, label: aiLabel0 },
-    { id: trusted.choices[1].id, label: aiLabel1 },
-  ],
-  source: "ai", // or "fallback" / "mock"
-});
-```
-
-5. Fallback to local package copy on timeout/5xx/invalid JSON; gameplay must continue.
+1. Resolve scheduled package via `resolveEventPackage(day, state.eventPlan)` or consequence via `pendingConsequences` + `eventPackageById`.
+2. AI request: `packageId`, `eventId`, `day`, city summary; if `isConsequence`, include origin event/choice context. Include **effective** `goldCost` values from `activeEvent.choices` (already difficulty-scaled).
+3. Validate response choice ids ⊆ trusted package (length 2–4).
+4. Merge with `decorateActiveEvent` (labels / title / description only — never costs or effects).
+5. Fallback to local copy on timeout/5xx/invalid JSON.
 6. Never apply effects when narrative arrives — only on `chooseEventOption`.
+7. After a successful `chooseEventOption`, if `state.activeEvent` is still set (same-day chain) or `eventId` changed, **generate narrative again** for the new active event. Do not treat the day as event-complete after a single choice.
 
-Pool reminder (2 packages per day): see [Patch.md](../Patch.md) §5. Same `runId` ⇒ same `eventPlan`.
+## Persistence
 
-## Persistence fields to store
+Store full `GameState` v4 including:
 
-Minimum on `game_runs` (names may vary):
+- `difficulty`, `eventPlan`, `pendingConsequences`, `rewardsChosenByWave`
+- `revision`, `incomeGrantedDays`, `effects`, `battleResult`
 
-- Full `GameState` blob (`version`, `revision`, tracks, `incomeGrantedDays`, `eventPlan`, effects, …)
-- Optional `preparedEventNarratives[]` keyed by plan entries
-- Action log: `actionId`, `type`, `runId`, `revisionBefore`, `revisionAfter`, timestamp
+Optional: prepared narratives keyed by `runId` + `eventId` / consequence `id`.
 
-Battle success reports (if separate collection): write on successful `startBattle` with `won: true` — not on event outcomes.
-
-## Stale / dedupe (recommended BE layer)
+## BE-only error codes
 
 | Code | When |
 |---|---|
-| `STALE_REVISION` | Client `expectedRevision` ≠ loaded `revision` |
-| `DUPLICATE_ACTION` | Same `actionId` already applied (return first result) |
-| `RUN_MISMATCH` | `runId` / ownership mismatch |
-| `UNSUPPORTED_STATE_VERSION` | `version !== 3` |
-
-Engine itself emits gameplay codes only (`INVALID_PHASE`, `EVENT_REQUIRED`, …).
-
-## Response contract
-
-```ts
-{ ok: true, state: GameState }
-{ ok: false, error: { code: string, message: string } }
-```
-
-Do not mutate gold/HP in the adapter after a successful engine call except via another engine function.
+| `STALE_REVISION` | Client revision ≠ loaded |
+| `DUPLICATE_ACTION` | Same `actionId` already applied |
+| `RUN_MISMATCH` | Ownership / run id mismatch |
+| `UNSUPPORTED_STATE_VERSION` | `version !== 4` |
 
 ## Smoke checklist
 
-1. `POST` create run → `version: 3`, `eventPlan.length === 4`, `revision: 0`.  
-2. Upgrade wall then troops on different days; costs follow level + discount.  
-3. Event choice id taken from plan package; unknown id → `INVALID_CHOICE`.  
-4. Kill AI service → `ensureLocalEvent` / fallback still finishes day 3.  
-5. `startBattle` twice same day → second call `BATTLE_ALREADY_RESOLVED`.  
-6. Load v1 save → rejected; no silent field mapping from `upgradeLevel`.
+1. Create run with each difficulty → monster preview / costs differ; Normal matches base table.  
+2. `eventPlan.length === 20`; days are prep days; stable for same `runId`.  
+3. Skip choice schedules consequence; trigger day opens event before next battle.  
+4. Choose first of two same-day consequences → response still `phase: "event"` → second narrative generated; refresh mid-queue does not double-apply effects.  
+5. Rewards after waves 1–9; wave 10 → victory.  
+6. `startBattle` twice → `BATTLE_ALREADY_RESOLVED`.  
+7. Load v3 save → rejected.

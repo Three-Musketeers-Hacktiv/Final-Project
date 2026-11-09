@@ -1,5 +1,6 @@
-import { gameConfig } from "./config";
-import type { ActiveEffects, Effect, GameState } from "./types";
+import { gameConfig, lastWaveNumber } from "./config";
+import { getDifficultyModifiers, scaleEconomyCost } from "./difficulty";
+import type { ActiveEffects, Difficulty, Effect, GameState } from "./types";
 
 export function emptyEffects(): ActiveEffects {
   return {
@@ -19,11 +20,11 @@ export function copyEffects(effects: ActiveEffects): ActiveEffects {
   };
 }
 
-export function upcomingWave(state: GameState): 1 | 2 {
-  return state.wavesCleared >= 1 ? 2 : 1;
+export function upcomingWave(state: GameState): number {
+  return Math.min(state.wavesCleared + 1, lastWaveNumber());
 }
 
-export function defenseBonusForWave(effects: ActiveEffects, wave: 1 | 2): number {
+export function defenseBonusForWave(effects: ActiveEffects, wave: number): number {
   return effects.defenseByWave[wave] ?? 0;
 }
 
@@ -31,20 +32,43 @@ export function rawUpgradeCost(level: number): number {
   return gameConfig.upgradeBaseCost + level * gameConfig.upgradeCostStep;
 }
 
-/** Highest discount rate; ceil after discount. Repair is never discounted. */
-export function discountedUpgradeCost(level: number, effects: ActiveEffects): number {
-  const raw = rawUpgradeCost(level);
-  if (effects.upgradeDiscountRate <= 0) return raw;
-  return Math.ceil(raw * (1 - effects.upgradeDiscountRate));
+/** Difficulty then discount; repair is never discounted. */
+export function discountedUpgradeCost(
+  level: number,
+  effects: ActiveEffects,
+  difficulty: Difficulty,
+): number {
+  const mods = getDifficultyModifiers(difficulty);
+  const withDifficulty = scaleEconomyCost(rawUpgradeCost(level), mods.upgradeCost);
+  if (effects.upgradeDiscountRate <= 0) return withDifficulty;
+  return Math.max(1, Math.ceil(withDifficulty * (1 - effects.upgradeDiscountRate)));
 }
 
-export function applyEffect(effects: ActiveEffects, effect: Effect, state: { gold: number; cityHp: number }): {
-  effects: ActiveEffects;
+export type MutableCity = {
   gold: number;
   cityHp: number;
-} {
+  cityMaxHp: number;
+};
+
+/** Waves already cleared cannot receive new timed bonuses. */
+export type EffectApplyContext = {
+  wavesCleared: number;
+};
+
+function waveStillAhead(requested: number, ctx: EffectApplyContext | undefined): number {
+  if (!ctx) return requested;
+  const upcoming = Math.min(ctx.wavesCleared + 1, lastWaveNumber());
+  return requested < upcoming ? upcoming : requested;
+}
+
+export function applyEffect(
+  effects: ActiveEffects,
+  effect: Effect,
+  state: MutableCity,
+  ctx?: EffectApplyContext,
+): { effects: ActiveEffects; gold: number; cityHp: number; cityMaxHp: number } {
   const next = copyEffects(effects);
-  let { gold, cityHp } = state;
+  let { gold, cityHp, cityMaxHp } = state;
   switch (effect.type) {
     case "grantGold":
       gold += effect.amount;
@@ -52,41 +76,54 @@ export function applyEffect(effects: ActiveEffects, effect: Effect, state: { gol
     case "damageCity":
       cityHp = Math.max(0, cityHp - effect.amount);
       break;
+    case "healCity":
+      cityHp = Math.min(cityMaxHp, cityHp + effect.amount);
+      break;
+    case "maxHpBonus":
+      cityMaxHp += effect.amount;
+      cityHp = Math.min(cityMaxHp, cityHp + effect.amount);
+      break;
     case "nextWaveDefense": {
-      const current = next.defenseByWave[effect.wave] ?? 0;
-      next.defenseByWave = { ...next.defenseByWave, [effect.wave]: current + effect.amount };
+      const wave = waveStillAhead(effect.wave, ctx);
+      const current = next.defenseByWave[wave] ?? 0;
+      next.defenseByWave = { ...next.defenseByWave, [wave]: current + effect.amount };
       break;
     }
-    case "upgradeDiscount":
+    case "upgradeDiscount": {
+      const untilWave = waveStillAhead(effect.untilWave, ctx);
       next.upgradeDiscountRate = Math.max(next.upgradeDiscountRate, effect.rate);
       next.upgradeDiscountUntilWave =
         next.upgradeDiscountUntilWave == null
-          ? effect.untilWave
-          : effect.untilWave > next.upgradeDiscountUntilWave
-            ? effect.untilWave
-            : next.upgradeDiscountUntilWave;
+          ? untilWave
+          : Math.max(next.upgradeDiscountUntilWave, untilWave);
       break;
+    }
     default: {
       const _never: never = effect;
       return _never;
     }
   }
-  return { effects: next, gold, cityHp };
+  return { effects: next, gold, cityHp, cityMaxHp };
 }
 
 export function applyEffects(
   effects: ActiveEffects,
   list: Effect[],
-  state: { gold: number; cityHp: number },
-): { effects: ActiveEffects; gold: number; cityHp: number } {
-  return list.reduce((acc, effect) => applyEffect(acc.effects, effect, acc), {
-    effects: copyEffects(effects),
-    gold: state.gold,
-    cityHp: state.cityHp,
-  });
+  state: MutableCity,
+  ctx?: EffectApplyContext,
+): { effects: ActiveEffects; gold: number; cityHp: number; cityMaxHp: number } {
+  return list.reduce(
+    (acc, effect) => applyEffect(acc.effects, effect, acc, ctx),
+    {
+      effects: copyEffects(effects),
+      gold: state.gold,
+      cityHp: state.cityHp,
+      cityMaxHp: state.cityMaxHp,
+    },
+  );
 }
 
-export function clearWaveDefense(effects: ActiveEffects, wave: 1 | 2): ActiveEffects {
+export function clearWaveDefense(effects: ActiveEffects, wave: number): ActiveEffects {
   const defenseByWave = { ...effects.defenseByWave };
   delete defenseByWave[wave];
   const next = { ...effects, defenseByWave };
@@ -94,10 +131,16 @@ export function clearWaveDefense(effects: ActiveEffects, wave: 1 | 2): ActiveEff
     next.upgradeDiscountRate = 0;
     next.upgradeDiscountUntilWave = null;
   }
+  // Prep income bonus is timed until next battle; clear when that wave resolves.
+  // Callers that need to keep income across a wave should re-apply via reward.
   return next;
 }
 
-/** Phase bonuses end after the final wave. */
+/** Clear timed prep income when leaving a reward segment into the next decade after a wave. */
+export function clearPrepIncomeBonus(effects: ActiveEffects): ActiveEffects {
+  return { ...effects, prepIncomeBonus: 0 };
+}
+
 export function clearEndOfCampaignEffects(): ActiveEffects {
   return emptyEffects();
 }

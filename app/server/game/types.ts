@@ -12,7 +12,7 @@ export type GameRulesetDocument = {
   _id: ObjectId;
   rulesetId: string;
   engineVersion: string;
-  stateVersion: 3;
+  stateVersion: 4;
   configFingerprint: string;
   status: "active" | "retired";
   createdAt: Date;
@@ -81,7 +81,7 @@ export type GameReportDocument = {
   _id: ObjectId;
   gameRunId: ObjectId;
   userId: ObjectId;
-  wave: 1 | 2;
+  wave: number;
   day: BattleDay;
   actionId: string;
   gameActionId: ObjectId;
@@ -108,7 +108,7 @@ export type EventDataDocument = {
   narrative: {
     title: string;
     description: string;
-    choices: [{ id: string; label: string }, { id: string; label: string }];
+    choices: Array<{ id: string; label: string }>;
   };
   source: PersistedNarrativeSource;
   provider?: string;
