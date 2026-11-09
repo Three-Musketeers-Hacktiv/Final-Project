@@ -16,11 +16,12 @@ type SettingsDialogProps = {
 
 /** In-game menu behind the ⚙ button: run overview, Resume, Surrender and Log Out. */
 export default function SettingsDialog({ onClose }: SettingsDialogProps) {
-  const { game } = useGame();
+  const { game, pending, act } = useGame();
   const { state } = game;
+  const ended = state.phase === "gameOver" || state.phase === "victory";
   const resumeRef = useRef(false);
   const onCloseRef = useRef(onClose);
-  const [surrenderStep, setSurrenderStep] = useState<"idle" | "confirm" | "unavailable">("idle");
+  const [confirmingSurrender, setConfirmingSurrender] = useState(false);
 
   useEffect(() => {
     onCloseRef.current = onClose;
@@ -34,7 +35,7 @@ export default function SettingsDialog({ onClose }: SettingsDialogProps) {
       if ((event as ToggleEvent).newState !== "closed") return;
       onCloseRef.current(resumeRef.current);
       resumeRef.current = false;
-      setSurrenderStep("idle");
+      setConfirmingSurrender(false);
     };
     dialog.addEventListener("toggle", handleToggle);
     return () => dialog.removeEventListener("toggle", handleToggle);
@@ -43,6 +44,11 @@ export default function SettingsDialog({ onClose }: SettingsDialogProps) {
   function resume() {
     resumeRef.current = true;
     document.getElementById(SETTINGS_DIALOG)?.hidePopover();
+  }
+
+  // The run ends as game over and the end screen takes over; a failure shows in the game toast.
+  async function surrender() {
+    if (await act("surrender", {})) document.getElementById(SETTINGS_DIALOG)?.hidePopover();
   }
 
   return (
@@ -54,27 +60,23 @@ export default function SettingsDialog({ onClose }: SettingsDialogProps) {
           Resume
         </GameButton>
 
-        {surrenderStep === "idle" && (
-          <GameButton variant="danger" onClick={() => setSurrenderStep("confirm")}>
+        {!confirmingSurrender && (
+          <GameButton variant="danger" disabled={ended} onClick={() => setConfirmingSurrender(true)}>
             Surrender
           </GameButton>
         )}
-        {surrenderStep === "confirm" && (
+        {confirmingSurrender && (
           <div className="rounded-sm border-2 border-crimson/70 p-3">
             <p>Give up this run? Your city will fall and the run ends.</p>
             <div className="mt-3 grid grid-cols-2 gap-3">
-              <GameButton onClick={() => setSurrenderStep("idle")}>Cancel</GameButton>
-              {/* TODO: send the surrender action once the backend has one (API_CONTRACT.md has none yet). */}
-              <GameButton variant="danger" onClick={() => setSurrenderStep("unavailable")}>
-                Surrender
+              <GameButton disabled={pending} onClick={() => setConfirmingSurrender(false)}>
+                Cancel
+              </GameButton>
+              <GameButton variant="danger" disabled={pending} onClick={surrender}>
+                {pending ? "Surrendering…" : "Surrender"}
               </GameButton>
             </div>
           </div>
-        )}
-        {surrenderStep === "unavailable" && (
-          <p role="alert" className="rounded-sm border-2 border-crimson/70 px-3 py-2 text-sm">
-            Surrendering isn&apos;t available yet. The server has no surrender action.
-          </p>
         )}
 
         {/* Kept apart so it isn't pressed by accident. */}

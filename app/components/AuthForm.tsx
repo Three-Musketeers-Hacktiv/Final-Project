@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState, type FormEvent } from "react";
+import { useLayoutEffect, useState, type FormEvent } from "react";
 import type { AuthResponse, LoginRequest, PublicUserView, RegisterRequest } from "@/contracts/api";
 import { ApiError, apiRequest } from "@/lib/api";
 import { errorMessage, fieldMessages } from "@/lib/errorMessages";
@@ -46,6 +46,18 @@ export default function AuthForm({ mode }: { mode: "login" | "register" }) {
   // INVALID_CREDENTIALS etc. for the whole form; VALIDATION_ERROR `error.fields` per input.
   const [formError, setFormError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Partial<Record<FieldName, string>>>({});
+
+  // Next.js keeps a page's state when you leave it (cacheComponents). Reset the form as it is hidden,
+  // so coming back after logging out shows a usable form, not "Logging in…" with the old password.
+  useLayoutEffect(
+    () => () => {
+      setPending(false);
+      setValues((v) => ({ ...v, password: "", confirmPassword: "" }));
+      setFormError(null);
+      setFieldErrors({});
+    },
+    [],
+  );
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     // Stay on the page so a failed attempt doesn't wipe what the player typed.

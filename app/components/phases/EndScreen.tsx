@@ -21,6 +21,8 @@ type EndScreenProps = {
 /** phase "victory" / "gameOver": the run is over and can no longer take actions. */
 export default function EndScreen({ outcome, day, wavesCleared, cityHp, cityMaxHp, gold }: EndScreenProps) {
   const won = outcome === "victory";
+  // Game over with the city still standing means the player surrendered.
+  const surrendered = !won && cityHp > 0;
   const stats: { label: string; icon: IconName; value: string }[] = [
     { label: "Day reached", icon: "timeline", value: String(day) },
     { label: "Waves cleared", icon: "thisWave", value: String(wavesCleared) },
@@ -44,9 +46,15 @@ export default function EndScreen({ outcome, day, wavesCleared, cityHp, cityMaxH
           className={`w-full max-w-sm select-none ${won ? "h-auto" : "aspect-[1536/690] object-cover"}`}
           draggable={false}
         />
-        <h3 className="text-3xl font-bold">{won ? "The city stands!" : "The city has fallen"}</h3>
+        <h3 className="text-3xl font-bold">
+          {won ? "The city stands!" : surrendered ? "The city has surrendered" : "The city has fallen"}
+        </h3>
         <p className="text-muted">
-          {won ? `Your walls held through all ${day} days of the siege.` : `The walls broke on day ${day}.`}
+          {won
+            ? `Your walls held through all ${day} days of the siege.`
+            : surrendered
+              ? `You gave up the defense on day ${day}.`
+              : `The walls broke on day ${day}.`}
         </p>
       </div>
 

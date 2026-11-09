@@ -8,6 +8,7 @@ import Panel from "@/components/Panel";
 import RunSummary from "@/components/RunSummary";
 import ScreenShell from "@/components/ScreenShell";
 import { ApiError } from "@/lib/api";
+import { errorMessage, isUnloadableSave } from "@/lib/errorMessages";
 import { serverApiRequest } from "@/lib/serverApi";
 
 export const metadata: Metadata = {
@@ -40,6 +41,17 @@ async function loadOrNull<T>(path: string, expected: string): Promise<T | null> 
   }
 }
 
+/** The active save, or the error code when the server can't load it (e.g. made by older game rules). */
+async function loadSave(): Promise<RunResponse | { unloadable: string } | null> {
+  try {
+    return await serverApiRequest<RunResponse>("/api/runs/current");
+  } catch (error) {
+    if (error instanceof ApiError && error.code === "NO_ACTIVE_SAVE") return null;
+    if (error instanceof ApiError && isUnloadableSave(error.code)) return { unloadable: error.code };
+    throw error;
+  }
+}
+
 /**
  * Home screen. Logged out (no session, or an expired one): a Play button that leads to login, which
  * comes back here. Logged in: the main menu, where "Continue" only shows with an active save.
@@ -59,8 +71,8 @@ async function Menu() {
     );
   }
 
-  const save = me.user.hasActiveSave ? await loadOrNull<RunResponse>("/api/runs/current", "NO_ACTIVE_SAVE") : null;
-  const state = save?.game.state;
+  const save = me.user.hasActiveSave ? await loadSave() : null;
+  const state = save && "game" in save ? save.game.state : null;
 
   return (
     <Panel title={`Welcome, ${me.user.username}`}>
@@ -72,6 +84,13 @@ async function Menu() {
               Continue
             </GameButton>
           </>
+        )}
+
+        {/* A save the server can't load: the player can only start over (New Game replaces it). */}
+        {save && "unloadable" in save && (
+          <p role="alert" className="rounded-sm border-2 border-crimson/70 px-3 py-2">
+            {errorMessage(save.unloadable)}
+          </p>
         )}
 
         <NewGameButton saveDay={state?.day ?? null} />

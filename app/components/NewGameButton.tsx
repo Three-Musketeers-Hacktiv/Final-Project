@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useRef, useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import type { CreateRunRequest, CreateRunResponse } from "@/contracts/api";
 import { ApiError, apiRequest } from "@/lib/api";
 import { errorMessage } from "@/lib/errorMessages";
@@ -24,7 +24,20 @@ export default function NewGameButton({ saveDay }: NewGameButtonProps) {
   const startRequestIds = useRef<Partial<Record<"start" | "replace", string>>>({});
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [needsConfirm, setNeedsConfirm] = useState(saveDay !== null);
+  // A save the server reported after this loaded (e.g. from another tab). The saved run itself is read
+  // from `saveDay` each render, so a menu restored after the run ended doesn't still ask to replace it.
+  const [saveAppeared, setSaveAppeared] = useState(false);
+  const needsConfirm = saveDay !== null || saveAppeared;
+
+  // Pages are kept when you leave them (cacheComponents): reset so a restored menu isn't stuck on "Starting…".
+  useLayoutEffect(
+    () => () => {
+      setPending(false);
+      setError(null);
+      setSaveAppeared(false);
+    },
+    [],
+  );
 
   async function startRun(replaceActiveSave: boolean) {
     const intent = replaceActiveSave ? "replace" : "start";
@@ -44,7 +57,7 @@ export default function NewGameButton({ saveDay }: NewGameButtonProps) {
       const code = err instanceof ApiError ? err.code : "INTERNAL_ERROR";
       if (code === "ACTIVE_SAVE_EXISTS") {
         // A save appeared since the menu loaded (e.g. another tab): ask first.
-        setNeedsConfirm(true);
+        setSaveAppeared(true);
         document.getElementById(REPLACE_SAVE_DIALOG)?.showPopover();
       } else if (code === "UNAUTHENTICATED") {
         router.replace("/login");
