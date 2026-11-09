@@ -1,5 +1,6 @@
 import { gameConfig } from "./config";
-import { hasUnresolvedEvent, isBattleDay } from "./calendar";
+import { isBattleDay } from "./calendar";
+import { hasUnresolvedEvent } from "./dayEnter";
 import { fail, isEnded, ok } from "./result";
 import { getRepairCost, getUpgradeCost, trackLevel } from "./stats";
 import type { ActionResult, GameState, UpgradeTrack } from "./types";
@@ -57,7 +58,7 @@ export function repairCity(state: GameState): ActionResult {
   const blocked = economyGate(state);
   if (blocked) return blocked;
   if (state.cityHp >= state.cityMaxHp) return fail("HP_FULL", "City HP is already full");
-  const cost = getRepairCost();
+  const cost = getRepairCost(state);
   if (state.gold < cost) return fail("INSUFFICIENT_GOLD", "Not enough gold to repair");
   const healed = Math.min(state.cityMaxHp, state.cityHp + gameConfig.repairHeal);
   return ok({
