@@ -894,3 +894,23 @@ Handoff/kendala lintas tim:
 - Live campaign runner berakhir valid di `gameOver` hari 50 setelah wave 4 dengan strategi otomatis saat ini, bukan `victory` hari 100. Ini bukan error API/backend; balancing/strategi kemenangan v4 perlu fixture atau rute aksi yang disepakati engine sebelum gate campaign victory dapat dinyatakan lulus.
 - Source frontend, source engine, dan root docs tidak diedit oleh implementasi backend.
 - Push tidak dilakukan.
+
+## 2026-11-09 — Audit patch balancing dan event terbaru
+
+Scope:
+- Membaca ulang kontrak dan implementasi engine terbaru setelah commit rekan `95489bc` dan `fb1055d` tersedia di branch lokal.
+- Membatasi seluruh perubahan backend pada `app/**`; frontend, `src/**`, dan root `docs/**` tetap read-only.
+
+Temuan:
+- Config tepercaya mengubah bonus wall, bonus city MaxHP, dan multiplier hard sehingga fingerprint ruleset lama tidak boleh dipakai ulang.
+- Biaya pilihan event pada active state sudah merupakan biaya efektif setelah difficulty scaling.
+- Consequence dapat memakai trusted successor package; validasi equality backend lama terlalu ketat.
+- Event consequence dapat langsung muncul setelah pilihan event pada hari yang sama.
+- Narasi tersimpan perlu dipakai ulang sebelum local fallback agar teks AI stabil dan panggilan provider tidak boros.
+- Baseline root typecheck dan 52 test lulus. Backend typecheck lulus; backend test menghasilkan 56 lulus dan 1 gagal karena assertion wall lama masih mengharapkan defense 4, sementara hasil tepercaya terbaru adalah 5.
+
+Rencana commit:
+1. Dokumentasi sinkronisasi patch terbaru.
+2. Ruleset v2, successor consequence validation, dan regression test balancing.
+3. Reuse narasi run/katalog AI serta test validasi/dekorasi.
+4. Closeout dokumentasi setelah campaign, typecheck, test, lint, dan build aktual dijalankan.

@@ -1,6 +1,6 @@
 # Engine V4 Backend Integration
 
-Status: **Backend implemented; cross-team gates recorded below**
+Status: **Latest engine patch synchronization in progress**
 Owner: Backend  
 Engine source: `../../src/game` and `../../docs/FOR_BACKEND.md` (read-only)  
 Last updated: 2026-11-09
@@ -21,6 +21,23 @@ This document records the backend changes required by game-engine patch v4. Back
 - Battle report `wave` and `day` are numeric campaign values, not the former `1 | 2` and `10 | 20` unions.
 - Public action names remain unchanged, including `surrender`.
 - Gemini remains the default narrative provider, with Zod validation and trusted local fallback.
+
+## Latest patch delta (2026-11-09)
+
+- Trusted balancing now uses wall defense `+3`, city maximum HP `+35`, hard monster HP multiplier `1.20`, and hard monster attack multiplier `1.12`. Backend obtains these values and its fingerprint from engine config.
+- `activeEvent.choices[].goldCost` is already difficulty-scaled. It is the effective cost; backend and frontend must not scale it again.
+- AI labels may not state any currency amount. Backend supplies effective costs as prompt context, but labels are accepted only through the engine trusted-label policy.
+- A consequence may move to a trusted successor package when its original window is occupied. Backend uses `isTrustedConsequencePackage`, not strict package equality.
+- Choosing an event can immediately activate another consequence on the same day. The response must decorate that new active event.
+- Narrative recovery order is: same run/event, configured Gemini generation, shared valid AI narrative for the ruleset/package/day after generation failure, then trusted local fallback.
+- The new immutable ruleset ID is `campaign-v4-100-day-v2`. Existing `v1` runs are not silently migrated because the config fingerprint changed.
+
+## Latest patch implementation tickets
+
+1. Version the immutable ruleset and use the engine successor-chain validator.
+2. Update balancing regression tests and cover the `late-3` successor schedule.
+3. Add stored narrative lookup while preserving trusted decoration and source metadata.
+4. Verify same-day chaining, a full campaign, typecheck, lint, build, and tests without editing frontend or engine files.
 
 ## Backend work items
 

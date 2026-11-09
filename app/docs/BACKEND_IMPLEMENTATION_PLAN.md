@@ -824,3 +824,15 @@ Yang tidak boleh dicatat:
 - log mentah yang mengandung credential.
 
 Satu entri log minimal berisi tanggal/waktu Asia/Jakarta, tujuan, tindakan, file terdampak, validasi, hasil, dan status commit. Push tetap dilakukan manual oleh pemilik repository dan tidak dijalankan otomatis.
+
+## 25. Sinkronisasi patch balancing dan event terbaru
+
+Tahap lanjutan setelah engine v4 awal:
+
+1. Gunakan ruleset immutable `campaign-v4-100-day-v2` karena fingerprint konfigurasi engine berubah.
+2. Perlakukan `activeEvent.choices[].goldCost` sebagai biaya efektif final dan larang label AI menyebut nominal mata uang.
+3. Validasi consequence yang digeser melalui rantai package tepercaya dari engine, termasuk antrean event pada hari yang sama.
+4. Gunakan ulang narasi run yang tersimpan; jika Gemini gagal, cari katalog AI bersama sebelum fallback lokal.
+5. Jalankan campaign 100 hari dan seluruh pemeriksaan backend tanpa mengubah source engine atau frontend.
+
+Output: backend mengikuti kontrak engine terbaru dan menyimpan narasi secara deterministik tanpa menduplikasi aturan gameplay.
