@@ -8,6 +8,7 @@ import {
   eventPackageById,
   GAME_STATE_VERSION,
   endPreparationDay,
+  ensureLocalEvent,
   gameConfig,
   getEffectiveStats,
   getWavePreview,
@@ -166,6 +167,11 @@ export function readEffectiveStats(state: GameState) {
 export function readWavePreview(state: GameState) {
   assertSupportedState(state);
   return getWavePreview(state);
+}
+
+export function ensureRequiredEvent(state: GameState): ActionResult {
+  assertSupportedState(state);
+  return ensureLocalEvent(state);
 }
 
 export type EngineGameAction =

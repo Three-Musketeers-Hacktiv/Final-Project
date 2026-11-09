@@ -7,7 +7,11 @@ import {
   type NarrativeResult,
 } from "@/server/ai/event-narrative";
 import type { UserDocument } from "@/server/auth/types";
-import { applyGameAction, type EngineGameAction } from "@/server/game-engine/adapter";
+import {
+  applyGameAction,
+  ensureRequiredEvent,
+  type EngineGameAction,
+} from "@/server/game-engine/adapter";
 import { hashPayload } from "@/server/game/hash";
 import { assertActionIdempotency } from "@/server/game/idempotency";
 import { assertLoadableRun } from "@/server/game/load";
@@ -48,7 +52,18 @@ function parseRunId(runId: string): ObjectId {
 }
 
 async function viewForRun(run: GameRunDocument) {
-  return toGameView(run, await findLatestReport(run._id));
+  const recovered = recoverRequiredEvent(run);
+  return toGameView(recovered, await findLatestReport(run._id));
+}
+
+function recoverRequiredEvent(run: GameRunDocument): GameRunDocument {
+  const result = ensureRequiredEvent(run.state);
+  if (!result.ok) return run;
+  if (result.state === run.state || result.state.revision === run.state.revision) return run;
+  return {
+    ...run,
+    state: { ...result.state, revision: run.state.revision },
+  };
 }
 
 async function validateRun(
@@ -262,7 +277,9 @@ export async function submitGameAction(
     });
   }
 
-  const result = applyGameAction(currentRun.state, toEngineAction(input));
+  const actionRun = recoverRequiredEvent(currentRun);
+  const recoveredEvent = currentRun.state.activeEvent ? null : actionRun.state.activeEvent;
+  const result = applyGameAction(actionRun.state, toEngineAction(input));
   if (!result.ok) throw new ApiError(422, result.error.code, result.error.message);
   if (result.state.revision !== currentRun.state.revision + 1) {
     throw new Error("Engine action did not advance exactly one revision");
@@ -270,14 +287,18 @@ export async function submitGameAction(
 
   const now = new Date();
   let nextState = result.state;
-  let generatedEvent: GeneratedEventWrite | null = null;
+  const generatedEvents: GeneratedEventWrite[] = [];
+  if (recoveredEvent) {
+    const recoveredNarrative = await resolveEventNarrative(currentRun, recoveredEvent, now);
+    if (recoveredNarrative.write) generatedEvents.push(recoveredNarrative.write);
+  }
   if (
     result.state.activeEvent &&
-    currentRun.state.activeEvent?.eventId !== result.state.activeEvent.eventId
+    actionRun.state.activeEvent?.eventId !== result.state.activeEvent.eventId
   ) {
     const resolvedNarrative = await resolveEventNarrative(currentRun, result.state.activeEvent, now);
     nextState = decorateActiveEvent(result.state, resolvedNarrative.result);
-    generatedEvent = resolvedNarrative.write;
+    if (resolvedNarrative.write) generatedEvents.push(resolvedNarrative.write);
   }
   const action: GameActionDocument = {
     _id: new ObjectId(),
@@ -302,19 +323,19 @@ export async function submitGameAction(
   const report = createReportDocument(nextRun, action);
   const timelineEntries = describeTimelineAction(
     input,
-    toGameView(currentRun),
+    toGameView(actionRun),
     toGameView(nextRun, report),
   );
   nextRun = {
     ...nextRun,
     timeline: [...(currentRun.timeline ?? []), ...timelineEntries],
   };
-  const resolvedEvent = input.type === "chooseEventOption" && currentRun.state.activeEvent
-    ? { eventId: currentRun.state.activeEvent.eventId, choiceId: input.payload.choiceId }
+  const resolvedEvent = input.type === "chooseEventOption" && actionRun.state.activeEvent
+    ? { eventId: actionRun.state.activeEvent.eventId, choiceId: input.payload.choiceId }
     : null;
 
   try {
-    await commitGameAction({ currentRun, nextRun, action, report, generatedEvent, resolvedEvent });
+    await commitGameAction({ currentRun, nextRun, action, report, generatedEvents, resolvedEvent });
   } catch (error) {
     if (error instanceof ApiError && error.code === "STALE_REVISION") {
       const committed = await findAction(runId, input.actionId);

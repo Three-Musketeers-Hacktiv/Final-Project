@@ -4,6 +4,7 @@ import {
   applyGameAction,
   assertPatchedGameState,
   createGameState,
+  ensureRequiredEvent,
   getEngineCompatibility,
   getEngineRulesetMetadata,
 } from "./adapter";
@@ -131,6 +132,25 @@ describe("game engine adapter", () => {
       pendingConsequences: state.pendingConsequences.map((entry) =>
         entry.id === deferred!.id ? forged : entry),
     }, state.runId)).toThrow("invalid pending consequence");
+  });
+
+  it("recovers a required event missing from a loaded state", () => {
+    let state = createGameState("run-event-recovery");
+    while (!state.activeEvent) {
+      const result = applyGameAction(state, { type: "endPreparationDay", payload: {} });
+      expect(result.ok).toBe(true);
+      if (!result.ok) throw new Error(result.error.message);
+      state = result.state;
+    }
+    const eventId = state.activeEvent.eventId;
+    const loaded = { ...state, phase: "preparation" as const, activeEvent: null };
+    const recovered = ensureRequiredEvent(loaded);
+
+    expect(recovered.ok).toBe(true);
+    if (!recovered.ok) return;
+    expect(recovered.state.activeEvent?.eventId).toBe(eventId);
+    expect(recovered.state.phase).toBe("event");
+    expect(recovered.state.revision).toBe(loaded.revision + 1);
   });
 
   it("rejects an event plan copied from another run", () => {

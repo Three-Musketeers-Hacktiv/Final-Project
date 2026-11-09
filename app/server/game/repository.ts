@@ -198,13 +198,13 @@ export async function commitGameAction(input: {
   nextRun: GameRunDocument;
   action: GameActionDocument;
   report: GameReportDocument | null;
-  generatedEvent: { eventData: EventDataDocument | null; runEvent: RunEventDocument } | null;
+  generatedEvents: Array<{ eventData: EventDataDocument | null; runEvent: RunEventDocument }>;
   resolvedEvent: { eventId: string; choiceId: string } | null;
 }): Promise<void> {
   const client = await getMongoClient();
   const database = await getDatabase();
   const session = client.startSession();
-  const { currentRun, nextRun, action, report, generatedEvent, resolvedEvent } = input;
+  const { currentRun, nextRun, action, report, generatedEvents, resolvedEvent } = input;
 
   try {
     await session.withTransaction(async () => {
@@ -232,7 +232,7 @@ export async function commitGameAction(input: {
       if (report) {
         await database.collection<GameReportDocument>("game_reports").insertOne(report, { session });
       }
-      if (generatedEvent) {
+      for (const generatedEvent of generatedEvents) {
         if (generatedEvent.eventData) {
           await database.collection<EventDataDocument>("event_data").insertOne(generatedEvent.eventData, { session });
         }
