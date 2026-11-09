@@ -1,8 +1,9 @@
+import Image from "next/image";
 import type { WavePreviewView } from "@/contracts/api";
 import GameButton from "../GameButton";
 import Icon, { type IconName } from "../Icon";
 import Modal from "../Modal";
-import SpritePlaceholder from "../SpritePlaceholder";
+import { waveInfo } from "../waveInfo";
 
 export const BATTLE_READY_DIALOG = "phase-battle-ready";
 
@@ -14,6 +15,7 @@ type BattleReadyDialogProps = {
 
 /** phase "battleReady": the wave is at the gates; the player starts the battle. */
 export default function BattleReadyDialog({ wave, pending, onStart }: BattleReadyDialogProps) {
+  const { art } = waveInfo(wave.wave, wave.name);
   const sides: { title: string; rows: { label: string; icon: IconName; value: number }[] }[] = [
     {
       title: "Your City",
@@ -41,7 +43,7 @@ export default function BattleReadyDialog({ wave, pending, onStart }: BattleRead
       dismissible={false}
     >
       <div className="flex justify-center">
-        <SpritePlaceholder label={wave.name} className="h-24 w-40" />
+        {art && <Image src={art} alt={wave.name} sizes="16rem" className="h-auto w-64" />}
       </div>
 
       <div className="mt-4 grid grid-cols-2 gap-3">

@@ -1,6 +1,7 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
+import type { BattleResult } from "../../src/game";
 import { mockRun } from "@/app/(game)/play/mockData";
 import { gameConfig } from "../../src/game/config";
 import Actions from "./Actions";
@@ -17,6 +18,7 @@ import ThisWave from "./ThisWave";
 import Timeline from "./Timeline";
 import TopBar from "./TopBar";
 import UpcomingWaves from "./UpcomingWaves";
+import { useBattlePlayback } from "./useBattlePlayback";
 import { useDayTimer, type Speed } from "./useDayTimer";
 import { upcomingWaves, waveInfo } from "./waveInfo";
 
@@ -24,10 +26,9 @@ import { upcomingWaves, waveInfo } from "./waveInfo";
 export default function GameScreen() {
   const { game, pending, timeline, act } = useGame();
   const { state, stats, wavePreview } = game;
-  const wave = wavePreview && { ...wavePreview, ...waveInfo(wavePreview.wave, wavePreview.name) };
-  const fighting = state.phase === "battleReady" || state.phase === "battleReport";
 
-  const [paused, setPaused] = useState(false);
+  // Starts paused, so opening or refreshing /play never runs the clock until the player presses Play.
+  const [paused, setPaused] = useState(true);
   const [speed, setSpeed] = useState<Speed>(1);
   // The settings dialog pauses the game; closing it restores the pause state from before.
   const pausedBeforeSettings = useRef(false);
@@ -37,6 +38,35 @@ export default function GameScreen() {
     setPaused(true);
     document.getElementById(SETTINGS_DIALOG)?.showPopover();
   }
+  // Start Battle moves the phase from battleReady to the result. Catch that change while rendering
+  // and replay the saved rounds; a page loaded on the report (a refresh) goes straight to it.
+  const [lastPhase, setLastPhase] = useState(state.phase);
+  const [replaying, setReplaying] = useState<BattleResult | null>(null);
+  if (state.phase !== lastPhase) {
+    setLastPhase(state.phase);
+    if (lastPhase === "battleReady" && state.battleResult?.day === state.day) setReplaying(state.battleResult);
+  }
+  const stopReplay = useCallback(() => setReplaying(null), []);
+  // Ignores Pause: the game starts paused, and a battle that waited for Play would look stuck.
+  const frame = useBattlePlayback({ result: replaying, speed, onDone: stopReplay });
+
+  const fighting = replaying !== null || state.phase === "battleReady" || state.phase === "battleReport";
+  const cityHp = frame?.cityHp ?? state.cityHp;
+  // A won battle already counts as cleared, so wavePreview jumps to the next wave. This Wave keeps
+  // the wave fought today and moves on to the next one when the following day starts.
+  const foughtToday = state.battleResult?.day === state.day ? state.battleResult : null;
+  const foughtConfig = foughtToday && gameConfig.waves.find((w) => w.wave === foughtToday.wave);
+  const wave = foughtConfig
+    ? { ...foughtConfig, ...waveInfo(foughtConfig.wave, foughtConfig.name) }
+    : wavePreview && { ...wavePreview, ...waveInfo(wavePreview.wave, wavePreview.name) };
+  // The wave in the scene: only on a battle day, from the gates until the report is closed.
+  const fought = replaying ?? (state.phase === "battleReport" ? state.battleResult : null);
+  const sceneWave = fought && wave
+    ? { ...wave, hp: frame?.monsterHp ?? fought.monsterHpAfter, maxHp: fought.monsterHpBefore }
+    : state.phase === "battleReady" && wave
+      ? { ...wave, maxHp: wave.hp }
+      : null;
+
   // Only preparation days tick; events, battles and rewards wait for the player.
   const clockRunning = !paused && state.phase === "preparation" && !pending;
   const dayProgress = useDayTimer({
@@ -78,7 +108,7 @@ export default function GameScreen() {
           </div>
           <div className="order-4 lg:order-none">
             <CityStatus
-              hp={state.cityHp}
+              hp={cityHp}
               maxHp={state.cityMaxHp}
               wallLevel={state.wallLevel}
               troopLevel={state.troopLevel}
@@ -98,10 +128,13 @@ export default function GameScreen() {
               cityLevel={state.cityLevel}
               wallLevel={state.wallLevel}
               troopLevel={state.troopLevel}
-              waveName={wave?.name ?? ""}
-              hp={wave?.hp ?? 0}
-              maxHp={wave?.hp ?? 0}
-              enemies={wave?.enemies ?? []}
+              wave={sceneWave}
+              cityHp={cityHp}
+              cityMaxHp={state.cityMaxHp}
+              attack={frame}
+              waveFallen={!frame && fought?.monsterHpAfter === 0}
+              cityFallen={!frame && state.phase === "gameOver" && state.cityHp === 0}
+              onSkip={frame && stopReplay}
             />
           </div>
           <div className="order-2 lg:order-none">
@@ -123,15 +156,17 @@ export default function GameScreen() {
         <div className="contents lg:flex lg:flex-col lg:gap-5">
           {wave && (
             <div className="order-7 lg:order-none">
-              <ThisWave name={wave.name} hp={wave.hp} attack={wave.attack} description={wave.description} />
+              <ThisWave name={wave.name} hp={wave.hp} attack={wave.attack} description={wave.description} art={wave.art} />
             </div>
           )}
           <div className="order-8 lg:order-none">
-            <UpcomingWaves waves={upcomingWaves(state.wavesCleared)} />
+            {/* The wave in This Wave isn't repeated here. */}
+            <UpcomingWaves waves={upcomingWaves(state.wavesCleared).filter((w) => w.wave !== wave?.wave)} />
           </div>
         </div>
       </main>
-      <PhaseDialogs />
+      {/* The report or defeat screen waits for the replay; on a loss it opens while the town still burns. */}
+      <PhaseDialogs hidden={replaying !== null && !frame?.showResult} />
       <SettingsDialog onClose={(resume) => setPaused(resume ? false : pausedBeforeSettings.current)} />
       <GameToast />
     </>

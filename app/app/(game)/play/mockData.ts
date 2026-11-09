@@ -2,12 +2,6 @@
 
 import type { TimelineEntry } from "@/lib/timeline";
 
-export type UpcomingWave = {
-  wave: number;
-  day: number;
-  enemies: string[];
-};
-
 export const mockRun = {
   day: 6,
   lastDay: 100,
@@ -39,11 +33,6 @@ export const mockRun = {
     attack: 22,
     description: "A group of goblins is approaching the city.",
   },
-  upcomingWaves: [
-    { wave: 1, day: 10, enemies: ["Goblin", "Goblin"] },
-    { wave: 2, day: 20, enemies: ["Goblin", "Goblin", "Ogre"] },
-    { wave: 3, day: 30, enemies: ["Goblin", "Ogre", "Bat"] },
-  ] satisfies UpcomingWave[],
   timeline: [
     { day: 6, category: "city", tone: "city", icon: "cityLevel", highlight: "Upgraded City", text: "to Lv.3." },
     { day: 5, category: "event", tone: "gain", icon: "plus", highlight: "Gained 200 Gold", text: "from an event." },
