@@ -43,7 +43,7 @@ const generatedEventNarrativeJsonSchema = {
 export type GeneratedEventNarrative = z.infer<typeof generatedEventNarrativeSchema>;
 export type NarrativeResult = {
   narrative: GeneratedEventNarrative;
-  source: "ai" | "fallback";
+  source: "ai" | "fallback" | "mock";
   provider: string | null;
   model: string | null;
   promptVersion: string;
@@ -131,6 +131,16 @@ function validateTrustedChoiceIds(event: ActiveEvent, narrative: GeneratedEventN
   ) {
     throw new Error("Generated event contains untrusted choice ids");
   }
+}
+
+export function restoreEventNarrative(
+  event: ActiveEvent,
+  narrative: unknown,
+  metadata: Omit<NarrativeResult, "narrative">,
+): NarrativeResult {
+  const parsed = generatedEventNarrativeSchema.parse(narrative);
+  validateTrustedChoiceIds(event, parsed);
+  return { narrative: parsed, ...metadata };
 }
 
 function defaultGenerator(): EventNarrativeGenerator | null {

@@ -1,6 +1,11 @@
 import { MongoServerError, ObjectId } from "mongodb";
 
-import { decorateActiveEvent, generateEventNarrative } from "@/server/ai/event-narrative";
+import {
+  decorateActiveEvent,
+  generateEventNarrative,
+  restoreEventNarrative,
+  type NarrativeResult,
+} from "@/server/ai/event-narrative";
 import type { UserDocument } from "@/server/auth/types";
 import { applyGameAction, type EngineGameAction } from "@/server/game-engine/adapter";
 import { hashPayload } from "@/server/game/hash";
@@ -19,9 +24,11 @@ import {
   findCurrentRun,
   findLatestReport,
   findRunByStartRequest,
+  findRunEvent,
   findRunForUser,
   findRulesetById,
   findSavePointer,
+  findSharedAiEventData,
 } from "@/server/game/repository";
 import type { CreateRunInput, SubmitActionInput } from "@/server/game/schemas";
 import type {
@@ -104,6 +111,111 @@ function toEngineAction(input: SubmitActionInput): EngineGameAction {
   return input as EngineGameAction;
 }
 
+type ActiveEvent = NonNullable<GameRunDocument["state"]["activeEvent"]>;
+type GeneratedEventWrite = {
+  eventData: EventDataDocument | null;
+  runEvent: RunEventDocument;
+};
+
+function runEventDocument(
+  run: GameRunDocument,
+  event: ActiveEvent,
+  result: NarrativeResult,
+  eventDataId: ObjectId,
+  now: Date,
+): RunEventDocument {
+  const source = toPersistedNarrativeSource(result.source);
+  return {
+    _id: new ObjectId(),
+    gameRunId: run._id,
+    eventDataId,
+    eventId: event.eventId,
+    packageId: event.packageId,
+    day: toEventDay(event.day),
+    narrativeSnapshot: { ...result.narrative, source },
+    chosenChoiceId: null,
+    createdAt: now,
+    resolvedAt: null,
+  };
+}
+
+async function resolveEventNarrative(
+  run: GameRunDocument,
+  event: ActiveEvent,
+  now: Date,
+): Promise<{ result: NarrativeResult; write: GeneratedEventWrite | null }> {
+  const existing = await findRunEvent(run._id, event.eventId);
+  if (existing) {
+    const { source, ...narrative } = existing.narrativeSnapshot;
+    return {
+      result: restoreEventNarrative(event, narrative, {
+        source,
+        provider: null,
+        model: null,
+        promptVersion: "stored-run-v1",
+      }),
+      write: null,
+    };
+  }
+
+  let result = await generateEventNarrative(event);
+  let reusedEventData: EventDataDocument | null = null;
+  if (result.source === "fallback") {
+    const shared = await findSharedAiEventData(
+      run.gameRulesetId,
+      event.packageId,
+      event.day,
+    );
+    if (shared) {
+      try {
+        result = restoreEventNarrative(event, shared.narrative, {
+          source: "ai",
+          provider: shared.provider ?? null,
+          model: shared.model ?? null,
+          promptVersion: shared.promptVersion,
+        });
+        reusedEventData = shared;
+      } catch {
+        // Invalid catalog entries are ignored; the already validated local fallback remains active.
+      }
+    }
+  }
+
+  if (reusedEventData) {
+    return {
+      result,
+      write: {
+        eventData: null,
+        runEvent: runEventDocument(run, event, result, reusedEventData._id, now),
+      },
+    };
+  }
+
+  const eventDataId = new ObjectId();
+  const narrativeSource = toPersistedNarrativeSource(result.source);
+  const eventData: EventDataDocument = {
+    _id: eventDataId,
+    gameRulesetId: run.gameRulesetId,
+    packageId: event.packageId,
+    day: toEventDay(event.day),
+    narrative: result.narrative,
+    source: narrativeSource,
+    ...(result.provider ? { provider: result.provider } : {}),
+    ...(result.model ? { model: result.model } : {}),
+    promptVersion: result.promptVersion,
+    schemaVersion: 1,
+    validationStatus: "valid",
+    createdAt: now,
+  };
+  return {
+    result,
+    write: {
+      eventData,
+      runEvent: runEventDocument(run, event, result, eventDataId, now),
+    },
+  };
+}
+
 async function replayCommittedAction(
   run: GameRunDocument,
   action: GameActionDocument,
@@ -158,46 +270,14 @@ export async function submitGameAction(
 
   const now = new Date();
   let nextState = result.state;
-  let generatedEvent: { eventData: EventDataDocument; runEvent: RunEventDocument } | null = null;
+  let generatedEvent: GeneratedEventWrite | null = null;
   if (
     result.state.activeEvent &&
     currentRun.state.activeEvent?.eventId !== result.state.activeEvent.eventId
   ) {
-    const narrativeResult = await generateEventNarrative(result.state.activeEvent);
-    nextState = decorateActiveEvent(result.state, narrativeResult);
-    const eventDataId = new ObjectId();
-    const narrative = narrativeResult.narrative;
-    const eventDay = toEventDay(result.state.activeEvent.day);
-    const narrativeSource = toPersistedNarrativeSource(narrativeResult.source);
-    const eventData: EventDataDocument = {
-      _id: eventDataId,
-      gameRulesetId: currentRun.gameRulesetId,
-      packageId: result.state.activeEvent.packageId,
-      day: eventDay,
-      narrative,
-      source: narrativeSource,
-      ...(narrativeResult.provider ? { provider: narrativeResult.provider } : {}),
-      ...(narrativeResult.model ? { model: narrativeResult.model } : {}),
-      promptVersion: narrativeResult.promptVersion,
-      schemaVersion: 1,
-      validationStatus: "valid",
-      createdAt: now,
-    };
-    generatedEvent = {
-      eventData,
-      runEvent: {
-        _id: new ObjectId(),
-        gameRunId: runId,
-        eventDataId,
-        eventId: result.state.activeEvent.eventId,
-        packageId: result.state.activeEvent.packageId,
-        day: eventDay,
-        narrativeSnapshot: { ...narrative, source: narrativeSource },
-        chosenChoiceId: null,
-        createdAt: now,
-        resolvedAt: null,
-      },
-    };
+    const resolvedNarrative = await resolveEventNarrative(currentRun, result.state.activeEvent, now);
+    nextState = decorateActiveEvent(result.state, resolvedNarrative.result);
+    generatedEvent = resolvedNarrative.write;
   }
   const action: GameActionDocument = {
     _id: new ObjectId(),
