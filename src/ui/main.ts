@@ -119,7 +119,7 @@ function loadState(): GameState {
   if (!raw) return createInitialState({ runId: "run-try" });
   try {
     const parsed = JSON.parse(raw) as GameState;
-    if (parsed.version !== 3 || typeof parsed.day !== "number" || typeof parsed.wallLevel !== "number") {
+    if (parsed.version !== 4 || typeof parsed.day !== "number" || typeof parsed.wallLevel !== "number") {
       notice = "Save uji rusak. Tekan Permainan baru. Data lama tidak dihapus otomatis.";
       return createInitialState({ runId: "run-try" });
     }
@@ -248,7 +248,8 @@ function actionsHtml(wallCost: number, troopCost: number, cityCost: number, repa
     return `<button type="button" class="primary" data-action="report">Lanjut laporan</button>${fresh}`;
   }
   if (state.phase === "reward") {
-    const rewards = gameConfig.rewards
+    const rewardSet = gameConfig.waveRewards.find((entry) => entry.afterWave === state.wavesCleared);
+    const rewards = (rewardSet?.options ?? [])
       .map(
         (reward) =>
           `<button type="button" class="primary" data-action="reward:${esc(reward.id)}">${esc(reward.label)}</button>`,

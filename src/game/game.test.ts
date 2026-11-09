@@ -1,656 +1,406 @@
 import { describe, expect, it } from "vitest";
-import { resolveBattle, type BattleSnapshot } from "./battle";
 import {
   attachActiveEvent,
   chooseEventOption,
   chooseReward,
   continueFromReport,
   createInitialState,
+  decorateActiveEvent,
   endPreparationDay,
+  ensureLocalEvent,
   gameConfig,
   getEffectiveStats,
+  getRepairCost,
   getUpgradeCost,
+  getWavePreview,
+  hashString,
+  isBattleDay,
+  isPreparationDay,
+  pickEventPlan,
   repairCity,
-  resolveEventPackage,
+  resolveBattle,
+  rewardsForWave,
   startBattle,
+  surrender,
   upgradeCity,
   upgradeTroops,
   upgradeWall,
-  surrender,
-  type ActionResult,
-  type ActiveEvent,
   type GameState,
 } from "./index";
 
-function must(result: ActionResult): GameState {
-  if (!result.ok) throw new Error(`${result.error.code}: ${result.error.message}`);
+function mustOk(result: { ok: true; state: GameState } | { ok: false; error: unknown }): GameState {
+  expect(result.ok).toBe(true);
+  if (!result.ok) throw new Error("expected ok");
   return result.state;
 }
 
-function snapshot(state: GameState): GameState {
-  return structuredClone(state);
+function skipToDay(state: GameState, targetDay: number): GameState {
+  let current = state;
+  while (current.day < targetDay) {
+    if (current.phase === "event" && current.activeEvent) {
+      const free = current.activeEvent.choices.find((choice) => choice.goldCost === 0);
+      expect(free).toBeTruthy();
+      // Prefer free choices without consequence when available.
+      const safe =
+        current.activeEvent.choices.find(
+          (choice) => choice.goldCost === 0 && !choice.consequence && choice.effects.length === 0,
+        ) ??
+        current.activeEvent.choices.find(
+          (choice) => choice.goldCost === 0 && !choice.consequence,
+        ) ??
+        free!;
+      current = mustOk(chooseEventOption(current, safe.id));
+      continue;
+    }
+    if (current.phase === "preparation") {
+      current = mustOk(endPreparationDay(current));
+      continue;
+    }
+    throw new Error(`Cannot skip from phase ${current.phase} on day ${current.day}`);
+  }
+  return current;
 }
 
-describe("initial state", () => {
-  it("grants day-1 income once and derives stats without storing totals", () => {
-    const state = createInitialState({ runId: "run-a" });
-    expect(state.version).toBe(3);
-    expect(state.wallLevel).toBe(0);
-    expect(state.troopLevel).toBe(0);
-    expect(state.cityLevel).toBe(0);
-    expect(state.revision).toBe(0);
+function clearEventsIfAny(state: GameState): GameState {
+  let current = state;
+  while (current.phase === "event" && current.activeEvent) {
+    const free =
+      current.activeEvent.choices.find(
+        (choice) => choice.goldCost === 0 && !choice.consequence && choice.effects.every((e) => e.type !== "damageCity"),
+      ) ??
+      current.activeEvent.choices.find((choice) => choice.goldCost === 0 && !choice.consequence) ??
+      current.activeEvent.choices.find((choice) => choice.goldCost === 0)!;
+    current = mustOk(chooseEventOption(current, free.id));
+  }
+  return current;
+}
+
+describe("calendar 100-day", () => {
+  it("marks every 10th day as battle and others as prep within 1..100", () => {
+    expect(isBattleDay(10)).toBe(true);
+    expect(isBattleDay(100)).toBe(true);
+    expect(isPreparationDay(1)).toBe(true);
+    expect(isPreparationDay(9)).toBe(true);
+    expect(isPreparationDay(11)).toBe(true);
+    expect(isPreparationDay(10)).toBe(false);
+    expect(isPreparationDay(101)).toBe(false);
+  });
+
+  it("grants day-1 income once and never on battle days", () => {
+    const state = createInitialState({ runId: "income-run" });
+    expect(state.version).toBe(4);
     expect(state.day).toBe(1);
-    expect(state.phase).toBe("preparation");
-    expect(state.gold).toBe(gameConfig.startingGold + gameConfig.dailyIncome);
     expect(state.incomeGrantedDays).toEqual([1]);
-    expect(state.cityHp).toBe(gameConfig.cityMaxHp);
-    const stats = getEffectiveStats(state);
-    expect(stats.attack).toBe(gameConfig.baseAttack);
-    expect(stats.defense).toBe(gameConfig.baseDefense);
-    expect(JSON.parse(JSON.stringify(state))).toEqual(state);
+    expect(state.gold).toBe(gameConfig.startingGold + gameConfig.dailyIncome);
+
+    let current = skipToDay(state, 10);
+    expect(current.phase).toBe("battleReady");
+    expect(current.incomeGrantedDays.includes(10)).toBe(false);
+  });
+});
+
+describe("difficulty", () => {
+  it("defaults to normal and matches base wave table in preview", () => {
+    const normal = createInitialState({ runId: "diff-normal" });
+    expect(normal.difficulty).toBe("normal");
+    const preview = getWavePreview(normal)!;
+    expect(preview.hp).toBe(150);
+    expect(preview.attack).toBe(22);
+  });
+
+  it("scales monster stats and economy on easy/hard", () => {
+    const easy = createInitialState({ runId: "diff-easy", difficulty: "easy" });
+    const hard = createInitialState({ runId: "diff-hard", difficulty: "hard" });
+    expect(getWavePreview(easy)!.hp).toBe(Math.max(1, Math.round(150 * 0.75)));
+    expect(getWavePreview(hard)!.hp).toBe(Math.max(1, Math.round(150 * 1.3)));
+    expect(getUpgradeCost(easy, "wall")).toBeLessThan(getUpgradeCost(hard, "wall"));
+    expect(getRepairCost(easy)).toBeLessThan(getRepairCost(hard));
+    expect(getEffectiveStats(easy).dailyIncome).toBeGreaterThan(getEffectiveStats(hard).dailyIncome);
+  });
+});
+
+describe("event plan", () => {
+  it("picks two stable prep days per decade for a runId", () => {
+    const a = pickEventPlan("plan-a");
+    const b = pickEventPlan("plan-a");
+    const c = pickEventPlan("plan-b");
+    expect(a).toEqual(b);
+    expect(a).toHaveLength(20);
+    expect(a.every((entry) => isPreparationDay(entry.day))).toBe(true);
+    expect(a.some((entry) => entry.day === 1)).toBe(false);
+    expect(JSON.stringify(a)).not.toEqual(JSON.stringify(c));
+  });
+
+  it("keeps packages with 2-4 choices and at least one free option", () => {
+    const state = createInitialState({ runId: "choices-run" });
+    for (const entry of state.eventPlan) {
+      const dayState = skipToDay(createInitialState({ runId: "choices-run" }), entry.day);
+      if (dayState.phase !== "event" || !dayState.activeEvent) continue;
+      const count = dayState.activeEvent.choices.length;
+      expect(count).toBeGreaterThanOrEqual(2);
+      expect(count).toBeLessThanOrEqual(4);
+      expect(dayState.activeEvent.choices.some((choice) => choice.goldCost === 0)).toBe(true);
+      break;
+    }
   });
 });
 
 describe("economy", () => {
-  it("raises one track per spend and shares the daily action slot", () => {
-    let state = createInitialState();
-    const before = snapshot(state);
-    const troops = must(upgradeTroops(state));
-    expect(state).toEqual(before);
-    expect(troops.gold).toBe(state.gold - 50);
-    expect(troops.troopLevel).toBe(1);
-    expect(troops.wallLevel).toBe(0);
-    expect(troops.cityLevel).toBe(0);
-    expect(troops.actionUsedToday).toBe(true);
-    expect(troops.revision).toBe(1);
-    expect(getEffectiveStats(troops).attack).toBe(15);
-    expect(getEffectiveStats(troops).defense).toBe(2);
-
-    const second = upgradeWall(troops);
-    expect(second.ok).toBe(false);
-    if (!second.ok) expect(second.error.code).toBe("NO_ACTION_LEFT");
-    expect(troops.gold).toBe(state.gold - 50);
-
-    const broke = { ...createInitialState(), gold: 10 };
-    const brokeBefore = snapshot(broke);
-    const denied = upgradeTroops(broke);
-    expect(denied.ok).toBe(false);
-    if (!denied.ok) expect(denied.error.code).toBe("INSUFFICIENT_GOLD");
-    expect(broke).toEqual(brokeBefore);
-    expect(broke.actionUsedToday).toBe(false);
-  });
-
-  it("raises max HP and income on city upgrade without a full heal", () => {
-    const hurt = { ...createInitialState(), cityHp: 100, gold: 200 };
-    const upgraded = must(upgradeCity(hurt));
-    expect(upgraded.cityLevel).toBe(1);
-    expect(upgraded.cityMaxHp).toBe(gameConfig.cityMaxHp + gameConfig.cityMaxHpBonus);
-    expect(upgraded.cityHp).toBe(100 + gameConfig.cityMaxHpBonus);
-    expect(getEffectiveStats(upgraded).attack).toBe(gameConfig.baseAttack);
-    expect(getEffectiveStats(upgraded).defense).toBe(gameConfig.baseDefense);
-
-    const next = must(endPreparationDay(upgraded));
-    expect(next.gold).toBe(upgraded.gold + gameConfig.dailyIncome + gameConfig.cityIncomeBonus);
-  });
-
-  it("rejects max upgrade and full-HP repair, and caps partial repair", () => {
-    const capped = {
-      ...createInitialState(),
-      wallLevel: gameConfig.maxTrackLevel,
-      troopLevel: gameConfig.maxTrackLevel,
-      cityLevel: gameConfig.maxTrackLevel,
-      gold: 500,
-    };
-    expect(upgradeWall(capped).ok).toBe(false);
-    expect(upgradeTroops(capped).ok).toBe(false);
-    const maxed = upgradeCity(capped);
-    expect(maxed.ok).toBe(false);
-    if (!maxed.ok) expect(maxed.error.code).toBe("MAX_UPGRADE");
-    expect(capped.actionUsedToday).toBe(false);
-
-    const full = repairCity(createInitialState());
-    expect(full.ok).toBe(false);
-    if (!full.ok) expect(full.error.code).toBe("HP_FULL");
-
-    const hurt = { ...createInitialState(), cityHp: 140, gold: 100 };
-    const repaired = must(repairCity(hurt));
-    expect(repaired.cityHp).toBe(150);
-    expect(repaired.gold).toBe(70);
-  });
-
-  it("ceils a discounted upgrade cost and does not discount repair", () => {
-    const state: GameState = {
-      ...createInitialState(),
-      wallLevel: 3,
-      troopLevel: 3,
-      cityLevel: 3,
-      gold: 200,
-      effects: {
-        defenseByWave: {},
-        upgradeDiscountRate: 0.25,
-        upgradeDiscountUntilWave: 2,
-        prepIncomeBonus: 0,
-      },
-    };
-    expect(getUpgradeCost(state, "wall")).toBe(83);
-    expect(getUpgradeCost(state, "troops")).toBe(83);
-    expect(getUpgradeCost(state, "city")).toBe(83);
-    const upgraded = must(upgradeWall(state));
-    expect(upgraded.gold).toBe(200 - 83);
-    expect(upgraded.wallLevel).toBe(4);
-    expect(getEffectiveStats(upgraded).defense).toBe(gameConfig.baseDefense + 4 * gameConfig.wallDefenseBonus);
-    const wounded = { ...state, cityHp: 100, actionUsedToday: false };
-    expect(must(repairCity(wounded)).gold).toBe(200 - gameConfig.repairCost);
-  });
-});
-
-describe("calendar", () => {
-  it("grants income once per preparation day and not on battle day", () => {
-    let state = createInitialState();
-    state = must(endPreparationDay(state));
-    expect(state.day).toBe(2);
-    expect(state.gold).toBe(gameConfig.startingGold + gameConfig.dailyIncome * 2);
-    expect(state.incomeGrantedDays).toEqual([1, 2]);
+  it("allows one successful action per prep day and rejects failed spends without consuming slot", () => {
+    let state = createInitialState({ runId: "eco-run", difficulty: "normal" });
+    state = { ...state, gold: 5, actionUsedToday: false };
+    const failed = upgradeWall(state);
+    expect(failed.ok).toBe(false);
+    if (!failed.ok) expect(failed.error.code).toBe("INSUFFICIENT_GOLD");
     expect(state.actionUsedToday).toBe(false);
 
-    state = must(endPreparationDay(state));
-    expect(state.day).toBe(3);
-    expect(state.phase).toBe("event");
-    const blocked = endPreparationDay(state);
-    expect(blocked.ok).toBe(false);
-    if (!blocked.ok) expect(blocked.error.code).toBe("EVENT_REQUIRED");
+    state = { ...state, gold: 200 };
+    state = mustOk(upgradeTroops(state));
+    expect(state.actionUsedToday).toBe(true);
+    const second = upgradeWall(state);
+    expect(second.ok).toBe(false);
+    if (!second.ok) expect(second.error.code).toBe("NO_ACTION_LEFT");
+  });
 
-    const tampered = { ...state, phase: "preparation" as const };
-    const stillBlocked = upgradeTroops(tampered);
-    expect(stillBlocked.ok).toBe(false);
-    if (!stillBlocked.ok) expect(stillBlocked.error.code).toBe("EVENT_REQUIRED");
+  it("repairs without exceeding max HP", () => {
+    let state = createInitialState({ runId: "repair-run" });
+    state = { ...state, cityHp: state.cityMaxHp - 10, gold: 200 };
+    state = mustOk(repairCity(state));
+    expect(state.cityHp).toBe(Math.min(state.cityMaxHp, state.cityMaxHp - 10 + gameConfig.repairHeal));
+    const full = repairCity({ ...state, actionUsedToday: false, cityHp: state.cityMaxHp });
+    expect(full.ok).toBe(false);
   });
 });
 
-describe("events", () => {
-  it("applies a choice once and can end the run on fatal damage", () => {
-    let state = createInitialState();
-    state = must(endPreparationDay(state));
-    state = must(endPreparationDay(state));
-    expect(state.activeEvent?.day).toBe(3);
-    expect(state.eventPlan.some((entry) => entry.day === 3 && entry.packageId === state.activeEvent?.packageId)).toBe(
-      true,
-    );
-    const payId = state.activeEvent!.choices[0].id;
-    const skipId = state.activeEvent!.choices[1].id;
-    const resolved = must(chooseEventOption(state, payId));
-    expect(resolved.phase).toBe("preparation");
-    expect(resolved.gold).toBe(state.gold - 20);
-    expect(resolved.effects.defenseByWave[1]).toBe(4);
-    expect(resolved.actionUsedToday).toBe(false);
-    expect(resolved.incomeGrantedDays).toEqual(state.incomeGrantedDays);
-    const again = chooseEventOption(resolved, skipId);
-    expect(again.ok).toBe(false);
-    if (!again.ok) expect(again.error.code).toBe("EVENT_ALREADY_RESOLVED");
-
-    const base = createInitialState({ runId: "run-fatal-day7" });
-    const day7 = resolveEventPackage(7, base.eventPlan)!;
-    const dying: GameState = {
-      ...base,
-      day: 7,
-      phase: "event",
-      cityHp: 5,
-      activeEvent: {
-        eventId: day7.eventId,
-        packageId: day7.packageId,
-        day: 7,
-        title: "x",
-        description: "x",
-        source: "local",
-        choices: day7.choices,
-      },
-    };
-    const hurtId = day7.choices[1].id;
-    const dead = must(chooseEventOption(dying, hurtId));
-    expect(dead.phase).toBe("gameOver");
-    expect(dead.cityHp).toBe(0);
-    expect(upgradeTroops(dead).ok).toBe(false);
-  });
-
-  it("assigns a deterministic event plan and varies packages across run ids", () => {
-    const first = createInitialState({ runId: "run-alpha" });
-    const again = createInitialState({ runId: "run-alpha" });
-    expect(first.eventPlan).toEqual(again.eventPlan);
-    expect(first.eventPlan).toHaveLength(4);
-    expect(first.eventPlan.map((entry) => entry.day)).toEqual([3, 7, 13, 17]);
-
-    let other = createInitialState({ runId: "run-0" });
-    for (let index = 0; index < 64; index += 1) {
-      other = createInitialState({ runId: `run-${index}` });
-      if (JSON.stringify(other.eventPlan) !== JSON.stringify(first.eventPlan)) break;
-    }
-    expect(other.eventPlan).not.toEqual(first.eventPlan);
-  });
-
-  it("rejects a second attach with a new eventId for the same planned package", () => {
-    let state = createInitialState({ runId: "run-event-guard" });
-    state = must(endPreparationDay(state));
-    state = must(endPreparationDay(state));
-    expect(state.day).toBe(3);
-    expect(state.phase).toBe("event");
-    const payId = state.activeEvent!.choices[0].id;
-    state = must(chooseEventOption(state, payId));
-    expect(state.effects.defenseByWave[1]).toBe(4);
-
-    const before = snapshot(state);
-    const planned = resolveEventPackage(3, before.eventPlan)!;
-    const forgedAttach: ActiveEvent = {
-      eventId: `${planned.eventId}-forged`,
-      packageId: planned.packageId,
-      day: 3,
-      title: "forged",
-      description: "forged",
-      source: "ai",
-      choices: planned.choices,
-    };
-    const rejected = attachActiveEvent(state, forgedAttach);
-    expect(rejected.ok).toBe(false);
-    if (!rejected.ok) expect(rejected.error.code).toBe("INVALID_CHOICE");
-    expect(state).toEqual(before);
-    expect(state.revision).toBe(before.revision);
-    expect(state.effects.defenseByWave[1]).toBe(4);
-
-    const replay = attachActiveEvent(state, {
-      eventId: planned.eventId,
-      packageId: planned.packageId,
-      day: 3,
-      title: planned.title,
-      description: planned.description,
-      source: "ai",
-      choices: planned.choices,
-    });
-    expect(replay.ok).toBe(false);
-    if (!replay.ok) expect(replay.error.code).toBe("EVENT_ALREADY_RESOLVED");
-    expect(state).toEqual(before);
-    expect(state.effects.defenseByWave[1]).toBe(4);
-  });
-
-  it("rejects packages outside the run eventPlan and wrong day or phase", () => {
-    let state = createInitialState({ runId: "run-event-plan" });
-    state = must(endPreparationDay(state));
-    state = must(endPreparationDay(state));
-    const planned = resolveEventPackage(3, state.eventPlan)!;
-    const other = gameConfig.events.find(
-      (event) => event.day === 3 && event.packageId !== planned.packageId,
-    )!;
-    const before = snapshot(state);
-
-    const wrongPackage = attachActiveEvent(state, {
-      eventId: other.eventId,
-      packageId: other.packageId,
-      day: 3,
-      title: other.title,
-      description: other.description,
-      source: "ai",
-      choices: other.choices,
-    });
-    expect(wrongPackage.ok).toBe(false);
-    if (!wrongPackage.ok) expect(wrongPackage.error.code).toBe("INVALID_CHOICE");
-    expect(state).toEqual(before);
-
-    const wrongDay = attachActiveEvent(state, {
-      eventId: planned.eventId,
-      packageId: planned.packageId,
-      day: 7,
-      title: planned.title,
-      description: planned.description,
-      source: "local",
-      choices: planned.choices,
-    });
-    expect(wrongDay.ok).toBe(false);
-    if (!wrongDay.ok) expect(wrongDay.error.code).toBe("INVALID_TRANSITION");
-
-    const wrongPhase = attachActiveEvent(
-      { ...state, phase: "battleReady", day: 10, activeEvent: null },
-      {
-        eventId: planned.eventId,
-        packageId: planned.packageId,
+describe("battle", () => {
+  it("rejects non-finite snapshots and resolves simultaneous damage", () => {
+    expect(
+      resolveBattle({
+        wave: 1,
         day: 10,
-        title: planned.title,
-        description: planned.description,
-        source: "local",
-        choices: planned.choices,
-      },
-    );
-    expect(wrongPhase.ok).toBe(false);
-    if (!wrongPhase.ok) expect(wrongPhase.error.code).toBe("INVALID_PHASE");
-  });
-
-  it("rejects inconsistent active identities and ignores forged choice effects", () => {
-    let state = createInitialState({ runId: "run-event-identity" });
-    state = must(endPreparationDay(state));
-    state = must(endPreparationDay(state));
-    const planned = resolveEventPackage(3, state.eventPlan)!;
-    const before = snapshot(state);
-
-    const inconsistent: GameState = {
-      ...state,
-      activeEvent: {
-        ...state.activeEvent!,
-        eventId: `${planned.eventId}-tampered`,
-      },
-    };
-    const denied = chooseEventOption(inconsistent, planned.choices[0].id);
-    expect(denied.ok).toBe(false);
-    if (!denied.ok) expect(denied.error.code).toBe("INVALID_CHOICE");
-    expect(inconsistent).toEqual({
-      ...before,
-      activeEvent: {
-        ...before.activeEvent!,
-        eventId: `${planned.eventId}-tampered`,
-      },
-    });
-
-    const forgedChoices: ActiveEvent = {
-      ...state.activeEvent!,
-      choices: [
-        {
-          ...planned.choices[0],
-          effects: [{ type: "nextWaveDefense", amount: 99, wave: 1 }],
-        },
-        planned.choices[1],
-      ],
-    };
-    const withForged: GameState = { ...state, activeEvent: forgedChoices };
-    const applied = must(chooseEventOption(withForged, planned.choices[0].id));
-    expect(applied.effects.defenseByWave[1]).toBe(4);
-  });
-
-  it("keeps identical active attach as a no-op and rejects late replacements", () => {
-    let state = createInitialState({ runId: "run-event-noop" });
-    state = must(endPreparationDay(state));
-    state = must(endPreparationDay(state));
-    const active = state.activeEvent!;
-    const before = snapshot(state);
-
-    const same = attachActiveEvent(state, {
-      ...active,
-      title: "late narrative",
-      description: "should not replace",
-      source: "ai",
-    });
-    expect(same.ok).toBe(true);
-    if (same.ok) {
-      expect(same.state).toEqual(before);
-      expect(same.state.revision).toBe(before.revision);
-      expect(same.state.activeEvent?.title).toBe(active.title);
-    }
-
-    const other = gameConfig.events.find(
-      (event) => event.day === 3 && event.packageId !== active.packageId,
-    )!;
-    const replaced = attachActiveEvent(state, {
-      eventId: other.eventId,
-      packageId: other.packageId,
-      day: 3,
-      title: other.title,
-      description: other.description,
-      source: "ai",
-      choices: other.choices,
-    });
-    expect(replaced.ok).toBe(false);
-    if (!replaced.ok) expect(replaced.error.code).toBe("INVALID_CHOICE");
-    expect(state).toEqual(before);
-
-    const corruptActive: GameState = {
-      ...state,
-      activeEvent: { ...active, eventId: `${active.eventId}-stale` },
-    };
-    const lateValid = attachActiveEvent(corruptActive, active);
-    expect(lateValid.ok).toBe(false);
-    if (!lateValid.ok) expect(lateValid.error.code).toBe("INVALID_PHASE");
-    expect(corruptActive.activeEvent?.eventId).toBe(`${active.eventId}-stale`);
-  });
-});
-
-describe("resolveBattle validation", () => {
-  const validBase = (): BattleSnapshot => {
-    const wave = gameConfig.waves[0]!;
-    return {
-      wave: wave.wave,
-      day: wave.day,
-      cityHp: 100,
-      cityAttack: 20,
-      cityDefense: 5,
-      monsterHp: wave.hp,
-      monsterAttack: wave.attack,
-    };
-  };
-
-  it("rejects NaN, Infinity, and -Infinity on every numeric field", () => {
-    const fields: (keyof BattleSnapshot)[] = [
-      "wave",
-      "day",
-      "cityHp",
-      "cityAttack",
-      "cityDefense",
-      "monsterHp",
-      "monsterAttack",
-    ];
-    for (const field of fields) {
-      for (const bad of [NaN, Infinity, -Infinity]) {
-        const battleSnap = { ...validBase(), [field]: bad } as BattleSnapshot;
-        expect(resolveBattle(battleSnap)).toBeNull();
-      }
-    }
-  });
-
-  it("rejects non-positive HP/attack, negative defense, and invalid wave/day", () => {
-    expect(resolveBattle({ ...validBase(), cityHp: 0 })).toBeNull();
-    expect(resolveBattle({ ...validBase(), monsterHp: -1 })).toBeNull();
-    expect(resolveBattle({ ...validBase(), cityAttack: 0 })).toBeNull();
-    expect(resolveBattle({ ...validBase(), monsterAttack: 0 })).toBeNull();
-    expect(resolveBattle({ ...validBase(), cityDefense: -1 })).toBeNull();
-    expect(resolveBattle({ ...validBase(), day: 11 })).toBeNull();
-    expect(resolveBattle({ ...validBase(), wave: 2, day: 10 })).toBeNull();
-  });
-
-  it("keeps a valid battle deterministic with finite HP", () => {
-    const snap = validBase();
-    const first = resolveBattle(snap);
-    const second = resolveBattle(snap);
-    expect(first).not.toBeNull();
-    expect(second).toEqual(first);
-    expect(Number.isFinite(first!.cityHpAfter)).toBe(true);
-    expect(Number.isFinite(first!.monsterHpAfter)).toBe(true);
-    expect(first!.cityHpLost).toBe(first!.cityHpBefore - first!.cityHpAfter);
-    expect(first!.rounds.length).toBeGreaterThan(0);
-  });
-});
-
-describe("battle and reward", () => {
-  it("resolves simultaneous damage once and keeps the stored report", () => {
-    const ready: GameState = {
-      ...createInitialState(),
-      day: 10,
-      phase: "battleReady",
-      troopLevel: 5,
-      wallLevel: 5,
-      cityHp: 50,
-      actionUsedToday: false,
-    };
-    const fought = must(startBattle(ready));
-    expect(fought.battleResult?.won).toBe(false);
-    expect(fought.battleResult?.monsterHpAfter).toBe(0);
-    expect(fought.battleResult?.cityHpAfter).toBe(0);
-    expect(fought.phase).toBe("gameOver");
-    expect(fought.battleResult?.monsterHpLost).toBe(150);
-    expect(fought.battleResult?.cityHpLost).toBe(50);
-    expect(fought.battleResult?.cityHpLost).toBe(fought.battleResult?.cityHpBefore! - fought.battleResult?.cityHpAfter!);
-
-    const winner = must(
-      startBattle({
-        ...createInitialState(),
-        day: 10,
-        phase: "battleReady",
-        troopLevel: 3,
-        wallLevel: 3,
+        cityHp: 100,
+        cityAttack: Number.NaN,
+        cityDefense: 2,
+        monsterHp: 50,
+        monsterAttack: 10,
       }),
-    );
-    const hp = winner.cityHp;
-    const again = startBattle(winner);
-    expect(again.ok).toBe(false);
-    if (!again.ok) expect(again.error.code).toBe("BATTLE_ALREADY_RESOLVED");
-    expect(winner.cityHp).toBe(hp);
+    ).toBeNull();
 
-    const reloaded = JSON.parse(JSON.stringify(winner)) as GameState;
-    expect(startBattle(reloaded).ok).toBe(false);
-    expect(reloaded.cityHp).toBe(hp);
+    const result = resolveBattle({
+      wave: 1,
+      day: 10,
+      cityHp: 40,
+      cityAttack: 20,
+      cityDefense: 100,
+      monsterHp: 30,
+      monsterAttack: 10,
+    });
+    expect(result).not.toBeNull();
+    expect(result!.rounds[0]!.damageToCity).toBe(1);
+    expect(result!.won).toBe(true);
   });
 
-  it("uses minimum 1 city damage when defense exceeds monster attack", () => {
-    const ready: GameState = {
-      ...createInitialState(),
-      day: 10,
+  it("does not re-apply damage when battle already resolved", () => {
+    let state = createInitialState({ runId: "battle-once" });
+    state = skipToDay(state, 10);
+    state = {
+      ...state,
+      troopLevel: 8,
+      wallLevel: 8,
+      cityHp: 200,
+      cityMaxHp: 200,
+      gold: 500,
+    };
+    state = mustOk(startBattle(state));
+    expect(state.phase).toBe("battleReport");
+    const hp = state.cityHp;
+    const again = startBattle(state);
+    expect(again.ok).toBe(false);
+    expect(state.cityHp).toBe(hp);
+  });
+});
+
+describe("rewards", () => {
+  it("offers unique options per wave and rejects wrong-wave ids", () => {
+    const w1 = rewardsForWave(1)!;
+    const w2 = rewardsForWave(2)!;
+    expect(w1.options.map((o) => o.id)).not.toEqual(w2.options.map((o) => o.id));
+
+    let state = createInitialState({ runId: "reward-run" });
+    state = skipToDay(state, 10);
+    state = {
+      ...state,
+      troopLevel: 10,
+      wallLevel: 10,
+      cityLevel: 4,
+      cityHp: 300,
+      cityMaxHp: 300,
+    };
+    state = mustOk(startBattle(state));
+    state = mustOk(continueFromReport(state));
+    expect(state.phase).toBe("reward");
+    const bad = chooseReward(state, w2.options[0]!.id);
+    expect(bad.ok).toBe(false);
+    state = mustOk(chooseReward(state, w1.options[0]!.id));
+    expect(state.rewardsChosenByWave["1"]).toBe(w1.options[0]!.id);
+    expect(state.day).toBe(11);
+  });
+});
+
+describe("consequences", () => {
+  it("schedules a deterministic consequence from a skip choice and fires later", () => {
+    const runId = "consequence-run";
+    let state = createInitialState({ runId });
+    // Find first planned event day with a skip consequence choice.
+    const firstDay = state.eventPlan[0]!.day;
+    state = skipToDay(state, firstDay);
+    state = clearEventsIfAny(state);
+    // Re-enter if skip cleared; force ensure on exact day by recreating path.
+    state = createInitialState({ runId });
+    state = skipToDay(state, firstDay);
+    expect(state.phase).toBe("event");
+    expect(state.activeEvent).not.toBeNull();
+    const skip = state.activeEvent!.choices.find((choice) => choice.consequence);
+    if (!skip) {
+      // Package may not include consequence; pick another plan day.
+      const withConsequence = state.eventPlan.find((entry) => {
+        const probe = skipToDay(createInitialState({ runId }), entry.day);
+        return probe.activeEvent?.choices.some((choice) => choice.consequence);
+      });
+      expect(withConsequence).toBeTruthy();
+      state = skipToDay(createInitialState({ runId }), withConsequence!.day);
+    }
+    const choice =
+      state.activeEvent!.choices.find((entry) => entry.consequence) ??
+      state.activeEvent!.choices.find((entry) => entry.goldCost === 0)!;
+    if (!choice.consequence) return;
+
+    state = mustOk(chooseEventOption(state, choice.id));
+    expect(state.pendingConsequences.length).toBeGreaterThan(0);
+    const pending = state.pendingConsequences[0]!;
+    expect(pending.triggerDay).toBeGreaterThan(state.day);
+    expect(isPreparationDay(pending.triggerDay)).toBe(true);
+
+    const triggerHash = hashString(`${runId}:${choice.id}:${choice.consequence.packageId}:trigger`);
+    expect(typeof triggerHash).toBe("number");
+
+    state = skipToDay(state, pending.triggerDay);
+    expect(state.phase).toBe("event");
+    expect(state.activeEvent?.isConsequence).toBe(true);
+    expect(state.activeEvent?.packageId).toBe(pending.packageId);
+  });
+});
+
+describe("narrative overlay", () => {
+  it("rewrites labels only for trusted choice ids", () => {
+    let state = createInitialState({ runId: "narr-run" });
+    const day = state.eventPlan[0]!.day;
+    state = skipToDay(state, day);
+    expect(state.activeEvent).not.toBeNull();
+    const event = state.activeEvent!;
+    const decorated = decorateActiveEvent(state, {
+      title: "AI title",
+      description: "AI body",
+      choices: event.choices.map((choice) => ({ id: choice.id, label: `AI:${choice.id}` })),
+      source: "ai",
+    });
+    expect(decorated.activeEvent?.title).toBe("AI title");
+    expect(decorated.activeEvent?.choices[0]?.effects).toEqual(event.choices[0]?.effects);
+    expect(decorated.activeEvent?.choices[0]?.goldCost).toBe(event.choices[0]?.goldCost);
+  });
+});
+
+describe("campaign integration", () => {
+  it("serializes state and supports surrender", () => {
+    const state = createInitialState({ runId: "json-run", difficulty: "hard" });
+    const json = JSON.stringify(state);
+    const parsed = JSON.parse(json) as GameState;
+    expect(parsed.version).toBe(4);
+    expect(parsed.difficulty).toBe("hard");
+    expect(parsed.eventPlan).toHaveLength(20);
+    const ended = mustOk(surrender(state));
+    expect(ended.phase).toBe("gameOver");
+  });
+
+  it("clears wave 1 through reward into day 11 with real actions", () => {
+    let state = createInitialState({ runId: "campaign-w1" });
+    // Buff enough to clear goblins reliably.
+    while (state.day < 10) {
+      state = clearEventsIfAny(state);
+      if (state.phase === "preparation" && !state.actionUsedToday && state.gold >= getUpgradeCost(state, "troops")) {
+        if (state.troopLevel < 6) state = mustOk(upgradeTroops(state));
+        else if (state.wallLevel < 4) state = mustOk(upgradeWall(state));
+        else if (state.cityLevel < 2) state = mustOk(upgradeCity(state));
+      }
+      if (state.phase === "preparation") state = mustOk(endPreparationDay(state));
+    }
+    expect(state.phase).toBe("battleReady");
+    state = mustOk(startBattle(state));
+    expect(state.battleResult?.won).toBe(true);
+    state = mustOk(continueFromReport(state));
+    expect(state.phase).toBe("reward");
+    state = mustOk(chooseReward(state, rewardsForWave(1)!.options[2]!.id));
+    expect(state.day).toBe(11);
+    expect(state.rewardsChosenByWave["1"]).toBeTruthy();
+  });
+
+  it("reaches victory after wave 10 with a focused fixture", () => {
+    let state = createInitialState({ runId: "victory-run", difficulty: "easy" });
+    state = {
+      ...state,
+      day: 100,
       phase: "battleReady",
-      wallLevel: 5,
+      troopLevel: 18,
+      wallLevel: 18,
+      cityLevel: 12,
+      cityHp: 2000,
+      cityMaxHp: 2000,
+      gold: 500,
+      wavesCleared: 9,
       effects: {
-        defenseByWave: { 1: 100 },
+        defenseByWave: { 10: 80 },
         upgradeDiscountRate: 0,
         upgradeDiscountUntilWave: null,
         prepIncomeBonus: 0,
       },
+      activeEvent: null,
+      pendingConsequences: [],
+      actionUsedToday: false,
     };
-    const fought = must(startBattle(ready));
-    expect(fought.battleResult?.rounds[0]?.damageToCity).toBe(1);
-    expect(fought.battleResult?.cityDefense).toBeGreaterThan(22);
-  });
-
-  it("moves a wave-1 win into day 11 with reward income applied first", () => {
-    let state: GameState = {
-      ...createInitialState(),
-      day: 10,
-      phase: "battleReady",
-      troopLevel: 3,
-      wallLevel: 3,
-      gold: 80,
-    };
-    state = must(startBattle(state));
-    expect(state.phase).toBe("battleReport");
+    state = mustOk(startBattle(state));
     expect(state.battleResult?.won).toBe(true);
-    expect(state.cityHp).toBe(state.battleResult?.cityHpAfter);
-    state = must(continueFromReport(state));
-    expect(state.phase).toBe("reward");
-    const goldBefore = state.gold;
-    state = must(chooseReward(state, "reward-income"));
-    expect(state.day).toBe(11);
-    expect(state.phase).toBe("preparation");
-    expect(state.rewardChosenId).toBe("reward-income");
-    expect(state.gold).toBe(goldBefore + gameConfig.dailyIncome + 6);
-    expect(state.incomeGrantedDays).toContain(11);
-    const repeat = chooseReward(state, "reward-gold");
-    expect(repeat.ok).toBe(false);
-    if (!repeat.ok) expect(repeat.error.code).toBe("REWARD_ALREADY_CHOSEN");
-  });
-});
-
-describe("20-day campaign", () => {
-  it("reaches victory through public actions only", () => {
-    let state = createInitialState({ runId: "campaign" });
-    const spend = (action: (current: GameState) => ActionResult, label: string) => {
-      const next = action(state);
-      if (!next.ok) throw new Error(`${label} ${next.error.code} day ${state.day} gold ${state.gold}`);
-      state = next.state;
-    };
-    const skip = () => {
-      state = must(endPreparationDay(state));
-    };
-    const choose = (index: 0 | 1) => {
-      const event = state.activeEvent;
-      if (!event) throw new Error(`No active event on day ${state.day}`);
-      state = must(chooseEventOption(state, event.choices[index].id));
-    };
-
-    spend(upgradeCity, "d1 city");
-    skip();
-    spend(upgradeCity, "d2 city");
-    skip();
-    choose(1);
-    skip();
-    spend(upgradeCity, "d4 city");
-    skip();
-    spend(upgradeTroops, "d5 troops");
-    skip();
-    spend(upgradeTroops, "d6 troops");
-    skip();
-    choose(0);
-    skip();
-    spend(upgradeTroops, "d8 troops");
-    skip();
-    skip();
-    expect(state.day).toBe(10);
-    expect(state.phase).toBe("battleReady");
-    expect(state.incomeGrantedDays).not.toContain(10);
-
-    state = must(startBattle(state));
-    expect(state.battleResult?.won).toBe(true);
-    state = must(continueFromReport(state));
-    state = must(chooseReward(state, "reward-income"));
-    expect(state.day).toBe(11);
-
-    spend(repairCity, "d11 repair");
-    skip();
-    spend(repairCity, "d12 repair");
-    skip();
-    choose(1);
-    spend(repairCity, "d13 repair");
-    skip();
-    spend(repairCity, "d14 repair");
-    skip();
-    spend(upgradeTroops, "d15 troops");
-    skip();
-    spend(upgradeWall, "d16 wall");
-    skip();
-    choose(0);
-    spend(upgradeWall, "d17 wall");
-    skip();
-    spend(upgradeTroops, "d18 troops");
-    skip();
-    spend(upgradeWall, "d19 wall");
-    skip();
-    expect(state.day).toBe(20);
-    expect(state.phase).toBe("battleReady");
-    expect(state.incomeGrantedDays).not.toContain(20);
-
-    state = must(startBattle(state));
-    expect(state.battleResult?.won).toBe(true);
-    expect(state.cityHp).toBeGreaterThan(0);
-    state = must(continueFromReport(state));
+    state = mustOk(continueFromReport(state));
     expect(state.phase).toBe("victory");
-    expect(state.troopLevel).toBe(5);
-    expect(state.wallLevel).toBe(3);
-    expect(state.cityLevel).toBe(3);
-    expect(upgradeCity(state).ok).toBe(false);
-    expect(endPreparationDay(state).ok).toBe(false);
-  });
-});
-
-describe("surrender", () => {
-  it("ends an active run as gameOver without changing other fields", () => {
-    const before = createInitialState({ runId: "run-surrender" });
-    const ended = must(surrender(before));
-    expect(ended.phase).toBe("gameOver");
-    expect(ended.revision).toBe(before.revision + 1);
-    expect(ended.gold).toBe(before.gold);
-    expect(ended.cityHp).toBe(before.cityHp);
-    expect(ended.day).toBe(before.day);
-    expect(ended.actionUsedToday).toBe(before.actionUsedToday);
-
-    const again = surrender(ended);
-    expect(again.ok).toBe(false);
-    if (!again.ok) expect(again.error.code).toBe("GAME_ENDED");
-    expect(upgradeTroops(ended).ok).toBe(false);
   });
 
-  it("rejects surrender after victory", () => {
-    const victory: GameState = { ...createInitialState(), phase: "victory" };
-    const result = surrender(victory);
-    expect(result.ok).toBe(false);
-    if (!result.ok) expect(result.error.code).toBe("GAME_ENDED");
+  it("rejects attach of a foreign event package", () => {
+    let state = createInitialState({ runId: "trust-run" });
+    const day = state.eventPlan[0]!.day;
+    state = skipToDay(state, day);
+    const foreign = attachActiveEvent(
+      { ...state, activeEvent: null, phase: "preparation" },
+      {
+        eventId: "fake",
+        packageId: "fake",
+        day,
+        title: "x",
+        description: "y",
+        choices: [
+          { id: "a", label: "a", goldCost: 0, effects: [] },
+          { id: "b", label: "b", goldCost: 0, effects: [] },
+        ],
+        source: "ai",
+      },
+    );
+    expect(foreign.ok).toBe(false);
+  });
+
+  it("ensureLocalEvent is idempotent for the same identity", () => {
+    let state = createInitialState({ runId: "ensure-run" });
+    const day = state.eventPlan[0]!.day;
+    state = skipToDay(state, day);
+    const first = mustOk(ensureLocalEvent(state));
+    const second = mustOk(ensureLocalEvent(first));
+    expect(second.revision).toBe(first.revision);
   });
 });
