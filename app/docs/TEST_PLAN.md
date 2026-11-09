@@ -140,7 +140,7 @@ Postman CLI yang tersedia dapat digunakan untuk menjalankan collection pada loca
 
 Artefak smoke test tersedia di `postman/backend-api.postman_collection.json` dan `postman/backend-api.postman_environment.json`. Collection mencakup register, login, `/auth/me`, create run, satu action, current run, dan logout. Jalankan hanya setelah server dan Atlas test siap.
 
-Runner `scripts/run-campaign.ts` menguji campaign API hari 1–20 terhadap server yang sedang berjalan. Runner membuat user/run unik, memakai cookie session, menjalankan seluruh event/battle/reward sampai victory, membaca ulang run dari MongoDB, memastikan save aktif sudah dibersihkan, lalu logout. Data test dipertahankan untuk audit dan tidak dihapus otomatis.
+Runner `scripts/run-campaign.ts` menguji campaign API engine v4 hari 1–100 terhadap server yang sedang berjalan. Runner membuat user/run easy unik, membaca event/reward dinamis dari response, menjalankan seluruh battle sampai victory, membaca ulang run dari MongoDB, memastikan save aktif sudah dibersihkan, lalu logout. Data test dipertahankan untuk audit dan tidak dihapus otomatis.
 
 ## 7. Pengujian keamanan minimum
 

@@ -79,13 +79,13 @@ const GeneratedEventNarrativeSchema = z.object({
       id: z.string().min(1),
       label: z.string().min(1),
     }).strict(),
-  ).length(2),
+  ).min(2).max(4),
 }).strict();
 ```
 
 Post-schema validation requires:
 
-- exactly the trusted choice-ID set, with no duplicate, missing, or invented ID;
+- exactly the trusted 2–4 choice-ID set, with no duplicate, missing, or invented ID;
 - English text within configured length limits;
 - no numeric gameplay authority from provider output;
 - merge by choice ID, never by array position.
@@ -96,7 +96,7 @@ Backend restores trusted costs/effects after validation. Event and choice IDs ar
 
 1. The client submits an ordinary game action.
 2. The engine returns a next state whose `activeEvent` is newly present.
-3. Backend derives input from that trusted event and selected `eventPlan` package.
+3. Backend derives input from that trusted scheduled/consequence event, including origin IDs when present.
 4. Backend calls Gemini before opening the MongoDB transaction.
 5. Backend parses with Zod and applies business validation.
 6. Valid narrative fields decorate the trusted event; otherwise fallback copies trusted engine text.

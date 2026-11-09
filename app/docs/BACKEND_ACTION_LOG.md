@@ -863,3 +863,34 @@ Rencana commit bertahap:
 2. Dukungan run v4, difficulty, persistence, dan view contract dinamis.
 3. Narasi event dinamis 2-4 pilihan dan consequence event.
 4. Campaign API 100 hari, regression test, dan handoff final.
+
+## 2026-11-09 — Implementasi dan verifikasi backend engine v4
+
+Implementasi:
+- Mengganti ruleset backend menjadi `campaign-v4-100-day-v1` dan menerima hanya `GameState.version === 4`.
+- Menambahkan difficulty pada create-run, idempotency hash, repository, state, Postman, dan shared API contract.
+- Mengganti literal hari/wave lama dengan validasi campaign 100 hari dan 10 battle dari config engine.
+- Memvalidasi 20 identitas scheduled event, pergeseran hari dalam dekade, pending consequence, active consequence, serta completed consequence ID terhadap package tepercaya.
+- Mengubah output narasi Gemini/fallback dan persistensi menjadi 2-4 pilihan; konteks consequence dikirim ke prompt tetapi gameplay tetap berasal dari engine.
+- Menambahkan `rewardOptions` tepercaya ke `GameView` agar frontend tidak lagi membaca config reward engine secara langsung.
+- Mengganti runner 20 hari dengan runner API state-driven 100 hari dan menambahkan backend-only typecheck.
+
+Commit (seluruhnya memakai identitas Git pengguna):
+- `4ff4f72 docs(backend): define engine v4 integration contract`
+- `5996370 feat(game): support engine v4 runs and difficulty`
+- `a5d6df6 feat(events): support dynamic v4 narratives`
+- `d961c88 test(campaign): cover engine v4 backend flow`
+
+Hasil pemeriksaan:
+- Root engine `npm run typecheck`: lulus.
+- Root engine `npm test`: lulus, 2 file / 27 test.
+- Backend `npm run typecheck:backend`: lulus setelah annotation regression test diperbaiki.
+- Backend `npm test`: lulus, 16 file / 56 test.
+- Backend `npm run lint`: lulus.
+- Live API terhadap MongoDB Atlas berhasil register, login, create v4 run, dan seluruh action yang dijalankan sampai battle wave 5 tanpa error integritas/persistensi.
+
+Handoff/kendala lintas tim:
+- Full app typecheck/build masih gagal hanya pada file frontend: `NewGameButton.tsx` belum mengirim difficulty, `PhaseDialogs.tsx` masih membaca `gameConfig.rewards`, dan `RewardDialog.tsx` belum menangani empat reward kind baru.
+- Live campaign runner berakhir valid di `gameOver` hari 50 setelah wave 4 dengan strategi otomatis saat ini, bukan `victory` hari 100. Ini bukan error API/backend; balancing/strategi kemenangan v4 perlu fixture atau rute aksi yang disepakati engine sebelum gate campaign victory dapat dinyatakan lulus.
+- Source frontend, source engine, dan root docs tidak diedit oleh implementasi backend.
+- Push tidak dilakukan.

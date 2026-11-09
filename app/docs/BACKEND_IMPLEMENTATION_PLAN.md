@@ -1,6 +1,6 @@
 # Backend Implementation Plan — Fantasy City Defense
 
-Status: **Engine v4 synchronization in progress**
+Status: **Backend engine v4 synchronization implemented; frontend/victory gates pending**
 Target: campaign 100 hari / 10 wave
 Backend: Next.js Route Handlers + MongoDB  
 Kontrak engine: `../../docs/DEV1_CONTRACT.md` dan `../../src/game` (read-only)
@@ -307,7 +307,7 @@ Aturan `expectedRevision`:
 1. Parse dan validasi body.
 2. Verifikasi session.
 3. Load run dan periksa ownership.
-4. Tolak GameState version selain 3.
+4. Tolak GameState version selain 4.
 5. Periksa actionId yang sudah tercatat; request identik menjadi replay sukses tanpa write kedua, payload berbeda ditolak.
 6. Cocokkan expectedRevision.
 7. Dispatch action ke satu fungsi public engine.
@@ -471,7 +471,7 @@ Implementasi saat ini membuat satu dokumen `event_data` ketika event pertama kal
 
 Event dan choice ID bersifat dinamis. Backend, campaign runner, Postman, dan frontend harus membaca ID dari `activeEvent.choices`; legacy ID tidak boleh dikirim berdasarkan hari saja.
 
-Untuk vertical slice awal, fallback harus bekerja tanpa provider AI. Integrasi AI tidak boleh menjadi blocker happy path 20 hari.
+Fallback harus bekerja tanpa provider AI. Integrasi AI tidak boleh menjadi blocker campaign 100 hari.
 
 ### Gemini runtime adapter
 
@@ -639,7 +639,7 @@ Output: frontend dapat membangun halaman auth terhadap API nyata.
 - Seed/fallback event minimal.
 - Create run idempotent.
 - Continue/current run.
-- Validasi save version 3.
+- Validasi save version 4 dan difficulty.
 - Replace-save confirmation contract.
 
 Output: user dapat membuat dan memuat state awal yang persisted.
@@ -661,7 +661,7 @@ Output vertical slice: login → new game → upgrade → reload dengan state sa
 - Continue report dan choose reward.
 - Victory/game over history.
 
-Output: alur hari 1–20 lengkap melalui API.
+Output: alur hari 1–100 lengkap melalui API.
 
 ### Phase 6 — Hardening dan integrasi frontend
 
@@ -716,12 +716,12 @@ Pada setiap slice, backend memberikan kepada frontend:
 | MongoDB tidak mendukung transaction | Pastikan replica set/Atlas sebelum repository dibuat |
 | Klik ganda menyebabkan biaya ganda | Unique actionId + expectedRevision + conditional update |
 | AI lambat/gagal | Fallback valid tersedia; jangan membuka transaction saat call provider |
-| Save v3 lama tidak memiliki `eventPlan` | Bedakan ruleset/fingerprint; jangan migrasi event aktif secara diam-diam |
+| Save v1-v3 tidak kompatibel | Bedakan ruleset/fingerprint; jangan migrasi state secara diam-diam |
 | Run lama mengubah pointer baru | Conditional pointer update dan active-run guard dalam transaksi |
-| Schema database drift dari state v3 | Runtime validation + test snapshot properties |
+| Schema database drift dari state v4 | Runtime validation + test snapshot properties |
 | Battle dihitung ulang setelah refresh | Persist report saat startBattle; load hanya membaca |
 | Secret/password bocor | Server-only env, redacted log, response allow-list |
-| Scope melebar ke campaign 50 hari | Selesaikan acceptance MVP 20 hari terlebih dahulu |
+| Campaign v4 berubah lagi | Pin ruleset/fingerprint dan audit delta sebelum implementasi |
 
 ## 21. Definition of done backend MVP
 
@@ -734,12 +734,12 @@ Backend dianggap selesai ketika:
 - New game dan continue persisted di MongoDB.
 - Semua action publik memanggil engine, bukan rumus backend.
 - `actionId` dan `expectedRevision` mencegah duplikasi/stale write.
-- State version selain 3 ditolak dengan jelas.
+- State version selain 4 ditolak dengan jelas.
 - Event fallback dapat menyelesaikan alur tanpa AI.
 - Battle report tidak dihitung dua kali.
 - Victory/game over dan save pointer konsisten.
 - Unit test, integration test, Postman test, typecheck, lint, dan build lulus.
-- Frontend berhasil memainkan satu alur 20 hari melalui API.
+- Frontend berhasil memainkan satu alur 100 hari melalui API.
 
 ## 22. Readiness checklist sebelum Phase 1
 

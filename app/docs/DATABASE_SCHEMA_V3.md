@@ -300,14 +300,11 @@ type EventDataDocument = {
   _id: ObjectId;
   gameRulesetId: ObjectId;
   packageId: string;
-  day: 3 | 7 | 13 | 17;
+  day: number;
   narrative: {
     title: string;
     description: string;
-    choices: [
-      { id: string; label: string },
-      { id: string; label: string },
-    ];
+    choices: Array<{ id: string; label: string }>; // 2-4
   };
   source: "ai" | "fallback" | "mock";
   model?: string;
@@ -343,14 +340,11 @@ type RunEventDocument = {
   eventDataId: ObjectId;
   eventId: string;
   packageId: string;
-  day: 3 | 7 | 13 | 17;
+  day: number;
   narrativeSnapshot: {
     title: string;
     description: string;
-    choices: [
-      { id: string; label: string },
-      { id: string; label: string },
-    ];
+    choices: Array<{ id: string; label: string }>; // 2-4
     source: "ai" | "fallback" | "mock";
   };
   chosenChoiceId: string | null;

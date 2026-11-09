@@ -1,6 +1,6 @@
 # Engine V4 Backend Integration
 
-Status: **Active implementation contract**  
+Status: **Backend implemented; cross-team gates recorded below**
 Owner: Backend  
 Engine source: `../../src/game` and `../../docs/FOR_BACKEND.md` (read-only)  
 Last updated: 2026-11-09
@@ -41,5 +41,5 @@ The v4 ruleset uses a new immutable ruleset ID and config fingerprint. Existing 
 
 - Backend-focused typecheck is clean.
 - Backend unit/contract tests pass, including v3 rejection, all difficulty values, dynamic days, 2–4 choices, and consequence-event validation.
-- Campaign runner reaches `victory` through normal API actions over 100 days and ten battles.
+- Campaign runner targets `victory` through normal API actions over 100 days and ten battles. The current live automatic strategy reaches a valid `gameOver` on day 50; a known winning engine fixture/strategy remains a cross-team gate.
 - Full repository checks are reported separately; frontend failures caused by its still-v3 assumptions are handed off and are not fixed from the backend scope.
