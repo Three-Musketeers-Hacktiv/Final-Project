@@ -5,7 +5,6 @@ import { createContext, useCallback, useContext, useRef, useState, type ReactNod
 import type { GameView, RunResponse, SubmitActionRequest, SubmitActionResponse } from "@/contracts/api";
 import { ApiError, apiRequest } from "@/lib/api";
 import { errorMessage } from "@/lib/errorMessages";
-import { describeAction, type TimelineEntry } from "@/lib/timeline";
 
 type ActionType = SubmitActionRequest["type"];
 type PayloadOf<T extends ActionType> = Extract<SubmitActionRequest, { type: T }>["payload"];
@@ -19,8 +18,6 @@ type GameContextValue = {
   /** Player-facing message for the last failed action, if any. */
   error: string | null;
   dismissError: () => void;
-  /** What happened this session, newest first. The API has no history endpoint yet. */
-  timeline: TimelineEntry[];
   /** Sends one gameplay action. Resolves true when the server applied it. */
   act: <T extends ActionType>(type: T, payload: PayloadOf<T>) => Promise<boolean>;
 };
@@ -44,7 +41,6 @@ export default function GameProvider({ runId, initialGame, children }: GameProvi
   const [game, setGame] = useState(initialGame);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [timeline, setTimeline] = useState<TimelineEntry[]>([]);
   // Refs so act() always sees the latest state, and a double click can't start a second request.
   const gameRef = useRef(initialGame);
   const busyRef = useRef(false);
@@ -83,7 +79,6 @@ export default function GameProvider({ runId, initialGame, children }: GameProvi
               body: request,
             });
             applyGame(result.game);
-            setTimeline((entries) => [...describeAction(request, before, result.game).reverse(), ...entries]);
             return true;
           } catch (err) {
             if (err instanceof ApiError && err.code === "NETWORK_ERROR" && attempt < NETWORK_RETRIES) continue;
@@ -113,7 +108,7 @@ export default function GameProvider({ runId, initialGame, children }: GameProvi
   const dismissError = useCallback(() => setError(null), []);
 
   return (
-    <GameContext value={{ runId, game, pending, error, dismissError, timeline, act }}>{children}</GameContext>
+    <GameContext value={{ runId, game, pending, error, dismissError, act }}>{children}</GameContext>
   );
 }
 

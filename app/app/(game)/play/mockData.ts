@@ -1,7 +1,5 @@
 // Placeholder data the API doesn't provide yet (only the City Record panel still uses it).
 
-import type { TimelineEntry } from "@/lib/timeline";
-
 export const mockRun = {
   day: 6,
   lastDay: 100,
@@ -33,12 +31,4 @@ export const mockRun = {
     attack: 22,
     description: "A group of goblins is approaching the city.",
   },
-  timeline: [
-    { day: 6, category: "city", tone: "city", icon: "cityLevel", highlight: "Upgraded City", text: "to Lv.3." },
-    { day: 5, category: "event", tone: "gain", icon: "plus", highlight: "Gained 200 Gold", text: "from an event." },
-    { day: 4, category: "city", tone: "city", icon: "wallLevel", highlight: "Upgraded Wall", text: "to Lv.1." },
-    { day: 3, category: "city", tone: "city", icon: "troopLevel", highlight: "Recruited soldiers.", text: "Attack increased by 5." },
-    { day: 2, category: "event", tone: "loss", icon: "minus", highlight: "Lost 30 Gold", text: "due to a supply shortage." },
-    { day: 1, category: "city", tone: "neutral", icon: "upcomingWaves", text: "The city is prepared for the coming siege." },
-  ] satisfies TimelineEntry[],
 };

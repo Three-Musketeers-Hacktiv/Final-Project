@@ -125,3 +125,36 @@ body {
     animation-play-state: paused;
   }
 }
+
+/* Thin themed scrollbar: no track background, no arrow buttons. Chrome/Safari/Edge use the
+   ::-webkit-scrollbar rules; Firefox, which lacks them, gets the standard properties instead
+   (Chrome would drop the custom look if those were set for it too). */
+.scrollbar-game::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.scrollbar-game::-webkit-scrollbar-track,
+.scrollbar-game::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+.scrollbar-game::-webkit-scrollbar-thumb {
+  background: var(--game-frame);
+  border-radius: 9999px;
+}
+
+.scrollbar-game::-webkit-scrollbar-thumb:hover {
+  background: var(--game-muted);
+}
+
+.scrollbar-game::-webkit-scrollbar-button {
+  display: none;
+}
+
+@supports not selector(::-webkit-scrollbar) {
+  .scrollbar-game {
+    scrollbar-width: thin;
+    scrollbar-color: var(--game-frame) transparent;
+  }
+}

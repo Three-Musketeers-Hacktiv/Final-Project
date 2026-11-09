@@ -24,7 +24,7 @@ import { upcomingWaves, waveInfo } from "./waveInfo";
 
 /** The /play dashboard, drawn from the GameView in GameProvider. */
 export default function GameScreen() {
-  const { game, pending, timeline, act } = useGame();
+  const { game, pending, act } = useGame();
   const { state, stats, wavePreview } = game;
 
   // Starts paused, so opening or refreshing /play never runs the clock until the player presses Play.
@@ -147,9 +147,9 @@ export default function GameScreen() {
               onEndDay={() => act("endPreparationDay", {})}
             />
           </div>
-          {/* No history endpoint yet: only this session's actions are listed. */}
+          {/* The server keeps the whole run's history, oldest first; show the newest on top. */}
           <div className="order-5 flex flex-col lg:order-none lg:flex-1">
-            <Timeline entries={timeline} />
+            <Timeline entries={[...game.timeline].reverse()} />
           </div>
         </div>
 
