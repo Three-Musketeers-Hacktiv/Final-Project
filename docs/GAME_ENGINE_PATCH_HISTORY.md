@@ -6,9 +6,9 @@ Kontrak hidup: [DEV1_CONTRACT.md](./DEV1_CONTRACT.md). Ringkas breaking v1→v3:
 | | |
 |---|---|
 | Lokasi kode | `src/game/` |
-| Format save saat ini | `GameState.version: 3` |
+| Format save saat ini | `GameState.version: 4` |
 | Baseline awal | `cc9840e` (*alpha 0.1*) pada branch `development-game-engine` |
-| Status patch terakhir | Validasi event + battle (working tree; lihat §8) |
+| Status patch terakhir | Kampanye 100 hari + difficulty + v4 (lihat §12) |
 
 ```text
 alpha 0.1
@@ -18,7 +18,8 @@ alpha 0.1
   → publish kontrak FE/BE
   → eventPlan + pool paket + narrative overlay
   → surrender
-  → perketat validasi event & battle   ← sekarang
+  → perketat validasi event & battle
+  → kampanye 100 hari / 10 wave / difficulty / consequences   ← sekarang (v4)
 ```
 
 ---
@@ -182,26 +183,9 @@ Verifikasi yang dijalankan saat patch: `npm run typecheck`, `npm test` (root).
 
 ---
 
-## 8. Peta file `src/game` (saat ini)
+## 8. Peta file `src/game` (era v3 — historis)
 
-| File | Peran |
-|---|---|
-| `types.ts` | `GameState` v3, fase, error, efek, battle, event |
-| `config.ts` | Angka playtest + pool event + waves + rewards |
-| `initialState.ts` | State awal + income hari 1 + `eventPlan` |
-| `eventPlan.ts` | Seed plan per `runId` |
-| `narrative.ts` | Overlay label/narasi murni |
-| `calendar.ts` | Hari persiapan/battle, unresolved event |
-| `economy.ts` | Tiga upgrade + repair |
-| `stats.ts` | ATK/DEF/income/biaya efektif |
-| `effects.ts` | Terapkan efek tepercaya |
-| `events.ts` | Attach / ensure / choose (validasi plan) |
-| `battle.ts` | `resolveBattle` murni (validasi finite) |
-| `rewards.ts` | Pilih satu reward wave 1 |
-| `transitions.ts` | Lanjut hari, battle, laporan, surrender |
-| `result.ts` | `ok` / `fail` / `isEnded` |
-| `index.ts` | Permukaan publik |
-| `game.test.ts` | Unit + integrasi 20 hari + regresi validasi |
+Pada era validasi event/battle, pohon file masih `version: 3` / 20 hari. Setelah §12, lihat peta file terkini di situ.
 
 ---
 
@@ -239,4 +223,55 @@ Fokus engine: `src/game/game.test.ts` (termasuk describe event validation, `reso
 | [../MVP.md](../MVP.md) | Lingkup MVP v2.1 |
 | [../.scratch/engine-validation-patch/](../.scratch/engine-validation-patch/) | Spek + tiket patch validasi event/battle |
 
-Bila menambah patch engine berikutnya, **tambahkan seksi baru di bawah §7** (tanggal, masalah, file, tes, hasil verifikasi) dan folder `.scratch/<nama-fitur>/` sesuai [agents/issue-tracker.md](./agents/issue-tracker.md).
+---
+
+## 12. Kampanye 100 hari + difficulty + state v4 (2026-11-09)
+
+**Lingkup:** rewrite `src/game` saja. Produk FE/BE (`app/`) **belum** di-wire; kontrak ada di [CAMPAIGN_100_DAY_CONTRACT.md](./CAMPAIGN_100_DAY_CONTRACT.md), [FOR_FRONTEND.md](./FOR_FRONTEND.md), [FOR_BACKEND.md](./FOR_BACKEND.md), [DEV1_CONTRACT.md](./DEV1_CONTRACT.md), [../Patch.md](../Patch.md).
+
+### 12.1 Keputusan
+
+| Topik | Isi |
+|---|---|
+| Kalender | Hari 1–100; battle tiap 10 hari (10 wave) |
+| Wave | Spike/tank roles; Goblin→Demon King (lihat `gameConfig.waves`) |
+| Difficulty | `easy` / `normal` / `hard` di state; skala monster + ekonomi |
+| Event days | 2 hari prep / dekade dari `pickEventPlan(runId)` (bukan 3/7 tetap) |
+| Choices | 2–4 per paket; ≥1 gratis; multi-effect tepercaya |
+| Consequences | Skip/refuse → `pendingConsequences`; tembak 1–3 hari sebelum battle |
+| Rewards | Unik per wave 1–9; `rewardsChosenByWave`; wave 10 → victory |
+| Ekonomi | Max track 18; biaya 45+30×L; income 28; repair 35/45 |
+| Save | `version: 4` — tolak v3 ke bawah, tanpa migrasi |
+
+### 12.2 File kunci
+
+| File | Peran |
+|---|---|
+| `types.ts` | State v4, Difficulty, PendingConsequence, efek baru |
+| `difficulty.ts` | Multiplier easy/normal/hard |
+| `config.ts` | 100-hari waves, waveRewards, re-export packages |
+| `eventPackages.ts` | Paket terjadwal per dekade + consequence |
+| `eventPlan.ts` | Hari + paket per dekade; `shiftPlanEntryDay` |
+| `calendar.ts` / `dayEnter.ts` | Prep/battle derived; masuk hari + prioritas consequence |
+| `effects.ts` / `stats.ts` / `economy.ts` / `battle.ts` | Scaling + efek heal/maxHp |
+| `events.ts` / `rewards.ts` / `transitions.ts` | Consequence schedule, reward per wave, victory wave 10 |
+| `narrative.ts` | Overlay 2–4 label |
+| `game.test.ts` | Regresi kampanye v4 |
+
+### 12.3 Verifikasi
+
+```bash
+npm run typecheck
+npm test
+```
+
+Hasil saat patch: typecheck OK; Vitest 27/27 hijau (`src/game/game.test.ts` + `src/ui/autoRun.test.ts`). Harness try-UI (`src/ui/main.ts`) disesuaikan minimal ke v4 agar typecheck root lulus — **bukan** produk `app/`.
+
+### 12.4 Yang sengaja belum disentuh
+
+- `app/components`, `app/server`, adapter, Mongo schema, AI runtime produk.
+- FE/BE harus mengadopsi kontrak v4 secara terpisah.
+
+---
+
+Bila menambah patch engine berikutnya, **tambahkan seksi baru di bawah §12** (tanggal, masalah, file, tes, hasil verifikasi) dan folder `.scratch/<nama-fitur>/` sesuai [agents/issue-tracker.md](./agents/issue-tracker.md).

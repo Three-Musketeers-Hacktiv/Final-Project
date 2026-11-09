@@ -3,7 +3,7 @@ import type { ActiveEvent, GameState } from "./types";
 export type EventNarrativeOverlay = {
   title: string;
   description: string;
-  choices: [{ id: string; label: string }, { id: string; label: string }];
+  choices: Array<{ id: string; label: string }>;
   source: ActiveEvent["source"];
 };
 
@@ -21,11 +21,20 @@ export function decorateActiveEvent(
       ...event,
       title: overlay.title,
       description: overlay.description,
-      choices: [
-        { ...event.choices[0], label: labels.get(event.choices[0].id) ?? event.choices[0].label },
-        { ...event.choices[1], label: labels.get(event.choices[1].id) ?? event.choices[1].label },
-      ],
+      choices: event.choices.map((choice) => ({
+        ...choice,
+        label: labels.get(choice.id) ?? choice.label,
+      })),
       source: overlay.source,
     },
   };
+}
+
+export function narrativeChoiceIdsMatch(state: GameState, overlay: EventNarrativeOverlay): boolean {
+  const event = state.activeEvent;
+  if (!event) return false;
+  if (overlay.choices.length < 2 || overlay.choices.length > 4) return false;
+  if (overlay.choices.length !== event.choices.length) return false;
+  const overlayIds = new Set(overlay.choices.map((choice) => choice.id));
+  return event.choices.every((choice) => overlayIds.has(choice.id));
 }

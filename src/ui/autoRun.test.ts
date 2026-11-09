@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createInitialState, type GameState } from "../game/index";
+import { createInitialState, gameConfig, type GameState } from "../game/index";
 import { AUTO_INTERVAL_MS, advanceDay, applyPreferredUpgrade, createAutoRun } from "./autoRun";
 
 function fakeClock() {
@@ -30,9 +30,9 @@ function fakeClock() {
   };
 }
 
-function harness(options?: { hidden?: boolean }) {
+function harness(options?: { hidden?: boolean; runId?: string }) {
   const clock = fakeClock();
-  let state = createInitialState({ runId: "run-auto" });
+  let state = createInitialState({ runId: options?.runId ?? "run-auto" });
   let hidden = options?.hidden ?? false;
   const auto = createAutoRun({
     getState: () => state,
@@ -74,21 +74,33 @@ describe("auto run controller", () => {
     expect(ui.state.day).toBe(day);
     ui.clock.flush(1);
     expect(ui.state.day).toBe(day + 1);
-    expect(ui.auto.snapshot().running).toBe(true);
+    if (ui.state.phase === "event") {
+      expect(ui.auto.snapshot().running).toBe(false);
+      expect(ui.auto.snapshot().pauseReason).toBe("event");
+    } else {
+      expect(ui.auto.snapshot().running).toBe(true);
+    }
   });
 
   it("pauses when the next day is an event and does not resume by itself", () => {
     const ui = harness();
-    ui.setState({ ...ui.state, day: 2, phase: "preparation", incomeGrantedDays: [1, 2] });
+    const eventDay = ui.state.eventPlan.map((entry) => entry.day).sort((a, b) => a - b)[0]!;
+    ui.setState({
+      ...ui.state,
+      day: eventDay - 1,
+      phase: "preparation",
+      activeEvent: null,
+      incomeGrantedDays: Array.from({ length: eventDay - 1 }, (_, i) => i + 1),
+    });
     ui.auto.enable();
     ui.clock.flush(AUTO_INTERVAL_MS);
-    expect(ui.state.day).toBe(3);
+    expect(ui.state.day).toBe(eventDay);
     expect(ui.state.phase).toBe("event");
     expect(ui.auto.snapshot().running).toBe(false);
     expect(ui.auto.snapshot().pauseReason).toBe("event");
     expect(ui.auto.snapshot().mode).toBe("auto");
     ui.clock.flush(AUTO_INTERVAL_MS * 3);
-    expect(ui.state.day).toBe(3);
+    expect(ui.state.day).toBe(eventDay);
   });
 
   it("manual mode ignores time and switching to manual cancels a pending tick", () => {
@@ -104,13 +116,20 @@ describe("auto run controller", () => {
 
   it("stops when advance is rejected and keeps the city state", () => {
     const ui = harness();
-    ui.setState({ ...ui.state, day: 3, phase: "preparation", activeEvent: null, completedEventIds: [] });
+    const eventDay = ui.state.eventPlan.map((entry) => entry.day).sort((a, b) => a - b)[0]!;
+    ui.setState({
+      ...ui.state,
+      day: eventDay,
+      phase: "preparation",
+      activeEvent: null,
+      completedEventIds: [],
+    });
     const before = ui.state.gold;
     ui.auto.enable();
     ui.clock.flush(AUTO_INTERVAL_MS);
     expect(ui.auto.snapshot().pauseReason).toBe("rejected");
     expect(ui.state.gold).toBe(before);
-    expect(ui.state.day).toBe(3);
+    expect(ui.state.day).toBe(eventDay);
   });
 
   it("pauses while the tab is hidden and a stale run tick does nothing", () => {
@@ -132,6 +151,8 @@ describe("auto run controller", () => {
 
   it("flags an unused economic action while auto is running", () => {
     const ui = harness();
+    // Ensure day 1 is not an event day for this run.
+    expect(ui.state.phase).toBe("preparation");
     ui.auto.enable();
     expect(ui.auto.snapshot().actionStillAvailable).toBe(true);
     expect(ui.auto.snapshot().autoUpgrade).toBe(false);
@@ -140,22 +161,28 @@ describe("auto run controller", () => {
   it("buys one upgrade per preparation day when auto upgrade is checked", () => {
     const ui = harness();
     const startGold = ui.state.gold;
+    const firstCost = gameConfig.upgradeBaseCost;
     ui.auto.enable();
     ui.auto.setAutoUpgrade(true);
     expect(ui.state.troopLevel).toBe(1);
     expect(ui.state.wallLevel).toBe(0);
-    expect(ui.state.gold).toBe(startGold - 50);
+    expect(ui.state.gold).toBe(startGold - firstCost);
     expect(ui.state.actionUsedToday).toBe(true);
     expect(ui.state.day).toBe(1);
     ui.clock.flush(AUTO_INTERVAL_MS);
     expect(ui.state.day).toBe(2);
-    expect(ui.state.troopLevel).toBe(2);
-    expect(ui.auto.snapshot().running).toBe(true);
+    if (ui.state.phase === "event") {
+      expect(ui.auto.snapshot().pauseReason).toBe("event");
+    } else {
+      expect(ui.state.troopLevel).toBe(2);
+      expect(ui.auto.snapshot().running).toBe(true);
+    }
   });
 
   it("buys the wall when troops are too expensive and the wall is not", () => {
     const ui = harness();
-    ui.setState({ ...ui.state, troopLevel: 4, gold: 50 });
+    const wallCost = gameConfig.upgradeBaseCost;
+    ui.setState({ ...ui.state, troopLevel: 4, gold: wallCost });
     ui.auto.enable();
     ui.auto.setAutoUpgrade(true);
     expect(ui.state.troopLevel).toBe(4);
@@ -176,7 +203,11 @@ describe("auto run controller", () => {
     expect(ui.state.gold).toBe(0);
     ui.clock.flush(AUTO_INTERVAL_MS);
     expect(ui.state.day).toBe(2);
-    expect(ui.auto.snapshot().pauseReason).toBe(null);
+    if (ui.state.phase === "event") {
+      expect(ui.auto.snapshot().pauseReason).toBe("event");
+    } else {
+      expect(ui.auto.snapshot().pauseReason).toBe(null);
+    }
     ui.auto.toManual();
     expect(ui.auto.snapshot().autoUpgrade).toBe(false);
   });

@@ -1,56 +1,65 @@
 # Developer 1 — Game Engine Contract
 
-Pure game engine lives in `src/game`. A **separate** testing harness (mock UI + mock narrative HTTP) lives in `src/dev-harness`, `harness/`, and `mock-server/` — see [HARNESS.md](./HARNESS.md). That harness is not the product UI/backend. Chronology of engine patches: [GAME_ENGINE_PATCH_HISTORY.md](./GAME_ENGINE_PATCH_HISTORY.md).
+Pure game engine lives in `src/game`. Chronology: [GAME_ENGINE_PATCH_HISTORY.md](./GAME_ENGINE_PATCH_HISTORY.md).  
+FE/BE connection guide for the 100-day campaign: [CAMPAIGN_100_DAY_CONTRACT.md](./CAMPAIGN_100_DAY_CONTRACT.md).
 
-Defaults (supersede older PRD bits where they conflict):
+Defaults (supersede older PRD / AGENTS bits where they conflict):
 
-- Three upgrade tracks share one daily economic slot with repair: wall raises defense, troops raise attack, city raises max HP and daily income.
-- City upgrade increases `cityMaxHp` and current HP by the same bonus (not a full heal). Repair stays separate and is never discounted.
-- No individual troop recruitment in the engine API. `troopLevel` is only the city's attack track.
-- Event “recruitment discount” is an **upgrade discount** applied to all three track costs.
+- Campaign: **100 days**, **10 waves** on days 10…100.
+- Three upgrade tracks share one daily economic slot with repair.
+- City upgrade increases `cityMaxHp` and current HP by the same bonus (not a full heal). Repair is never discounted.
+- No unit recruitment API. `troopLevel` is the city's attack track.
+- Event choices: **2–4** per package; ≥1 free; skip/refuse may schedule **consequence** events.
+- Event days are **per-run** (2 prep days / decade via `pickEventPlan`), not fixed 3/7/13/17.
+- Difficulty: `easy` | `normal` | `hard` scales monsters + economy.
+- Playtest economy: `dailyIncome` **28**, upgrade `45 + level × 30`, max level **18**, repair **35/45**, city MaxHP +25 / income +5 per level.
 - Phases: `preparation` | `event` | `battleReady` | `battleReport` | `reward` | `gameOver` | `victory`.
-- Playtest delta vs the older AGENTS gold table: `dailyIncome` is **25**.
-- Playtest track bonuses: wall defense +2, troops attack +5, city max HP +20 and income +8 per level. Cost `50 + level × 20`, max 5 per track. Income +8 (not +3) is required so separate attack and defense purchases can still clear wave 2.
-- Older PRD/MVP docs may still describe a single ATK+DEF upgrade. This contract supersedes that.
 
-## State schema (`version: 3`)
+## State schema (`version: 4`)
 
 ```ts
+type Difficulty = "easy" | "normal" | "hard";
 type EventPlanEntry = { day: number; packageId: string; eventId: string };
+type PendingConsequence = {
+  id: string;
+  originEventId: string;
+  originChoiceId: string;
+  packageId: string;
+  triggerDay: number;
+};
 
 type GameState = {
-  version: 3;          // save format version
-  revision: number;    // starts at 0 after createInitialState
+  version: 4;
+  revision: number;
   runId: string;
+  difficulty: Difficulty;
   day: number;
   phase: GamePhase;
   gold: number;
   cityHp: number;
   cityMaxHp: number;
-  wallLevel: number;   // defense track, starts at 0
-  troopLevel: number;  // attack track, starts at 0
-  cityLevel: number;   // max HP + income track, starts at 0
+  wallLevel: number;
+  troopLevel: number;
+  cityLevel: number;
   actionUsedToday: boolean;
-  incomeGrantedDays: number[]; // unique preparation days that received income
+  incomeGrantedDays: number[];
   completedEventIds: string[];
-  eventPlan: EventPlanEntry[]; // one trusted package per scheduled event day
-  activeEvent: ActiveEvent | null;
+  eventPlan: EventPlanEntry[];          // length 20
+  pendingConsequences: PendingConsequence[];
+  activeEvent: ActiveEvent | null;      // choices length 2–4
   effects: ActiveEffects;
   wavesCleared: number;
   battleResult: BattleResult | null;
-  rewardChosenId: string | null;
+  rewardsChosenByWave: Record<string, string>;
 };
 ```
 
-- `version` is the **save format** identifier. This release uses `3`. Version `1` (`upgradeLevel`) and `2` are not migrated — see [Patch.md](../Patch.md).
-- `revision` is a separate monotonic counter. Every successful public gameplay action that changes state increments it **once** (including composite `chooseReward`). Errors and no-ops do not increment. `createInitialState` yields `revision: 0`.
-- `incomeGrantedDays` replaces the old single `incomeGrantedForDay` marker. Only valid preparation days appear in the list.
-- `eventPlan` is filled at create via `pickEventPlan(runId)` (stable hash). Each event day (3/7/13/17) has a pool of two packages; the plan picks one. Resolve with `resolveEventPackage(day, state.eventPlan)`. Do not hardcode legacy ids like `event-day-3` / `day3-pay`.
-- AI may overlay title/description/labels through `decorateActiveEvent`; costs and effects always come from the trusted package in `config.ts`.
+- Reject `version` 1–3 at the BE boundary — **no migration**.
+- `revision` increments once per successful mutating action; `createInitialState` → `0`.
+- `eventPlan` from `pickEventPlan(runId)` (stable hash). Resolve with `resolveEventPackage(day, state.eventPlan)`.
+- AI may overlay title/description/labels via `decorateActiveEvent`; costs/effects stay trusted.
 - Engine is pure: no React, DOM, `fetch`, `localStorage`, timers, or `process.env`.
 - State is JSON-serializable.
-
-**Save loading:** rejecting unsupported older formats (`UNSUPPORTED_STATE_VERSION`) is scheduled for ticket 04. This ticket does not add autosave or migration. Do not assume `version: 1` payloads can be loaded.
 
 ## API (`src/game`)
 
@@ -58,6 +67,8 @@ type GameState = {
 import {
   createInitialState,
   getEffectiveStats,
+  getWavePreview,
+  rewardsForWave,
   upgradeWall,
   upgradeTroops,
   upgradeCity,
@@ -72,23 +83,19 @@ import {
   pickEventPlan,
   resolveEventPackage,
   decorateActiveEvent,
+  surrender,
 } from "./game";
 
-const state = createInitialState({ runId: "run-…" });
-const stats = getEffectiveStats(state);
-const troops = upgradeTroops(state); // { ok, state } | { ok:false, error:{code,message} }
-const wall = upgradeWall(state);
-const city = upgradeCity(state); // max HP + income, not attack/defense
+const state = createInitialState({ runId: "run-…", difficulty: "normal" });
 ```
 
-### Day transitions
+### Day / wave transitions
 
-- There is **no** public `enterDay(day)` jump API. Callers advance with `endPreparationDay` (prep → next day) or `chooseReward` (reward → day 11).
-- `createInitialState` applies day-1 income exactly once via an internal helper.
-- `endPreparationDay` only accepts a valid preparation day in `preparation` phase, advances exactly one day, and rejects reverse/jump/out-of-range days with `INVALID_TRANSITION`.
-- A scheduled event that is unfinished blocks shopping and advance with `EVENT_REQUIRED`, even if `phase` was tampered to `preparation`.
-- Resolving an event stays on the same day: no extra income and no action-slot reset.
-- Battle days (10, 20) grant no income and no economic actions.
+- No public `enterDay(day)`.
+- Advance with `endPreparationDay` or `chooseReward` (after waves 1–9 → next prep day).
+- Battle days grant no income / no economy actions.
+- Unresolved scheduled **or** consequence event → `EVENT_REQUIRED`.
+- Wave 10 win → `continueFromReport` → `victory` (no reward).
 
 ### Error codes (stable for UI)
 
@@ -96,23 +103,16 @@ const city = upgradeCity(state); // max HP + income, not attack/defense
 |---|---|
 | `INVALID_PHASE` | Action not allowed in the current phase |
 | `INVALID_TRANSITION` | Illegal day / calendar transition |
-| `EVENT_REQUIRED` | Scheduled event must be resolved first |
+| `EVENT_REQUIRED` | Event must be resolved first |
 | `NO_ACTION_LEFT` | Daily economic action already used |
 | `INSUFFICIENT_GOLD` | Not enough gold |
-| `MAX_UPGRADE` | That upgrade track is already at max level |
+| `MAX_UPGRADE` | Track at max level |
 | `HP_FULL` | Repair not needed |
-| `INVALID_CHOICE` | Unknown / disallowed choice |
+| `INVALID_CHOICE` | Unknown / disallowed choice or reward |
 | `EVENT_ALREADY_RESOLVED` | Event already completed |
-| `REWARD_ALREADY_CHOSEN` | Reward already taken |
+| `REWARD_ALREADY_CHOSEN` | Reward already taken for that wave |
 | `BATTLE_INVALID` | Battle config / day invalid |
 | `BATTLE_ALREADY_RESOLVED` | Battle already computed |
-| `GAME_ENDED` | `gameOver` or `victory` — no further gameplay |
+| `GAME_ENDED` | `gameOver` or `victory` |
 
-Reserved for later tickets (not enforced here):
-
-| Code | Ticket |
-|---|---|
-| `RUN_MISMATCH` / `STALE_REVISION` / `DUPLICATE_ACTION` | 03 controller |
-| `UNSUPPORTED_STATE_VERSION` | 04 save load |
-
-Effects come only from trusted packages in `config.ts`. UI/AI layers may attach narrative labels after validating IDs against those packages.
+Reserved for BE layers: `RUN_MISMATCH`, `STALE_REVISION`, `DUPLICATE_ACTION`, `UNSUPPORTED_STATE_VERSION`.
