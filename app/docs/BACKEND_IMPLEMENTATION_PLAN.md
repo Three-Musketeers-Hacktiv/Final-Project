@@ -833,10 +833,20 @@ Satu entri log minimal berisi tanggal/waktu Asia/Jakarta, tujuan, tindakan, file
 
 Tahap lanjutan setelah engine v4 awal:
 
-1. Gunakan ruleset immutable `campaign-v4-100-day-v2` karena fingerprint konfigurasi engine berubah.
+1. Gunakan ruleset immutable `campaign-v4-100-day-v3`; v2 sudah digunakan backend untuk fingerprint balancing sebelumnya.
 2. Perlakukan `activeEvent.choices[].goldCost` sebagai biaya efektif final dan larang label AI menyebut istilah mata uang apa pun yang didukung engine.
 3. Validasi consequence yang digeser melalui rantai package tepercaya dari engine, termasuk antrean event pada hari yang sama.
 4. Gunakan ulang narasi run yang tersimpan; jika Gemini gagal, cari katalog AI bersama sebelum fallback lokal.
 5. Jalankan campaign 100 hari dan seluruh pemeriksaan backend tanpa mengubah source engine atau frontend.
 
 Output: backend mengikuti kontrak engine terbaru dan menyimpan narasi secara deterministik tanpa menduplikasi aturan gameplay.
+
+## 26. Sinkronisasi balancing normal/hard terbaru
+
+1. Pertahankan `GameState.version === 4`, tetapi terbitkan metadata ruleset baru karena fingerprint `gameConfig` berubah.
+2. Gunakan nilai engine secara langsung: repair normal `25/60`, wave normal sampai `600/64`, dan multiplier hard terbaru; backend/frontend tidak menyimpan tabel duplikat.
+3. Tolak load run ruleset v1/v2 sebagai incompatible, tanpa menimpa fingerprint atau memigrasikan state diam-diam.
+4. Tambahkan regression adapter untuk selector repair, preview easy/normal/hard, serta wave terakhir.
+5. Jalankan seluruh test engine/backend dan campaign API 100 hari terhadap ruleset v3.
+
+Output: run baru memakai `campaign-v4-100-day-v3`; run lama tetap immutable untuk audit.

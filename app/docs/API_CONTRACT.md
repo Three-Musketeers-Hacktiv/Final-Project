@@ -264,6 +264,8 @@ Aturan:
 - Jika save aktif ada dan `replaceActiveSave` false, server menolak.
 - Jika true, pointer save berpindah ke run baru; run lama tetap tersimpan dan tidak dianggap selesai.
 - Create run hanya menyimpan state awal, delapan properties revision 0, metadata ruleset, dan pointer save.
+- Run baru menggunakan ruleset backend `campaign-v4-100-day-v3`. Save ruleset v1/v2 ditolak sebagai incompatible dan harus diganti melalui alur new game yang eksplisit.
+- Repair cost/heal, preview wave, dan multiplier difficulty pada response selalu berasal dari selector engine terbaru; client tidak boleh menyimpan tabel balancing sendiri.
 - Narasi event dibuat ketika action engine memasuki scheduled/consequence event yang dipilih engine. Jika AI tidak tersedia/gagal, fallback lokal digunakan pada action yang sama.
 - Create run mengembalikan `state.eventPlan`; setiap entry berisi `day`, `packageId`, dan `eventId` yang dipilih engine secara deterministik dari `runId`.
 

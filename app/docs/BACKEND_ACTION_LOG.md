@@ -977,3 +977,29 @@ Scope:
 - Root engine/docs yang terlihat pada merge berasal dari commit rekan dan tidak dimodifikasi backend.
 - Server development untuk smoke test sudah dihentikan dan `.env` tidak diubah.
 - Push tidak dilakukan.
+
+## 2026-11-09 — Sinkronisasi balancing normal/hard terbaru
+
+Integrasi remote:
+- `git fetch origin --prune` menemukan remote 2 commit lebih maju dan sudah memuat seluruh commit backend lokal.
+- Branch di-fast-forward dari `62bc855` ke merge remote `ff853e2`; patch engine utama adalah `33bf5cb fix(game): balance normal and hard difficulties for campaign`.
+- File root `src/game/**`, root `docs/**`, dan `Patch.md` masuk utuh dari commit rekan dan tidak diedit oleh pekerjaan backend.
+
+Temuan audit:
+- `GameState.version` tetap 4, tetapi `gameConfig` dan fingerprint berubah: repair normal 25 gold/60 HP, wave normal berakhir 600/64, serta multiplier hard menjadi HP 1.08, attack 1.06, upgrade 1.08, income 0.95, repair 1.05, event gold 1.08.
+- Backend sudah memakai `campaign-v4-100-day-v2` untuk fingerprint patch sebelumnya. Saran v2 pada kontrak engine tidak dapat dipakai ulang tanpa melanggar metadata Atlas immutable.
+- Run baru harus memakai `campaign-v4-100-day-v3`; run v1/v2 tetap disimpan untuk audit dan ditolak pada load tanpa migrasi diam-diam.
+
+Implementasi:
+- Adapter ruleset dinaikkan ke v3.
+- Regression adapter membuktikan repair normal 25, hard repair 27, heal 60, preview wave 1 normal 150/22, hard 162/23, dan wave 10 normal 600/64.
+- Dokumentasi integrasi, API, database, implementation plan, dan test plan diperbarui.
+
+Validasi tahap implementasi:
+- Backend `npm.cmd run typecheck:backend`: lulus.
+- Backend targeted test adapter/load: lulus, 2 file / 18 test.
+
+Commit:
+- `f77ffb7 fix(game): version latest balance ruleset`
+
+Push tidak dilakukan.
