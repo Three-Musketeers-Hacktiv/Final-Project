@@ -1,235 +1,238 @@
-import type { EventPackage, RewardOption } from "./types";
+import { CONSEQUENCE_PACKAGES, SCHEDULED_EVENT_PACKAGES } from "./eventPackages";
+import type { EventPackage, WaveDefinition, WaveRewardSet } from "./types";
 
-/** Playtest income is 25 (AGENTS table listed 15). One source of truth. */
+export const GAME_STATE_VERSION = 4 as const;
+
 export const gameConfig = {
   startingDay: 1,
+  lastDay: 100,
   startingGold: 100,
-  dailyIncome: 25,
+  dailyIncome: 28,
   cityMaxHp: 150,
   baseAttack: 10,
   baseDefense: 2,
-  upgradeBaseCost: 50,
-  upgradeCostStep: 20,
-  maxTrackLevel: 5,
+  upgradeBaseCost: 45,
+  upgradeCostStep: 30,
+  maxTrackLevel: 18,
   wallDefenseBonus: 2,
   troopAttackBonus: 5,
-  cityMaxHpBonus: 20,
-  /** +3 could not fund separate ATK and DEF tracks through wave 2. */
-  cityIncomeBonus: 8,
-  repairCost: 30,
-  repairHeal: 30,
-  lastDay: 20,
-  battleDays: [10, 20] as const,
+  cityMaxHpBonus: 25,
+  cityIncomeBonus: 5,
+  repairCost: 35,
+  repairHeal: 45,
+  eventsPerDecade: 2,
+  minEventGapDays: 2,
+  battleDays: [10, 20, 30, 40, 50, 60, 70, 80, 90, 100] as const,
   waves: [
-    { wave: 1 as const, day: 10, name: "Goblin Horde", hp: 150, attack: 22 },
-    { wave: 2 as const, day: 20, name: "Orc Host", hp: 260, attack: 34 },
-  ],
-  rewards: [
-    { id: "reward-gold", label: "Royal subsidy", kind: "grantGold", amount: 40 },
-    { id: "reward-income", label: "Trade routes", kind: "prepIncomeBonus", amount: 6 },
-    { id: "reward-discount", label: "City logistics", kind: "upgradeDiscount", amount: 0.25 },
-  ] satisfies RewardOption[],
-  /**
-   * Trusted event pools. Multiple packages may share a day; each run picks one
-   * package per day via `pickEventPlan`. AI may rewrite title/description/labels only.
-   */
-  events: [
+    { wave: 1, day: 10, name: "Goblin Horde", role: "tutorial", hp: 150, attack: 22 },
+    { wave: 2, day: 20, name: "Orc Host", role: "check", hp: 280, attack: 36 },
+    { wave: 3, day: 30, name: "Great Wolf", role: "spike", hp: 340, attack: 52 },
+    { wave: 4, day: 40, name: "Cyclops", role: "tank", hp: 620, attack: 48 },
+    { wave: 5, day: 50, name: "Wyvern", role: "midboss", hp: 700, attack: 78 },
+    { wave: 6, day: 60, name: "Lich", role: "attrition", hp: 820, attack: 70 },
+    { wave: 7, day: 70, name: "Lesser Demon", role: "spike", hp: 1000, attack: 95 },
+    { wave: 8, day: 80, name: "Demon", role: "tank", hp: 1400, attack: 110 },
+    { wave: 9, day: 90, name: "Dragon", role: "spike", hp: 1550, attack: 145 },
+    { wave: 10, day: 100, name: "Demon King", role: "finale", hp: 2200, attack: 160 },
+  ] satisfies WaveDefinition[],
+  waveRewards: [
     {
-      packageId: "event-day-3-scouts",
-      eventId: "event-day-3-scouts",
-      day: 3,
-      title: "Scouts at the gate",
-      description:
-        "My lord, enemy scouts have been sighted beyond the gate. I advise posting extra guards before the first wave, or letting them pass so the city's gold stays intact.",
-      choices: [
+      afterWave: 1,
+      options: [
         {
-          id: "day3-scouts-pay",
-          label: "Reinforce the gate: pay 20 gold, defense +4 for the first wave",
-          goldCost: 20,
-          effects: [{ type: "nextWaveDefense", amount: 4, wave: 1 }],
+          id: "w1-income",
+          label: "Trade routes (+6 prep income until next battle)",
+          kind: "prepIncomeBonus",
+          amount: 6,
         },
         {
-          id: "day3-scouts-skip",
-          label: "Let them pass. No immediate consequence.",
-          goldCost: 0,
-          effects: [],
+          id: "w1-discount",
+          label: "Merchant favor (25% upgrade discount until next wave)",
+          kind: "upgradeDiscount",
+          amount: 0,
+          rate: 0.25,
+          untilWave: 2,
+        },
+        { id: "w1-gold", label: "Treasury haul (+35 gold)", kind: "grantGold", amount: 35 },
+      ],
+    },
+    {
+      afterWave: 2,
+      options: [
+        { id: "w2-gold", label: "Spoils (+60 gold)", kind: "grantGold", amount: 60 },
+        { id: "w2-heal", label: "Field medics (heal 35 HP)", kind: "healCity", amount: 35 },
+        {
+          id: "w2-def",
+          label: "Barricades (+5 defense next wave)",
+          kind: "nextWaveDefense",
+          amount: 5,
+          wave: 3,
         },
       ],
     },
     {
-      packageId: "event-day-3-envoy",
-      eventId: "event-day-3-envoy",
-      day: 3,
-      title: "Nervous border envoy",
-      description:
-        "My lord, a border envoy begs for escort coin before the first wave. Paying them hardens our walls; refusing costs nothing today.",
-      choices: [
+      afterWave: 3,
+      options: [
         {
-          id: "day3-envoy-pay",
-          label: "Fund the escort: pay 20 gold, defense +4 for the first wave",
-          goldCost: 20,
-          effects: [{ type: "nextWaveDefense", amount: 4, wave: 1 }],
+          id: "w3-income",
+          label: "Tax reform (+8 prep income until next battle)",
+          kind: "prepIncomeBonus",
+          amount: 8,
+        },
+        { id: "w3-maxhp", label: "Reinforce walls (+20 Max HP)", kind: "maxHpBonus", amount: 20 },
+        { id: "w3-heal", label: "Surgeons (heal 45 HP)", kind: "healCity", amount: 45 },
+      ],
+    },
+    {
+      afterWave: 4,
+      options: [
+        {
+          id: "w4-discount",
+          label: "Guild charter (30% upgrade discount until next wave)",
+          kind: "upgradeDiscount",
+          amount: 0,
+          rate: 0.3,
+          untilWave: 5,
+        },
+        { id: "w4-gold", label: "Booty (+80 gold)", kind: "grantGold", amount: 80 },
+        { id: "w4-heal", label: "Rest tents (heal 40 HP)", kind: "healCity", amount: 40 },
+      ],
+    },
+    {
+      afterWave: 5,
+      options: [
+        { id: "w5-gold", label: "Royal grant (+110 gold)", kind: "grantGold", amount: 110 },
+        {
+          id: "w5-def",
+          label: "Watchtowers (+6 defense next wave)",
+          kind: "nextWaveDefense",
+          amount: 6,
+          wave: 6,
         },
         {
-          id: "day3-envoy-skip",
-          label: "Send them away empty-handed. No immediate consequence.",
-          goldCost: 0,
-          effects: [],
+          id: "w5-income",
+          label: "Caravan pact (+10 prep income until next battle)",
+          kind: "prepIncomeBonus",
+          amount: 10,
         },
       ],
     },
     {
-      packageId: "event-day-7-supplies",
-      eventId: "event-day-7-supplies",
-      day: 7,
-      title: "Supply dilemma",
-      description:
-        "The stores are running low, my lord. We can buy supplies now, or refuse the offer and accept damage to the city.",
-      choices: [
+      afterWave: 6,
+      options: [
+        { id: "w6-maxhp", label: "Stoneworks (+25 Max HP)", kind: "maxHpBonus", amount: 25 },
+        { id: "w6-heal", label: "Hospital tents (heal 55 HP)", kind: "healCity", amount: 55 },
         {
-          id: "day7-supplies-pay",
-          label: "Buy supplies: pay 15 gold.",
-          goldCost: 15,
-          effects: [],
-        },
-        {
-          id: "day7-supplies-hurt",
-          label: "Refuse the offer. The city loses 10 HP.",
-          goldCost: 0,
-          effects: [{ type: "damageCity", amount: 10 }],
+          id: "w6-discount",
+          label: "Blacksmith deals (30% upgrade discount until next wave)",
+          kind: "upgradeDiscount",
+          amount: 0,
+          rate: 0.3,
+          untilWave: 7,
         },
       ],
     },
     {
-      packageId: "event-day-7-labor",
-      eventId: "event-day-7-labor",
-      day: 7,
-      title: "Exhausted work crews",
-      description:
-        "The labor crews are spent, my lord. A wage now keeps the walls sound; refusing means the city takes the strain.",
-      choices: [
+      afterWave: 7,
+      options: [
+        { id: "w7-gold", label: "War chest (+130 gold)", kind: "grantGold", amount: 130 },
+        { id: "w7-heal", label: "Priests of light (heal 50 HP)", kind: "healCity", amount: 50 },
         {
-          id: "day7-labor-pay",
-          label: "Pay the crews: pay 15 gold.",
-          goldCost: 15,
-          effects: [],
-        },
-        {
-          id: "day7-labor-hurt",
-          label: "Order them onward unpaid. The city loses 10 HP.",
-          goldCost: 0,
-          effects: [{ type: "damageCity", amount: 10 }],
+          id: "w7-def",
+          label: "Iron plating (+8 defense next wave)",
+          kind: "nextWaveDefense",
+          amount: 8,
+          wave: 8,
         },
       ],
     },
     {
-      packageId: "event-day-13-caravan",
-      eventId: "event-day-13-caravan",
-      day: 13,
-      title: "Trade opportunity",
-      description:
-        "A merchant caravan offers two paths, my lord: gold you can spend today, or cheaper building costs until the second wave.",
-      choices: [
+      afterWave: 8,
+      options: [
         {
-          id: "day13-caravan-gold",
-          label: "Accept the caravan gold: gold +20.",
-          goldCost: 0,
-          effects: [{ type: "grantGold", amount: 20 }],
+          id: "w8-income",
+          label: "Tribute lines (+12 prep income until next battle)",
+          kind: "prepIncomeBonus",
+          amount: 12,
         },
-        {
-          id: "day13-caravan-discount",
-          label: "Secure material prices: 25% upgrade discount until the second wave.",
-          goldCost: 0,
-          effects: [{ type: "upgradeDiscount", rate: 0.25, untilWave: 2 }],
-        },
+        { id: "w8-maxhp", label: "Citadel expansion (+30 Max HP)", kind: "maxHpBonus", amount: 30 },
+        { id: "w8-gold", label: "Loot (+150 gold)", kind: "grantGold", amount: 150 },
       ],
     },
     {
-      packageId: "event-day-13-guild",
-      eventId: "event-day-13-guild",
-      day: 13,
-      title: "Guild bargain",
-      description:
-        "The builders' guild opens its ledgers, my lord: a purse of gold now, or discounted upgrades until the second wave.",
-      choices: [
+      afterWave: 9,
+      options: [
         {
-          id: "day13-guild-gold",
-          label: "Take the guild purse: gold +20.",
-          goldCost: 0,
-          effects: [{ type: "grantGold", amount: 20 }],
+          id: "w9-discount",
+          label: "Siege contracts (35% upgrade discount until Demon King)",
+          kind: "upgradeDiscount",
+          amount: 0,
+          rate: 0.35,
+          untilWave: 10,
         },
         {
-          id: "day13-guild-discount",
-          label: "Lock guild rates: 25% upgrade discount until the second wave.",
-          goldCost: 0,
-          effects: [{ type: "upgradeDiscount", rate: 0.25, untilWave: 2 }],
+          id: "w9-combo",
+          label: "Last stand prep (heal 40 and +6 defense final wave)",
+          kind: "combo",
+          amount: 0,
+          effects: [
+            { type: "healCity", amount: 40 },
+            { type: "nextWaveDefense", amount: 6, wave: 10 },
+          ],
         },
+        { id: "w9-gold", label: "Final war chest (+170 gold)", kind: "grantGold", amount: 170 },
       ],
     },
-    {
-      packageId: "event-day-17-barricades",
-      eventId: "event-day-17-barricades",
-      day: 17,
-      title: "Final barricades",
-      description:
-        "The second wave draws near, my lord. I advise raising extra barricades now, or saving the gold for the days that remain.",
-      choices: [
-        {
-          id: "day17-barricades-pay",
-          label: "Raise barricades: pay 20 gold, defense +4 for the second wave",
-          goldCost: 20,
-          effects: [{ type: "nextWaveDefense", amount: 4, wave: 2 }],
-        },
-        {
-          id: "day17-barricades-skip",
-          label: "Keep the gold. No immediate consequence.",
-          goldCost: 0,
-          effects: [],
-        },
-      ],
-    },
-    {
-      packageId: "event-day-17-watchfires",
-      eventId: "event-day-17-watchfires",
-      day: 17,
-      title: "Watchfires on the ridge",
-      description:
-        "Ridgeline watchfires could blind the second wave, my lord. Lighting them costs gold now; leaving them dark saves coin.",
-      choices: [
-        {
-          id: "day17-watchfires-pay",
-          label: "Light the watchfires: pay 20 gold, defense +4 for the second wave",
-          goldCost: 20,
-          effects: [{ type: "nextWaveDefense", amount: 4, wave: 2 }],
-        },
-        {
-          id: "day17-watchfires-skip",
-          label: "Leave the ridge dark. No immediate consequence.",
-          goldCost: 0,
-          effects: [],
-        },
-      ],
-    },
-  ] satisfies EventPackage[],
-};
+  ] satisfies WaveRewardSet[],
+} as const;
+
+export const EVENT_PACKAGES: EventPackage[] = [
+  ...SCHEDULED_EVENT_PACKAGES,
+  ...CONSEQUENCE_PACKAGES,
+];
 
 export function scheduledEventDays(): number[] {
-  return [...new Set(gameConfig.events.map((event) => event.day))].sort((a, b) => a - b);
+  // Legacy helper name: actual days come from each run's eventPlan.
+  return [];
 }
 
-export function eventPackagesForDay(day: number): EventPackage[] {
-  return gameConfig.events.filter((event) => event.day === day);
+export function eventPackagesForDecade(decade: number): EventPackage[] {
+  return SCHEDULED_EVENT_PACKAGES.filter((pkg) => pkg.decade === decade);
+}
+
+export function eventPackagesForDay(_day: number): EventPackage[] {
+  return [];
 }
 
 export function eventPackageById(packageId: string): EventPackage | undefined {
-  return gameConfig.events.find((event) => event.packageId === packageId);
+  return EVENT_PACKAGES.find((pkg) => pkg.packageId === packageId);
 }
 
-/** Default package for a day (first in the pool). Prefer `resolveEventPackage` with a run plan. */
-export function eventPackageForDay(day: number): EventPackage | undefined {
-  return eventPackagesForDay(day)[0];
+export function eventPackageForDay(day: number, planPackageId?: string): EventPackage | undefined {
+  if (planPackageId) return eventPackageById(planPackageId);
+  return undefined;
 }
 
-export function rewardById(id: string): RewardOption | undefined {
-  return gameConfig.rewards.find((reward) => reward.id === id);
+export function rewardsForWave(wave: number): WaveRewardSet | undefined {
+  return gameConfig.waveRewards.find((entry) => entry.afterWave === wave);
+}
+
+export function rewardById(rewardId: string) {
+  for (const set of gameConfig.waveRewards) {
+    const found = set.options.find((option) => option.id === rewardId);
+    if (found) return { ...found, afterWave: set.afterWave };
+  }
+  return undefined;
+}
+
+export function getWaveByDay(day: number): WaveDefinition | undefined {
+  return gameConfig.waves.find((wave) => wave.day === day);
+}
+
+export function getWaveByNumber(wave: number): WaveDefinition | undefined {
+  return gameConfig.waves.find((entry) => entry.wave === wave);
+}
+
+export function lastWaveNumber(): number {
+  return gameConfig.waves[gameConfig.waves.length - 1]!.wave;
 }
