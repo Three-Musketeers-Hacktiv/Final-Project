@@ -58,6 +58,6 @@ The latest balance keeps `GameState.version === 4` but changes the config finger
 
 - Backend-focused typecheck is clean.
 - Backend unit/contract tests pass, including dynamic days, 2–4 choices, trusted successor consequences, stored narrative validation, and missing-event recovery.
-- Latest campaign runner reaches `victory` through 215 normal API actions, 21 events, 100 days, and ten battles against MongoDB Atlas.
-- Root engine typecheck and all 56 root tests pass; all 61 backend tests and backend typecheck pass; backend lint passes.
+- Latest ruleset-v3 campaign runner reaches `victory` through 196 normal API actions, 22 events, 100 days, and ten battles against MongoDB Atlas.
+- Root engine typecheck and all 60 root tests pass; all 62 backend tests and backend typecheck pass; backend lint passes.
 - Production build compiles, then fails only on existing frontend v3 assumptions: missing create-run difficulty and outdated reward config/kinds. These frontend-owned files were not changed.

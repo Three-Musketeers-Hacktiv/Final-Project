@@ -998,8 +998,17 @@ Implementasi:
 Validasi tahap implementasi:
 - Backend `npm.cmd run typecheck:backend`: lulus.
 - Backend targeted test adapter/load: lulus, 2 file / 18 test.
+- Root `npm.cmd run typecheck`: lulus.
+- Root `npm.cmd test`: lulus, 3 file / 60 test termasuk simulasi balance.
+- Backend full test: lulus, 16 file / 62 test.
+- Backend lint: lulus.
+- Live ruleset-v3 campaign di Atlas: lulus sampai `victory` hari 100 melalui 196 action, 22 event, dan 10 battle. Data development dipertahankan untuk audit.
+- Production build compile berhasil, lalu typecheck berhenti hanya pada frontend-owned `NewGameButton.tsx`, `PhaseDialogs.tsx`, dan `RewardDialog.tsx` yang masih memakai create-run/reward contract lama.
 
 Commit:
 - `f77ffb7 fix(game): version latest balance ruleset`
+- `5f88dd7 docs(backend): define balance ruleset v3 rollout`
 
+- Server development smoke test sudah dihentikan dan `.env` tidak diubah.
+- Source frontend dan engine tidak diedit oleh implementasi backend.
 Push tidak dilakukan.
