@@ -118,6 +118,9 @@ Catatan:
 - `state` berasal dari snapshot MongoDB yang sudah divalidasi sebagai version 4, termasuk `runId`, `difficulty`, 20-entry `eventPlan`, dan `pendingConsequences`.
 - `stats` dan `wavePreview` selalu berasal dari selector engine.
 - `eventNarrative` hanya mendekorasi teks/label; cost dan effects tetap dari package engine terpercaya.
+- `eventNarrative.choices[].goldCost` adalah biaya efektif final yang sudah diskalakan engine berdasarkan difficulty; client tidak melakukan scaling ulang.
+- Label narasi tidak boleh menyatakan nominal mata uang. Jika output AI melanggar, backend mengembalikan label engine tepercaya.
+- Setelah `chooseEventOption`, response dapat tetap berada pada phase `event` dengan `eventId` baru ketika consequence berikutnya antre pada hari yang sama; frontend harus merender event dari response terbaru.
 - Source persisten setelah dekorasi adalah `ai`, `fallback`, atau `mock`; `local` hanya boleh muncul sementara dari engine sebelum backend mendekorasi event.
 - `report` hanya tersedia jika battle terkait sudah diselesaikan.
 - `timeline` selalu tersedia dalam urutan kronologis. Run baru dan dokumen lama tanpa field timeline dibaca sebagai `[]`.

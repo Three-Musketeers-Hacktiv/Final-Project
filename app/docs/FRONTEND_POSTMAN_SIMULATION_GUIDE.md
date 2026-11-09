@@ -169,9 +169,11 @@ Jika backend dijalankan pada URL atau origin lain:
 
 ```bash
 CAMPAIGN_BASE_URL=http://localhost:3000 \
-CAMPAIGN_ORIGIN=http://localhost:3000 \
+CAMPAIGN_ORIGIN=http://localhost:3001 \
 npm run test:campaign
 ```
+
+`CAMPAIGN_ORIGIN` harus sama persis dengan `APP_ORIGIN` server. Contoh di atas dipakai ketika API berjalan pada port 3000 tetapi frontend/origin yang diizinkan pada `.env` adalah port 3001.
 
 Setiap eksekusi membuat akun dan run test baru. Data tersebut tidak dihapus otomatis karena dipertahankan untuk audit development.
 

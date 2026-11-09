@@ -914,3 +914,35 @@ Rencana commit:
 2. Ruleset v2, successor consequence validation, dan regression test balancing.
 3. Reuse narasi run/katalog AI serta test validasi/dekorasi.
 4. Closeout dokumentasi setelah campaign, typecheck, test, lint, dan build aktual dijalankan.
+
+## 2026-11-09 — Implementasi dan closeout patch balancing/event terbaru
+
+Implementasi backend:
+- Mengubah immutable ruleset menjadi `campaign-v4-100-day-v2` agar config fingerprint terbaru tidak bertabrakan dengan run v1.
+- Mengganti strict consequence package equality dengan `isTrustedConsequencePackage` dan menambah regression untuk seed `late-3` serta package asing.
+- Menyesuaikan timeline wall upgrade dengan bonus defense terbaru (`2 → 5`).
+- Memvalidasi ulang narasi tersimpan, menjaga effective gold cost engine, dan memakai trusted-label policy untuk menolak nominal mata uang pada label AI.
+- Menambahkan reuse snapshot `runs_event`; setelah Gemini tidak tersedia/gagal, backend mencoba katalog `event_data` AI valid sebelum fallback lokal.
+- Menambahkan recovery `ensureLocalEvent` pada load/action boundary. Recovery dilipat ke public action tanpa revision tambahan; same-day successor event dapat dipersistenkan dalam transaksi yang sama.
+- Memperbarui kontrak API, AI runtime, schema database, test plan, implementation plan, panduan frontend/Postman, dan dokumen integrasi v4.
+
+Commit berkala (identitas Git pengguna):
+- `b7c9f9a docs(backend): plan latest engine patch sync`
+- `c6fa597 fix(game): trust successor consequences and version ruleset`
+- `a5f2da5 feat(events): reuse validated stored narratives`
+- `2470584 fix(events): recover missing active events on load`
+
+Validasi aktual:
+- Root `npm.cmd run typecheck`: lulus.
+- Root `npm.cmd test`: lulus, 2 file / 52 test.
+- Backend `npm.cmd run typecheck:backend`: lulus.
+- Backend `npm.cmd test`: lulus, 16 file / 61 test.
+- Backend `npm.cmd run lint`: lulus.
+- Live `npm.cmd run test:campaign`: lulus melalui 217 action, 22 event, 10 battle, dan berakhir `victory` hari 100. Test membuat data development Atlas dan tidak menghapusnya.
+- `npm.cmd run build`: compile berhasil, lalu typecheck gagal hanya pada frontend-owned `NewGameButton.tsx`, `PhaseDialogs.tsx`, dan `RewardDialog.tsx` yang masih memakai kontrak v3. File tersebut tidak diubah sesuai batas scope.
+
+Scope dan operasional:
+- Tidak ada perubahan pada root `src/**`, root `docs/**`, atau file frontend.
+- `.env` tidak diubah. Campaign memakai override proses `CAMPAIGN_ORIGIN` yang sama dengan `APP_ORIGIN`.
+- Server development yang dipakai smoke test sudah dihentikan.
+- Push tidak dilakukan.

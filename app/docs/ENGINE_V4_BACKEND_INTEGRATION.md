@@ -1,6 +1,6 @@
 # Engine V4 Backend Integration
 
-Status: **Latest engine patch synchronization in progress**
+Status: **Backend synchronized; frontend build handoff remains**
 Owner: Backend  
 Engine source: `../../src/game` and `../../docs/FOR_BACKEND.md` (read-only)  
 Last updated: 2026-11-09
@@ -57,6 +57,7 @@ The v4 ruleset uses a new immutable ruleset ID and config fingerprint. Existing 
 ## Verification gates
 
 - Backend-focused typecheck is clean.
-- Backend unit/contract tests pass, including v3 rejection, all difficulty values, dynamic days, 2–4 choices, and consequence-event validation.
-- Campaign runner targets `victory` through normal API actions over 100 days and ten battles. The current live automatic strategy reaches a valid `gameOver` on day 50; a known winning engine fixture/strategy remains a cross-team gate.
-- Full repository checks are reported separately; frontend failures caused by its still-v3 assumptions are handed off and are not fixed from the backend scope.
+- Backend unit/contract tests pass, including dynamic days, 2–4 choices, trusted successor consequences, stored narrative validation, and missing-event recovery.
+- Campaign runner reaches `victory` through 217 normal API actions, 22 events, 100 days, and ten battles against MongoDB Atlas.
+- Root engine typecheck and all 52 root tests pass; all 61 backend tests and backend typecheck pass; backend lint passes.
+- Production build compiles, then fails only on existing frontend v3 assumptions: missing create-run difficulty and outdated reward config/kinds. These frontend-owned files were not changed.

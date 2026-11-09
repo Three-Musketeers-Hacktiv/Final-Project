@@ -442,7 +442,7 @@ Create run tidak memanggil provider AI. Narasi dibuat ketika action engine memas
 
 1. Baca pointer save user.
 2. Load run menggunakan `runId + userId`.
-3. Validasi `version === 3`, `runId`, ruleset fingerprint, `eventPlan`, dan bentuk state.
+3. Validasi `version === 4`, `runId`, ruleset fingerprint, `eventPlan`, consequence successor, dan bentuk state.
 4. Untuk current save, pastikan pointer `gameRunId` dan `savedRevision` cocok dengan run.
 5. Baca event/report yang relevan.
 6. Bentuk selector dan GameView tanpa menjalankan action engine.
@@ -467,7 +467,11 @@ AI, mock, atau fallback hanya boleh menyediakan:
 
 Ketika action engine menghasilkan event aktif, backend boleh melakukan dekorasi narasi dalam transaksi yang sama setelah memvalidasi `eventId`, `packageId`, hari, dan choice IDs. Backend tidak boleh mengganti cost/effects dari engine.
 
-Implementasi saat ini membuat satu dokumen `event_data` ketika event pertama kali aktif pada run. Narasi AI yang lolos validator dipakai bila provider terkonfigurasi; selain itu backend memakai fallback lokal terpercaya. Reuse katalog lintas-run belum diterapkan.
+Implementasi membekukan narasi per `runId + eventId`. Backend memakai snapshot run yang sudah ada lebih dahulu. Jika Gemini tersedia, output valid dipakai; bila provider tidak tersedia/gagal, backend mencari narasi AI valid untuk ruleset/package/day yang sama sebelum fallback lokal. Semua teks tersimpan divalidasi ulang dan didekorasikan melalui gameplay fields tepercaya dari engine.
+
+`activeEvent.choices[].goldCost` sudah merupakan biaya efektif setelah difficulty scaling. Backend tidak melakukan scaling ulang. Label AI yang menyebut nominal mata uang diganti dengan label engine oleh trusted-label policy.
+
+Consequence dapat memakai successor package yang disetujui engine. Backend memakai `isTrustedConsequencePackage` dan tetap memverifikasi ID deterministik, origin event/choice, trigger day, duplikasi, serta active/pending identity.
 
 Event dan choice ID bersifat dinamis. Backend, campaign runner, Postman, dan frontend harus membaca ID dari `activeEvent.choices`; legacy ID tidak boleh dikirim berdasarkan hari saja.
 
@@ -598,8 +602,8 @@ register
 → hari 3 event
 → wave 1
 → reward
-→ wave 2
-→ victory atau game over
+→ wave 2–10 dan reward wave 2–9
+→ victory setelah wave 10 atau game over
 → refresh dan continue pada beberapa fase
 ```
 
