@@ -13,6 +13,7 @@ import {
   getWavePreview,
   isDifficulty,
   isPreparationDay,
+  isTrustedConsequencePackage,
   repairCity,
   surrender,
   startBattle,
@@ -25,7 +26,7 @@ import {
 } from "../../../src/game";
 
 const SUPPORTED_STATE_VERSION = GAME_STATE_VERSION;
-const RULESET_ID = "campaign-v4-100-day-v1";
+const RULESET_ID = "campaign-v4-100-day-v2";
 
 export type EngineCompatibility = {
   stateVersion: typeof SUPPORTED_STATE_VERSION;
@@ -89,7 +90,8 @@ export function assertPatchedGameState(state: GameState, expectedRunId: string):
     const originChoice = originPackage?.choices.find((choice) => choice.id === originChoiceId);
     return Boolean(
       consequencePackage &&
-      originChoice?.consequence?.packageId === packageId &&
+      originChoice?.consequence &&
+      isTrustedConsequencePackage(originChoice.consequence.packageId, packageId) &&
       Number.isInteger(triggerDay) &&
       isPreparationDay(triggerDay),
     );
