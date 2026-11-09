@@ -1,7 +1,7 @@
 # Backend Implementation Plan — Fantasy City Defense
 
-Status: **Implemented and synchronized with latest engine/frontend contracts, including surrender and persistent timeline**
-Target: prototipe 20 hari / 2 wave  
+Status: **Engine v4 synchronization in progress**
+Target: campaign 100 hari / 10 wave
 Backend: Next.js Route Handlers + MongoDB  
 Kontrak engine: `../../docs/DEV1_CONTRACT.md` dan `../../src/game` (read-only)
 
@@ -25,7 +25,7 @@ Keputusan berikut telah dikonfirmasi oleh pemilik backend dan menjadi default im
 | Model AI | Model dikonfigurasi melalui `GEMINI_MODEL`; provider/model lain hanya melalui adapter dan konfigurasi server eksplisit |
 | Credential AI | `GEMINI_API_KEY` server-only; tidak pernah memakai prefix public |
 | Runtime validation | Zod untuk request API, environment, state boundary, dan output AI |
-| Database schema | Mengikuti state versi 3 dan delapan game properties |
+| Database schema | Mengikuti state versi 4 dan delapan game properties |
 | Identitas MongoDB | `_id` dan referensi dokumen memakai `ObjectId` |
 | Save aktif | Satu save aktif; run lama tetap tersimpan/read-only ketika pointer diganti dan tidak otomatis dianggap selesai |
 | File ownership | Mengikuti pembagian backend/frontend/shared pada dokumen ini |
@@ -85,7 +85,9 @@ Konsekuensinya:
 - Backend tidak menghitung harga, income, damage, bonus, atau transisi fase sendiri.
 - Frontend tidak mengirim nilai akhir gold/HP/level yang dipercaya server.
 - Backend tidak melakukan migrasi diam-diam dari state versi lama.
-- `GameState.version` yang diterima untuk MVP adalah `3`.
+- `GameState.version` yang diterima adalah `4`; state v1-v3 ditolak tanpa migrasi implisit.
+- Run dibuat dengan difficulty `easy`, `normal`, atau `hard`; nilai ini ikut fingerprint idempotency create-run.
+- Hari/event/wave dibaca dinamis dari state/config engine v4 (100 hari, 10 wave, 20 scheduled event), bukan konstanta backend lama.
 
 ### Dokumen turunan backend
 

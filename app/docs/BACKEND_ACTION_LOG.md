@@ -844,3 +844,22 @@ Catatan dependency dan data:
 - Audit instalasi root melaporkan 1 moderate dan 2 critical vulnerability dependency development. `npm audit fix --force` tidak dijalankan karena dapat membuat perubahan breaking di luar scope.
 - Smoke test menambah data development untuk audit dan tidak melakukan delete/reset.
 - Push tidak dilakukan.
+
+## 2026-11-09 — Perencanaan sinkronisasi engine v4
+
+Tindakan:
+- Membandingkan tree patch v4 yang sudah ter-merge dengan remote patch terbaru; isi file identik walaupun hash commit berbeda karena riwayat remote ditulis ulang.
+- Mengaudit kontrak engine v4 dan menemukan delta backend pada state version, difficulty, campaign 100 hari, 10 wave, 20 scheduled event, consequence event, reward per wave, dan pilihan event 2-4.
+- Menambahkan kontrak integrasi khusus `ENGINE_V4_BACKEND_INTEGRATION.md` dan memperbarui API contract, implementation plan, database schema, serta test plan.
+- Menetapkan batas: source engine, root docs, dan frontend tidak diedit oleh pekerjaan backend ini.
+
+Baseline sebelum implementasi:
+- Backend typecheck gagal pada asumsi state v3 dan tipe wave 1-2; frontend juga masih mengacu pada reward config v3.
+- Backend test: 20 gagal dan 32 lulus karena adapter menolak `GameState.version === 4`.
+- Lint lulus.
+
+Rencana commit bertahap:
+1. Dokumentasi kontrak integrasi v4.
+2. Dukungan run v4, difficulty, persistence, dan view contract dinamis.
+3. Narasi event dinamis 2-4 pilihan dan consequence event.
+4. Campaign API 100 hari, regression test, dan handoff final.
