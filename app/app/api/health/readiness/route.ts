@@ -7,14 +7,19 @@ export async function GET(request: Request) {
 
   try {
     const env = getServerEnv();
-    const aiConfigured = Boolean(env.OPENAI_API_KEY && env.OPENAI_MODEL);
+    const aiConfigured = Boolean(env.GEMINI_API_KEY && env.GEMINI_MODEL);
     if (env.NODE_ENV === "production" && !aiConfigured) {
-      throw new Error("OpenAI runtime configuration is required in production");
+      throw new Error("Gemini runtime configuration is required in production");
     }
     await pingDatabase();
 
     return apiSuccess(
-      { status: "ready", database: "reachable", ai: aiConfigured ? "configured" : "fallback-only" },
+      {
+        status: "ready",
+        database: "reachable",
+        ai: aiConfigured ? "configured" : "fallback-only",
+        aiProvider: env.AI_PROVIDER,
+      },
       requestId,
     );
   } catch (error) {

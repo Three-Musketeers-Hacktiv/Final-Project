@@ -1,6 +1,6 @@
 # Developer 1 — Game Engine Contract
 
-Pure game engine lives in `src/game`. A **separate** testing harness (mock UI + mock narrative HTTP) lives in `src/dev-harness`, `harness/`, and `mock-server/` — see [HARNESS.md](./HARNESS.md). That harness is not the product UI/backend.
+Pure game engine lives in `src/game`. A **separate** testing harness (mock UI + mock narrative HTTP) lives in `src/dev-harness`, `harness/`, and `mock-server/` — see [HARNESS.md](./HARNESS.md). That harness is not the product UI/backend. Chronology of engine patches: [GAME_ENGINE_PATCH_HISTORY.md](./GAME_ENGINE_PATCH_HISTORY.md).
 
 Defaults (supersede older PRD bits where they conflict):
 

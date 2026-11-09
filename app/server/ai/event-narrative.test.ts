@@ -11,7 +11,8 @@ beforeAll(() => {
   process.env.MONGODB_URI = "mongodb://localhost:27017";
   process.env.JWT_SECRET = "test-secret-value-with-at-least-32-characters";
   process.env.APP_ORIGIN = "http://localhost:3000";
-  process.env.OPENAI_PROMPT_VERSION = "test-v1";
+  process.env.AI_PROVIDER = "gemini";
+  process.env.AI_PROMPT_VERSION = "test-v1";
 });
 
 function stateAtFirstEvent() {
@@ -28,14 +29,15 @@ describe("event narrative runtime", () => {
     const state = stateAtFirstEvent();
     const original = state.activeEvent!;
     const generator: EventNarrativeGenerator = {
+      provider: "test",
       model: "test-model",
       async generate() {
         return {
-          title: "Judul AI",
-          description: "Deskripsi AI",
+          title: "An Urgent Counsel",
+          description: "My lord, the city awaits your decision.",
           choices: [
-            { id: original.choices[1].id, label: "Pilihan kedua" },
-            { id: original.choices[0].id, label: "Pilihan pertama" },
+            { id: original.choices[1].id, label: "Choose the second counsel" },
+            { id: original.choices[0].id, label: "Choose the first counsel" },
           ],
         };
       },
@@ -45,16 +47,18 @@ describe("event narrative runtime", () => {
     const decorated = decorateActiveEvent(state, narrative).activeEvent!;
 
     expect(narrative.source).toBe("ai");
-    expect(decorated.title).toBe("Judul AI");
+    expect(narrative.provider).toBe("test");
+    expect(decorated.title).toBe("An Urgent Counsel");
     expect(decorated.choices[0].goldCost).toBe(original.choices[0].goldCost);
     expect(decorated.choices[0].effects).toEqual(original.choices[0].effects);
-    expect(decorated.choices[0].label).toBe("Pilihan pertama");
+    expect(decorated.choices[0].label).toBe("Choose the first counsel");
   });
 
   it("falls back when generated choice ids are untrusted", async () => {
     const event = stateAtFirstEvent().activeEvent!;
     const warning = vi.spyOn(console, "warn").mockImplementation(() => undefined);
     const generator: EventNarrativeGenerator = {
+      provider: "test",
       model: "test-model",
       async generate() {
         return {
@@ -71,6 +75,7 @@ describe("event narrative runtime", () => {
     const result = await generateEventNarrative(event, generator);
 
     expect(result.source).toBe("fallback");
+    expect(result.provider).toBeNull();
     expect(result.narrative.title).toBe(event.title);
     expect(result.narrative.choices.map((choice) => choice.id)).toEqual(
       event.choices.map((choice) => choice.id),

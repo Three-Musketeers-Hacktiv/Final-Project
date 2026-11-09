@@ -3,7 +3,7 @@ export { createInitialState } from "./initialState";
 export { pickEventPlan, resolveEventPackage } from "./eventPlan";
 export { getEffectiveAttack, getEffectiveDefense, getEffectiveStats, getRepairCost, getUpgradeCost, getWavePreview } from "./stats";
 export { upgradeWall, upgradeTroops, upgradeCity, repairCity } from "./economy";
-export { endPreparationDay, startBattle, continueFromReport } from "./transitions";
+export { endPreparationDay, startBattle, continueFromReport, surrender } from "./transitions";
 export { attachActiveEvent, chooseEventOption, ensureLocalEvent, toActiveEvent } from "./events";
 export { decorateActiveEvent } from "./narrative";
 export { chooseReward } from "./rewards";

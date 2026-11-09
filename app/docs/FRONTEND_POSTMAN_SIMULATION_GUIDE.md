@@ -1,6 +1,6 @@
 # Panduan Simulasi Backend untuk Developer Frontend
 
-Terakhir diperbarui: 2026-11-06
+Terakhir diperbarui: 2026-11-08
 
 Panduan ini digunakan untuk menjalankan backend secara lokal, mencoba smoke test melalui Postman, dan memverifikasi campaign hari 1–20 sebelum integrasi UI frontend.
 
@@ -14,7 +14,9 @@ Sebelum mulai, minta informasi berikut melalui jalur komunikasi privat:
 
 Jangan mengirim URI, password database, JWT secret, atau API key melalui Git. File `.env` tidak boleh di-commit.
 
-OpenAI key tidak diperlukan untuk pengujian ini. Jika `OPENAI_API_KEY` dan `OPENAI_MODEL` kosong, backend memakai narasi fallback lokal dan gameplay tetap berjalan.
+Gemini key tidak diperlukan untuk pengujian ini. Jika `GEMINI_API_KEY` dan `GEMINI_MODEL` kosong, backend memakai narasi fallback terpercaya dan gameplay tetap berjalan.
+
+Game engine dan backend sudah memakai `eventPlan` serta choice ID dinamis. Panduan ini telah diverifikasi melalui campaign API 42 action sampai `victory` dan smoke test surrender sampai `gameOver`.
 
 ## 2. Prasyarat laptop
 
@@ -57,12 +59,15 @@ JWT_AUDIENCE=city-defense-web
 BCRYPT_SALT_ROUNDS=12
 APP_ORIGIN=http://localhost:3000
 
-OPENAI_API_KEY=
-OPENAI_MODEL=
-OPENAI_TIMEOUT_MS=10000
-OPENAI_MAX_RETRIES=1
-OPENAI_MAX_OUTPUT_TOKENS=800
-OPENAI_PROMPT_VERSION=event-v1
+AI_PROVIDER=gemini
+GEMINI_API_KEY=
+GEMINI_MODEL=
+AI_API_KEY=
+AI_MODEL=
+AI_TIMEOUT_MS=10000
+AI_MAX_RETRIES=1
+AI_MAX_OUTPUT_TOKENS=800
+AI_PROMPT_VERSION=event-advisor-en-v1
 
 LOG_LEVEL=info
 ```
@@ -100,7 +105,7 @@ curl http://localhost:3000/api/health
 curl http://localhost:3000/api/health/readiness
 ```
 
-Readiness yang benar mengembalikan status `ready`, database `reachable`, dan AI `fallback-only` bila OpenAI tidak dikonfigurasi.
+Readiness yang benar mengembalikan status `ready`, database `reachable`, dan AI `fallback-only` bila Gemini tidak dikonfigurasi.
 
 ## 4. Mengimpor Postman collection
 
@@ -201,26 +206,28 @@ Untuk setiap baris berikut, ubah `type` dan `payload`, lalu klik **Send**. Janga
 |---:|---|---|
 | 1 | `upgradeCity`, `endPreparationDay` | masuk hari 2 |
 | 2 | `upgradeCity`, `endPreparationDay` | masuk event hari 3 |
-| 3 | `chooseEventOption`, `endPreparationDay` | `{ "choiceId": "day3-skip" }` |
+| 3 | `chooseEventOption`, `endPreparationDay` | pilih ID choice kedua dari response event aktif |
 | 4 | `upgradeCity`, `endPreparationDay` | masuk hari 5 |
 | 5 | `upgradeTroops`, `endPreparationDay` | masuk hari 6 |
 | 6 | `upgradeTroops`, `endPreparationDay` | masuk event hari 7 |
-| 7 | `chooseEventOption`, `endPreparationDay` | `{ "choiceId": "day7-pay" }` |
+| 7 | `chooseEventOption`, `endPreparationDay` | pilih ID choice pertama dari response event aktif |
 | 8 | `upgradeTroops`, `endPreparationDay` | masuk hari 9 |
 | 9 | `endPreparationDay` | masuk `battleReady` hari 10 |
 | 10 | `startBattle`, `continueFromReport`, `chooseReward` | reward: `{ "rewardId": "reward-income" }`; masuk hari 11 |
 | 11 | `repairCity`, `endPreparationDay` | masuk hari 12 |
 | 12 | `repairCity`, `endPreparationDay` | masuk event hari 13 |
-| 13 | `chooseEventOption`, `repairCity`, `endPreparationDay` | event: `{ "choiceId": "day13-discount" }` |
+| 13 | `chooseEventOption`, `repairCity`, `endPreparationDay` | pilih ID choice kedua dari response event aktif |
 | 14 | `repairCity`, `endPreparationDay` | masuk hari 15 |
 | 15 | `upgradeTroops`, `endPreparationDay` | masuk hari 16 |
 | 16 | `upgradeWall`, `endPreparationDay` | masuk event hari 17 |
-| 17 | `chooseEventOption`, `upgradeWall`, `endPreparationDay` | event: `{ "choiceId": "day17-pay" }` |
+| 17 | `chooseEventOption`, `upgradeWall`, `endPreparationDay` | pilih ID choice pertama dari response event aktif |
 | 18 | `upgradeTroops`, `endPreparationDay` | masuk hari 19 |
 | 19 | `upgradeWall`, `endPreparationDay` | masuk `battleReady` hari 20 |
 | 20 | `startBattle`, `continueFromReport` | fase akhir `victory` |
 
-Gunakan `{}` untuk action tanpa payload khusus. Contoh event action:
+Gunakan `{}` untuk action tanpa payload khusus. Saat masuk hari event, buka response action sebelumnya, periksa `data.game.eventNarrative.choices`, lalu salin `id` pada posisi yang disebutkan tabel. ID berbeda menurut package yang dipilih engine dan tidak boleh ditebak dari nomor hari.
+
+Contoh event action setelah ID disalin:
 
 ```json
 {
@@ -228,7 +235,7 @@ Gunakan `{}` untuk action tanpa payload khusus. Contoh event action:
   "expectedRevision": {{revision}},
   "type": "chooseEventOption",
   "payload": {
-    "choiceId": "day3-skip"
+    "choiceId": "GANTI_DENGAN_ID_DARI_RESPONSE"
   }
 }
 ```
@@ -248,7 +255,67 @@ Sesudah final action hari 20:
 4. Kirim `Logout`; hasil harus `200`.
 5. Kirim `Current User`; hasil harus `401 UNAUTHENTICATED`.
 
-## 8. Error yang paling umum
+## 8. Simulasi surrender
+
+Surrender dapat diuji segera setelah `Create Run`; campaign tidak perlu dijalankan sampai hari 20. Pastikan `runId` dan `revision` berasal dari response run aktif, lalu kirim:
+
+```http
+POST {{baseUrl}}/api/runs/{{runId}}/actions
+Content-Type: application/json
+```
+
+```json
+{
+  "actionId": "{{$guid}}",
+  "expectedRevision": {{revision}},
+  "type": "surrender",
+  "payload": {}
+}
+```
+
+Hasil yang wajib diperiksa:
+
+1. Response `200` dan `data.game.state.phase` menjadi `gameOver`.
+2. Revision bertambah tepat satu; field gameplay lain tidak berubah.
+3. `GET {{baseUrl}}/api/runs/{{runId}}` tetap `200` dan menyimpan final state tersebut.
+4. `GET {{baseUrl}}/api/runs/current` menghasilkan `404 NO_ACTIVE_SAVE`.
+5. Surrender baru terhadap run yang sama menghasilkan `409 GAME_ENDED`.
+6. Payload selain `{}`, misalnya `{ "reason": "quit" }`, menghasilkan `400 VALIDATION_ERROR`.
+
+Developer yang ingin menjalankan alur otomatis dari Git Bash dapat memakai:
+
+```bash
+cd app
+SURRENDER_ORIGIN=http://localhost:3001 npm run test:surrender
+```
+
+Ganti nilai `SURRENDER_ORIGIN` agar sama persis dengan `APP_ORIGIN` pada environment lokal. Server backend harus tetap berjalan di terminal lain; bila port backend bukan 3000, tambahkan `SURRENDER_BASE_URL`, misalnya `SURRENDER_BASE_URL=http://localhost:3002`.
+
+## 9. Verifikasi timeline persisten
+
+Setiap response create/load/action sekarang selalu memiliki `data.game.timeline`.
+
+Verifikasi manual yang disarankan:
+
+1. Jalankan `Create Run`; pastikan `data.game.timeline` adalah `[]`.
+2. Simpan satu `actionId`, lalu jalankan action `upgradeWall`; pastikan timeline berisi entry dengan ID `<actionId>:0`.
+3. Kirim ulang request yang persis sama dengan `actionId`, type, payload, dan expected revision awal yang sama; hasil harus `200`, revision tidak bertambah, dan entry timeline tidak terduplikasi.
+4. Gunakan `actionId` yang sama dengan type/payload berbeda; hasil harus `409 ACTION_PAYLOAD_CONFLICT`.
+5. Kirim action yang ditolak engine; GET run kembali dan pastikan timeline tidak berubah.
+6. Refresh atau kirim `GET /api/runs/current`/`GET /api/runs/:runId`; array timeline harus sama dengan response action terakhir.
+
+Timeline disimpan oldest-first. Frontend boleh membalik urutan untuk tampilan, tetapi harus memakai `game.timeline` server sebagai sumber kebenaran dan tidak menambahkan hasil `describeAction` lokal di atas array server.
+
+Runner otomatis dari Git Bash:
+
+```bash
+cd app
+TIMELINE_ORIGIN=http://localhost:3001 npm run test:timeline
+```
+
+Samakan `TIMELINE_ORIGIN` dengan `APP_ORIGIN`. Jika backend tidak berjalan di port 3000, tambahkan `TIMELINE_BASE_URL`.
+
+## 10. Error yang paling umum
 
 ### `SERVICE_NOT_READY` atau koneksi MongoDB gagal
 
@@ -273,9 +340,9 @@ Jalankan `Login` kembali dan pastikan Postman cookie jar aktif. Setelah logout, 
 
 Nilai environment `revision` tertinggal. Kirim `GET /api/runs/{{runId}}`, salin `data.game.state.revision` ke environment, lalu ulangi intent dengan `actionId` baru.
 
-### `409 DUPLICATE_ACTION`
+### Retry action dengan `actionId` sama
 
-`actionId` pernah digunakan. Gunakan `{{$guid}}` dan kirim intent baru hanya setelah state terbaru sudah diambil.
+Request identik sekarang menghasilkan replay `200` dan tidak menambah revision/timeline. Jika type atau payload berbeda, backend menghasilkan `409 ACTION_PAYLOAD_CONFLICT`; buat `actionId` baru hanya untuk intent baru.
 
 ### Register menghasilkan `409`
 
@@ -285,7 +352,7 @@ Username sudah dipakai. Kosongkan variable `username` agar collection membuat us
 
 Hentikan proses lama dengan `Ctrl+C`. Bila backend dijalankan pada port lain, samakan `baseUrl`, `APP_ORIGIN`, `CAMPAIGN_BASE_URL`, dan `CAMPAIGN_ORIGIN`.
 
-## 9. Informasi yang dikirim ke developer backend bila gagal
+## 11. Informasi yang dikirim ke developer backend bila gagal
 
 Kirim informasi berikut tanpa secret:
 

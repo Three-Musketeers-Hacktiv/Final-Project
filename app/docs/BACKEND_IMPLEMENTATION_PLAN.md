@@ -1,6 +1,6 @@
 # Backend Implementation Plan — Fantasy City Defense
 
-Status: **Planning**  
+Status: **Implemented and synchronized with latest engine/frontend contracts, including surrender and persistent timeline**
 Target: prototipe 20 hari / 2 wave  
 Backend: Next.js Route Handlers + MongoDB  
 Kontrak engine: `../../docs/DEV1_CONTRACT.md` dan `../../src/game` (read-only)
@@ -21,16 +21,16 @@ Keputusan berikut telah dikonfirmasi oleh pemilik backend dan menjadi default im
 | Kontrak API | Dimiliki backend; frontend mengikuti kontrak di `contracts/**` |
 | Integrasi engine | Engine root read-only; backend memakai public API melalui satu adapter |
 | Ruleset MVP | Config engine tetap sumber aturan; MongoDB menyimpan identitas/metadata ruleset |
-| Event AI | OpenAI Responses API wajib tersedia saat demo, dengan timeout dan fallback terpercaya |
-| Model AI | Model dikonfigurasi melalui `OPENAI_MODEL`; model harus mendukung Structured Outputs |
-| Credential AI | `OPENAI_API_KEY` server-only; dapat diganti per developer melalui environment |
+| Event AI | Gemini menjadi provider default saat demo; timeout dan fallback terpercaya wajib |
+| Model AI | Model dikonfigurasi melalui `GEMINI_MODEL`; provider/model lain hanya melalui adapter dan konfigurasi server eksplisit |
+| Credential AI | `GEMINI_API_KEY` server-only; tidak pernah memakai prefix public |
 | Runtime validation | Zod untuk request API, environment, state boundary, dan output AI |
 | Database schema | Mengikuti state versi 3 dan delapan game properties |
 | Identitas MongoDB | `_id` dan referensi dokumen memakai `ObjectId` |
-| Save aktif | Satu save aktif; run lama tetap tersimpan ketika pointer diganti dan tidak otomatis dianggap selesai |
+| Save aktif | Satu save aktif; run lama tetap tersimpan/read-only ketika pointer diganti dan tidak otomatis dianggap selesai |
 | File ownership | Mengikuti pembagian backend/frontend/shared pada dokumen ini |
 
-Beberapa detail teknis masih harus ditentukan sebelum Phase 1: model OpenAI default, hasil benchmark cost bcrypt pada Vercel, dan hasil technical spike import engine.
+Baseline dan remediasi BE-R00–BE-R08 sudah diimplementasikan. Detail hasil, commit, dan release gate tersedia di [BACKEND_REMEDIATION_PLAN.md](./BACKEND_REMEDIATION_PLAN.md).
 
 ## 1. Tujuan dokumen
 
@@ -93,11 +93,12 @@ Rencana ini dijabarkan menjadi dokumen kerja berikut:
 
 - [API_CONTRACT.md](./API_CONTRACT.md) — endpoint, request/response, error, idempotency, dan kewajiban frontend.
 - [DATABASE_SCHEMA_V3.md](./DATABASE_SCHEMA_V3.md) — collection, document shape, index, transaksi, dan strategi ID.
-- [AI_EVENT_RUNTIME.md](./AI_EVENT_RUNTIME.md) — OpenAI Responses API, Structured Outputs Zod, timeout, dan fallback.
+- [AI_EVENT_RUNTIME.md](./AI_EVENT_RUNTIME.md) — Gemini/provider adapter, Structured Output tervalidasi Zod, timeout, dan fallback.
 - [AUTH_SESSION_SPEC.md](./AUTH_SESSION_SPEC.md) — bcrypt, JWT cookie, single session berbasis `jti`, CSRF, dan rate limit.
 - [TEST_PLAN.md](./TEST_PLAN.md) — matrix unit, integration, contract, concurrency, security, dan smoke test.
 - [ENVIRONMENT_AND_DEPLOYMENT.md](./ENVIRONMENT_AND_DEPLOYMENT.md) — MongoDB Atlas, Vercel, environment, release, dan rollback.
 - [BACKEND_ACTION_LOG.md](./BACKEND_ACTION_LOG.md) — catatan kronologis seluruh tindakan material backend.
+- [BACKEND_REMEDIATION_PLAN.md](./BACKEND_REMEDIATION_PLAN.md) — ticket dan urutan implementasi setelah patch game engine terbaru.
 
 ## 4. Gambaran arsitektur
 
@@ -229,6 +230,7 @@ type GameView = {
   wavePreview: ReturnType<typeof getWavePreview>;
   eventNarrative: EventNarrativeView | null;
   report: BattleReportView | null;
+  timeline: TimelineEntry[];
 };
 ```
 
@@ -263,7 +265,7 @@ type SubmitActionRequest = {
 };
 ```
 
-Tipe action yang dapat dicatat pada `game_actions` adalah `upgradeWall`, `upgradeTroops`, `upgradeCity`, `repairCity`, `endPreparationDay`, `chooseEventOption`, `startBattle`, `continueFromReport`, `chooseReward`, dan helper internal `attachActiveEvent`.
+Tipe action yang dapat dicatat pada `game_actions` adalah `upgradeWall`, `upgradeTroops`, `upgradeCity`, `repairCity`, `endPreparationDay`, `chooseEventOption`, `startBattle`, `continueFromReport`, `chooseReward`, `surrender`, dan helper internal `attachActiveEvent`.
 
 Action publik dari frontend:
 
@@ -278,8 +280,11 @@ Action publik dari frontend:
 | `startBattle` | `{}` | `startBattle(state)` |
 | `continueFromReport` | `{}` | `continueFromReport(state)` |
 | `chooseReward` | `{ rewardId: string }` | `chooseReward(state, rewardId)` |
+| `surrender` | `{}` | `surrender(state)` |
 
 `attachActiveEvent` dan `ensureLocalEvent` adalah operasi internal backend/engine. Frontend tidak boleh mengirim event arbitrary untuk dipasang ke state.
+
+`surrender` adalah action publik tanpa payload tambahan. Backend tidak menghitung hasil surrender; adapter hanya meneruskan state ke engine. Finalisasi memakai jalur `gameOver` generik yang sudah ada.
 
 Aturan `actionId`:
 
@@ -301,19 +306,21 @@ Aturan `expectedRevision`:
 2. Verifikasi session.
 3. Load run dan periksa ownership.
 4. Tolak GameState version selain 3.
-5. Periksa actionId yang sudah tercatat.
+5. Periksa actionId yang sudah tercatat; request identik menjadi replay sukses tanpa write kedua, payload berbeda ditolak.
 6. Cocokkan expectedRevision.
 7. Dispatch action ke satu fungsi public engine.
 8. Jika engine gagal, jangan menulis database.
 9. Jika sukses, pastikan revisionAfter = revisionBefore + 1.
-10. Bentuk snapshot properties dari state dan selector engine.
-11. Tulis run, action log, properties, event/report/history terkait dalam transaksi.
+10. Bentuk snapshot properties dan timeline entry dari view sebelum/sesudah.
+11. Tulis run, timeline, action log, properties, event/report/history terkait dalam transaksi.
 12. Commit transaksi.
 13. Bentuk GameView dari state yang benar-benar tersimpan.
 14. Kirim respons sukses.
 ```
 
 Update `game_runs` menggunakan filter `_id + userId + state.revision`. Filter ini menjadi optimistic concurrency guard tambahan selain pemeriksaan awal.
+
+Timeline persisten berada pada `game_runs.timeline`, bukan engine state. Entry mempunyai ID deterministik `${actionId}:${index}`, disimpan oldest-first, dan selalu dikembalikan melalui `GameView`. Dokumen prototype lama yang belum memiliki field diperlakukan sebagai array kosong.
 
 ## 10. Autentikasi dan session
 
@@ -366,7 +373,7 @@ Deployment MongoDB harus mendukung multi-document transaction, seperti replica s
 
 ### State dan properties versi 3
 
-`game_runs.state` menyimpan `GameState` versi 3 secara lengkap.
+`game_runs.state` menyimpan `GameState` versi 3 secara lengkap, termasuk `eventPlan` deterministik yang dibuat engine dari `runId`. Event/choice ID tidak boleh di-hardcode oleh backend atau test client.
 
 Setiap snapshot `game_properties` mencatat:
 
@@ -394,9 +401,10 @@ Total attack dan defense tidak ditulis kembali ke `GameState`.
 
 Engine saat ini memakai config dari source code. Karena itu untuk MVP:
 
-- `gameRulesetId` pada `game_runs` adalah REF ke metadata ruleset; `rulesetId` tetap menjadi identifier string pada document `game_rulesets`, misalnya `prototype-v3`.
+- `gameRulesetId` pada `game_runs` adalah REF ke metadata ruleset; `rulesetId` tetap menjadi identifier string pada document `game_rulesets`.
 - Backend tidak mengubah rumus engine berdasarkan dokumen MongoDB.
 - Dokumen ruleset berfungsi sebagai metadata/snapshot audit immutable.
+- Perubahan `gameConfig`/state shape yang mengubah fingerprint wajib membuat identitas ruleset baru; backend tidak boleh memakai `$setOnInsert` untuk menyamarkan fingerprint mismatch.
 - Dynamic ruleset baru dikerjakan jika engine menyediakan kontrak resminya.
 
 ### Indeks minimum
@@ -406,11 +414,11 @@ Engine saat ini memakai config dari source code. Karena itu untuk MVP:
 | `users` | unique `username` |
 | `sessions` | unique `userId`; unique `jti`; TTL `expiresAt` |
 | `game_runs` | unique `_id`; unique `(userId, startRequestId)` |
-| `game_actions` | unique `(gameRunId, actionId)`; unique `(gameRunId, revisionAfter)` |
-| `game_properties` | unique `(gameRunId, revision, statKey)` |
-| `runs_event` | unique `(gameRunId, eventId)` |
+| `game_actions` | unique `(gameRunId, actionId)`; unique `(gameRunId, revisionAfter)`; index `(gameRunId, createdAt)` |
+| `game_properties` | unique `(gameRunId, revision, statKey)`; index `(gameActionId)` |
+| `runs_event` | unique `(gameRunId, eventId)`; index `(gameRunId, day)` |
 | `game_reports` | unique `(gameRunId, wave)` |
-| `event_data` | non-unique `(gameRulesetId, packageId, day)` |
+| `event_data` | non-unique `(gameRulesetId, packageId, day, createdAt desc)` |
 
 ## 12. Mulai game dan lanjutkan save
 
@@ -422,8 +430,9 @@ Request membawa `startRequestId`. Alur:
 2. Periksa apakah `(userId, startRequestId)` sudah pernah sukses.
 3. Buat `runId` di backend.
 4. Panggil `createInitialState({ runId })`.
-5. Simpan run revision 0, delapan properties awal, metadata ruleset, dan pointer save user dalam transaksi.
-6. Kembalikan run yang sama jika request identik diulang.
+5. Verifikasi state revision 0 memiliki empat entry `eventPlan` tepercaya untuk hari 3/7/13/17.
+6. Simpan run, delapan properties awal, metadata ruleset immutable, dan pointer save user dalam transaksi.
+7. Kembalikan run yang sama jika request identik diulang.
 
 Create run tidak memanggil provider AI. Narasi dibuat ketika action engine memasuki hari event dan panggilan provider selesai sebelum transaksi action MongoDB dibuka.
 
@@ -431,9 +440,10 @@ Create run tidak memanggil provider AI. Narasi dibuat ketika action engine memas
 
 1. Baca pointer save user.
 2. Load run menggunakan `runId + userId`.
-3. Validasi `version === 3`, `runId`, revision, dan bentuk state.
-4. Baca event/report yang relevan.
-5. Bentuk selector dan GameView tanpa menjalankan action engine.
+3. Validasi `version === 3`, `runId`, ruleset fingerprint, `eventPlan`, dan bentuk state.
+4. Untuk current save, pastikan pointer `gameRunId` dan `savedRevision` cocok dengan run.
+5. Baca event/report yang relevan.
+6. Bentuk selector dan GameView tanpa menjalankan action engine.
 
 Load tidak memberikan income, mengaktifkan ulang efek, atau menghitung ulang battle.
 
@@ -445,6 +455,7 @@ Engine tetap menjadi sumber kebenaran untuk:
 - ID pilihan.
 - `goldCost` dan effects.
 - Validitas hari dan penyelesaian event.
+- `eventPlan`, yaitu satu package deterministik untuk setiap event day berdasarkan `runId`.
 
 AI, mock, atau fallback hanya boleh menyediakan:
 
@@ -456,22 +467,24 @@ Ketika action engine menghasilkan event aktif, backend boleh melakukan dekorasi 
 
 Implementasi saat ini membuat satu dokumen `event_data` ketika event pertama kali aktif pada run. Narasi AI yang lolos validator dipakai bila provider terkonfigurasi; selain itu backend memakai fallback lokal terpercaya. Reuse katalog lintas-run belum diterapkan.
 
+Event dan choice ID bersifat dinamis. Backend, campaign runner, Postman, dan frontend harus membaca ID dari `activeEvent.choices`; legacy ID tidak boleh dikirim berdasarkan hari saja.
+
 Untuk vertical slice awal, fallback harus bekerja tanpa provider AI. Integrasi AI tidak boleh menjadi blocker happy path 20 hari.
 
-### OpenAI runtime adapter
+### Gemini runtime adapter
 
-- Gunakan official OpenAI SDK untuk TypeScript/JavaScript.
-- Gunakan Responses API, bukan API khusus coding atau eksekusi agent.
-- `OPENAI_MODEL` menentukan model runtime sehingga model dapat diganti tanpa perubahan source code.
-- Model yang dipilih wajib mendukung Structured Outputs.
+- Gemini adalah provider default melalui SDK resmi Google Gen AI yang dipilih saat implementasi.
+- `AI_PROVIDER=gemini` dan `GEMINI_MODEL` menentukan runtime tanpa konfigurasi di UI/client.
+- Provider/model lain hanya didukung melalui adapter eksplisit yang memakai interface, schema, prompt, dan fallback yang sama.
 - Gunakan Zod sebagai sumber schema output dan parser runtime.
 - Output AI hanya berisi title, description, dan label pilihan yang terikat pada choice ID terpercaya.
-- Jangan mengirim username, password, session, save lengkap, atau data pribadi pemain ke OpenAI.
+- Prompt dan output menggunakan English `en-US` dengan suara penasihat loyal yang menyapa “my lord”.
+- Jangan mengirim username, password, session, save lengkap, atau data pribadi pemain ke provider.
 - Batasi timeout, jumlah retry, panjang output, dan satu generasi ketika masing-masing event memasuki state aktif.
 - Jika API gagal, timeout, menolak, atau menghasilkan output invalid, gunakan fallback terpercaya.
-- Jangan membuka MongoDB transaction saat menunggu respons OpenAI.
+- Jangan membuka MongoDB transaction saat menunggu respons provider.
 
-Untuk development lokal, setiap developer boleh memakai project API key miliknya melalui environment. Untuk deployment Vercel, gunakan project service account/API key milik aplikasi agar production tidak bergantung permanen pada akun pribadi salah satu developer.
+Untuk development lokal, key boleh kosong dan runtime memakai fallback. Preview/Production memakai Gemini key milik aplikasi melalui Vercel secret agar deployment tidak bergantung pada akun pribadi salah satu developer.
 
 ## 14. Integrasi battle dan report
 
@@ -495,9 +508,13 @@ Ketika state menjadi `gameOver` atau `victory`, backend:
 | Body tidak valid | 400 | `VALIDATION_ERROR` |
 | Belum login / session invalid | 401 | `UNAUTHENTICATED` |
 | Run bukan milik user | 404 | `RUN_NOT_FOUND` |
-| Action duplikat | 409 | `DUPLICATE_ACTION` |
+| Action ID sama, payload sama | 200 | Replay hasil commit tanpa write/timeline kedua |
+| Action ID sama, payload berbeda | 409 | `ACTION_PAYLOAD_CONFLICT` |
+| Action ID sama, payload berbeda | 409 | `ACTION_PAYLOAD_CONFLICT` |
 | Revision stale | 409 | `STALE_REVISION` |
 | Save version tidak didukung | 409 | `UNSUPPORTED_STATE_VERSION` |
+| Run/state tidak konsisten | 409 | `RUN_INTEGRITY_ERROR` |
+| Save pointer tidak cocok | 409 | `SAVE_POINTER_MISMATCH` |
 | Aturan engine menolak action | 409 atau 422 | Error code stabil dari engine |
 | Rate limit | 429 | `RATE_LIMITED` |
 | Kesalahan tak terduga | 500 | `INTERNAL_ERROR` |
@@ -524,12 +541,13 @@ NODE_ENV=
 Jika AI runtime dipakai:
 
 ```text
-OPENAI_API_KEY=
-OPENAI_MODEL=
-OPENAI_TIMEOUT_MS=10000
-OPENAI_MAX_RETRIES=1
-OPENAI_MAX_OUTPUT_TOKENS=800
-OPENAI_PROMPT_VERSION=event-v1
+AI_PROVIDER=gemini
+GEMINI_API_KEY=
+GEMINI_MODEL=
+AI_TIMEOUT_MS=10000
+AI_MAX_RETRIES=1
+AI_MAX_OUTPUT_TOKENS=800
+AI_PROMPT_VERSION=event-advisor-en-v1
 ```
 
 Secret hanya berada di server environment, tidak memakai prefix public, tidak ditulis ke repository, log, atau response.
@@ -654,6 +672,18 @@ Output: alur hari 1–20 lengkap melalui API.
 
 Output: backend siap demo dan integrasi produk.
 
+### Phase 7 — Remediasi patch engine terbaru
+
+- Jalankan BE-R00–BE-R08 dari `BACKEND_REMEDIATION_PLAN.md`.
+- Validasi patched `eventPlan` dan ruleset fingerprint pada seluruh load/action path.
+- Cegah run lama mengambil alih pointer save aktif.
+- Bedakan duplicate action dari payload conflict.
+- Selaraskan index/literal persistensi.
+- Migrasikan provider default ke Gemini dengan prompt advisor English.
+- Ubah campaign/Postman agar memakai dynamic choice ID.
+
+Output: backend selaras dengan engine patch tanpa perubahan source frontend atau engine.
+
 ## 19. Urutan vertical slice untuk sinergi frontend
 
 Backend tidak menunggu seluruh API selesai sebelum menyerahkan kontrak. Integrasi dilakukan bertahap:
@@ -683,7 +713,9 @@ Pada setiap slice, backend memberikan kepada frontend:
 | Frontend dan backend mengedit config yang sama | Koordinasikan shared files dan gunakan commit kecil |
 | MongoDB tidak mendukung transaction | Pastikan replica set/Atlas sebelum repository dibuat |
 | Klik ganda menyebabkan biaya ganda | Unique actionId + expectedRevision + conditional update |
-| AI lambat/gagal | Fallback valid tersedia; jangan membuka transaction saat call AI |
+| AI lambat/gagal | Fallback valid tersedia; jangan membuka transaction saat call provider |
+| Save v3 lama tidak memiliki `eventPlan` | Bedakan ruleset/fingerprint; jangan migrasi event aktif secara diam-diam |
+| Run lama mengubah pointer baru | Conditional pointer update dan active-run guard dalam transaksi |
 | Schema database drift dari state v3 | Runtime validation + test snapshot properties |
 | Battle dihitung ulang setelah refresh | Persist report saat startBattle; load hanya membaca |
 | Secret/password bocor | Server-only env, redacted log, response allow-list |
@@ -718,15 +750,15 @@ Backend dianggap selesai ketika:
 - [x] Engine root read-only dan diakses melalui adapter.
 - [x] Ruleset MVP tetap berasal dari config engine.
 - [x] AI runtime wajib saat demo dan fallback tetap tersedia.
-- [x] Provider AI menggunakan OpenAI Responses API dan official SDK.
+- [x] Gemini ditetapkan sebagai provider AI default untuk remediasi berikutnya.
 - [x] API key dan model AI dikonfigurasi melalui environment.
 - [x] Runtime validation menggunakan Zod.
 - [x] Schema mengikuti state versi 3.
 - [x] MongoDB `_id` dan referensi dokumen menggunakan `ObjectId`.
 - [x] Save aktif dan ownership file mengikuti rekomendasi dokumen ini.
 - [x] Nilai awal timeout 10 detik, satu retry, dan maksimum output 800 token ditetapkan; dapat dikonfigurasi lewat environment.
-- [ ] Pilih nilai default `OPENAI_MODEL` yang mendukung Structured Outputs dan sesuai budget demo.
-- [ ] Buat project service account/API key OpenAI khusus production Vercel.
+- [ ] Pilih `GEMINI_MODEL` yang mendukung JSON/schema output dan sesuai budget demo.
+- [ ] Buat Gemini API key khusus Preview/Production Vercel.
 - [ ] Benchmark cost bcrypt 12 dan pastikan library bcrypt yang dipilih lolos build Vercel.
 - [x] Zod dipilih sebagai dependency runtime validation; instalasi dilakukan saat scaffold backend.
 - [ ] Buktikan import engine melalui technical spike tanpa perubahan root.
@@ -774,7 +806,7 @@ Yang wajib dicatat:
 - dependency dan environment variable yang ditambah/diubah;
 - command pemeriksaan yang dijalankan dan hasil sebenarnya;
 - perubahan schema/index/seed database;
-- perubahan konfigurasi Atlas, Vercel, atau OpenAI tanpa menulis nilai secret;
+- perubahan konfigurasi Atlas, Vercel, atau provider AI tanpa menulis nilai secret;
 - endpoint atau fitur yang selesai;
 - test yang lulus/gagal dan blocker;
 - hash serta pesan commit setelah commit dibuat;

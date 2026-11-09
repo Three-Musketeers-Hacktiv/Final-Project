@@ -39,12 +39,36 @@ export type BattleReportView = {
   createdAt: string;
 };
 
+export type TimelineCategory = "city" | "battle" | "event";
+export type TimelineTone = "city" | "gain" | "loss" | "neutral";
+export type TimelineIcon =
+  | "wallLevel"
+  | "troopLevel"
+  | "cityLevel"
+  | "repairWall"
+  | "timeline"
+  | "upcomingWaves"
+  | "thisWave"
+  | "minus"
+  | "plus";
+
+export type TimelineEntry = {
+  id: string;
+  day: number;
+  category: TimelineCategory;
+  tone: TimelineTone;
+  icon: TimelineIcon;
+  highlight?: string;
+  text: string;
+};
+
 export type GameView = {
   state: GameState;
   stats: EffectiveStats;
   wavePreview: WavePreviewView;
   eventNarrative: ActiveEvent | null;
   report: BattleReportView | null;
+  timeline: TimelineEntry[];
 };
 
 export type RegisterRequest = {
@@ -80,7 +104,8 @@ export type SubmitActionRequest =
   | BaseAction<"chooseEventOption", { choiceId: string }>
   | BaseAction<"startBattle", EmptyPayload>
   | BaseAction<"continueFromReport", EmptyPayload>
-  | BaseAction<"chooseReward", { rewardId: string }>;
+  | BaseAction<"chooseReward", { rewardId: string }>
+  | BaseAction<"surrender", EmptyPayload>;
 
 export type RunResponse = { runId: string; game: GameView };
 export type CreateRunResponse = RunResponse & { replayed: boolean };

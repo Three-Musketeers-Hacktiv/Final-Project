@@ -1,3 +1,4 @@
+import { gameConfig } from "./config";
 import type { BattleResult, BattleRoundLog } from "./types";
 
 export type BattleSnapshot = {
@@ -10,10 +11,30 @@ export type BattleSnapshot = {
   monsterAttack: number;
 };
 
-export function resolveBattle(snapshot: BattleSnapshot): BattleResult | null {
-  if (snapshot.cityHp <= 0 || snapshot.monsterHp <= 0 || snapshot.cityAttack <= 0 || snapshot.monsterAttack <= 0) {
-    return null;
+function isValidBattleSnapshot(snapshot: BattleSnapshot): boolean {
+  const numericFields = [
+    snapshot.wave,
+    snapshot.day,
+    snapshot.cityHp,
+    snapshot.cityAttack,
+    snapshot.cityDefense,
+    snapshot.monsterHp,
+    snapshot.monsterAttack,
+  ];
+  if (!numericFields.every((value) => Number.isFinite(value))) return false;
+  if (snapshot.wave !== 1 && snapshot.wave !== 2) return false;
+  if (!gameConfig.waves.some((wave) => wave.wave === snapshot.wave && wave.day === snapshot.day)) {
+    return false;
   }
+  if (snapshot.cityHp <= 0 || snapshot.monsterHp <= 0) return false;
+  if (snapshot.cityAttack <= 0 || snapshot.monsterAttack <= 0) return false;
+  if (snapshot.cityDefense < 0) return false;
+  return true;
+}
+
+export function resolveBattle(snapshot: BattleSnapshot): BattleResult | null {
+  if (!isValidBattleSnapshot(snapshot)) return null;
+
   let cityHp = snapshot.cityHp;
   let monsterHp = snapshot.monsterHp;
   const rounds: BattleRoundLog[] = [];

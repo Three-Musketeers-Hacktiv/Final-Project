@@ -627,3 +627,220 @@ Tindakan:
 Batas scope:
 - Tidak mengubah source game engine, endpoint backend, atau artefak Postman.
 - Root `src/**` dan root `docs/**` tidak diubah.
+
+## 2026-11-08 — Penyelarasan dokumentasi dengan patch game engine dan Gemini
+
+Tujuan:
+- Menyusun target remediasi backend setelah patch game engine terbaru tanpa mengubah source frontend atau engine.
+- Menetapkan Gemini sebagai provider AI default dan mempertahankan fallback terpercaya.
+
+Tindakan:
+- Mengaudit kontrak remediasi terlampir terhadap engine, backend, runner campaign, schema, index, dan dokumentasi yang ada.
+- Menambahkan `BACKEND_REMEDIATION_PLAN.md` dengan ticket BE-R00–BE-R08, urutan implementasi, test, release gate, dan batas ownership file.
+- Menyelaraskan API contract, implementation plan, dan database schema dengan `eventPlan`, event/choice ID dinamis, ruleset fingerprint, load consistency, active-save pointer, serta payload idempotency.
+- Mengubah target runtime AI menjadi provider-neutral dengan Gemini sebagai default, output Zod, English advisor voice, dan generasi on-demand.
+- Memperbarui environment contract, deployment runbook, test plan, dan panduan Postman agar memakai konfigurasi `AI_*`/`GEMINI_*` serta choice ID dari response.
+- Menjaga seluruh value pada `.env.example` tetap kosong sesuai keputusan pemilik backend.
+
+Batas scope:
+- Tidak mengubah `src/game/**`, `src/ui/**`, root `docs/**`, atau source game engine lain.
+- Tidak mengubah `app/components/**`, `app/app/(game)/**`, `app/lib/**`, atau `app/proxy.ts` milik frontend.
+- Tidak mengubah source backend pada tahap dokumentasi ini; migrasi Gemini dan remediasi source masih berstatus pending.
+- Tidak menjalankan migrasi atau penghapusan data MongoDB.
+
+Validasi dokumentasi:
+- Memeriksa `git diff --check`.
+- Memeriksa daftar file berubah terhadap backend-owned scope.
+- Memeriksa ulang referensi OpenAI/legacy choice ID pada dokumen aktif; referensi historis action log dipertahankan sebagai riwayat.
+
+Commit:
+- `dafb875 docs(backend): align engine remediation contracts`.
+- Commit Gemini/runbook dibuat setelah staged diff final.
+- Push tidak dilakukan.
+
+## 2026-11-08 — Implementasi remediasi backend setelah patch engine
+
+Tujuan:
+- Menyelesaikan BE-R00–BE-R08 tanpa mengubah source frontend atau game engine.
+- Menjamin backend dapat membaca, memvalidasi, menyimpan, dan menjalankan campaign berdasarkan `eventPlan` terbaru.
+
+Implementasi:
+- Mengganti dependency/runtime OpenAI dengan SDK resmi `@google/genai` dan Gemini sebagai provider default.
+- Menambahkan konfigurasi `AI_*`/`GEMINI_*`, readiness provider aktif, JSON schema, validasi Zod, prompt advisor English, trusted choice IDs, timeout/retry, dan fallback.
+- Mengganti ruleset menjadi `prototype-v3-event-plan-v1` serta menolak fingerprint ruleset yang tidak cocok.
+- Menambahkan shared load validator untuk state version, `runId`, deterministic `eventPlan`, active event, ruleset, dan current-save pointer.
+- Membedakan `DUPLICATE_ACTION` dari `ACTION_PAYLOAD_CONFLICT` menggunakan `payloadHash` pada jalur normal dan race.
+- Membatasi action pada active save serta membuat update/clear pointer kondisional terhadap run dan revision di dalam transaksi.
+- Menambah index query remediation, literal hari event/battle, source `ai | fallback | mock`, dan runtime guard sebelum write MongoDB.
+- Mengubah runner campaign agar mengambil event/choice ID dinamis dari response API.
+- Menyelaraskan status kontrak API, schema, runtime AI, implementation/remediation plan, test plan, environment runbook, dan panduan Postman.
+
+Commit fitur:
+- `173f07d feat(ai): add configurable gemini narrative runtime`.
+- `c76521c fix(backend): validate patched engine saves and rulesets`.
+- `2331d9e fix(game): harden active run pointer and action idempotency`.
+- `1463d13 fix(database): align indexes and persisted game literals`.
+- `cf80172 test(campaign): support dynamic engine event plans`.
+
+Validasi aktual:
+- `npm.cmd run lint`: lulus.
+- `npm.cmd run typecheck`: lulus.
+- `npm.cmd run test`: lulus, 14 file dan 43 test.
+- `npm.cmd run db:indexes`: lulus pada database development yang dikonfigurasi; setup tetap idempotent dan tidak menghapus data/index lama.
+- `npm.cmd run test:campaign`: lulus 42 action sampai `phase: victory`, revision 42; dynamic packages/choice IDs terbaca dari response.
+- Campaign memverifikasi run final dapat dibaca ulang, active save kosong, logout sukses, dan `/api/auth/me` sesudah logout menghasilkan `401`.
+- `npm.cmd run build`: percobaan sandbox pertama gagal mengambil Google Fonts milik frontend; pengulangan dengan akses network lulus penuh.
+- `npm.cmd audit --omit=dev`: tidak menemukan vulnerability pada dependency production.
+- Live Gemini call belum dijalankan karena `GEMINI_API_KEY`/`GEMINI_MODEL` belum diisi; jalur fallback dan fake generator tercakup test/campaign.
+
+Database dan data:
+- Index baru diterapkan pada database development yang sudah diverifikasi.
+- User/run campaign baru dipertahankan untuk audit development.
+- Tidak ada reset, delete, atau migrasi destruktif terhadap save lama.
+
+Handoff frontend:
+- Frontend membaca choice ID dari `game.eventNarrative.choices`, bukan membentuk ID dari hari.
+- Frontend perlu menyediakan pesan untuk `UNSUPPORTED_STATE_VERSION`, `RUN_INTEGRITY_ERROR`, `SAVE_POINTER_MISMATCH`, dan `ACTION_PAYLOAD_CONFLICT`.
+- Mapping frontend tidak diedit karena berada di luar ownership backend.
+
+Batas scope:
+- Tidak ada perubahan pada `src/game/**`, `src/ui/**`, root `docs/**`, atau file game engine.
+- Tidak ada perubahan pada `app/components/**`, `app/app/(game)/**`, `app/lib/**`, atau `app/proxy.ts`.
+- `.env` lokal tidak diubah atau di-commit.
+- Push tidak dilakukan.
+
+## 2026-11-08 — Perencanaan integrasi backend surrender
+
+Tujuan:
+- Menindaklanjuti engine commit `a0cc71b` yang menambahkan transisi murni `surrender(state)`.
+- Menetapkan kontrak backend sebelum implementasi tanpa mengubah source engine atau frontend.
+
+Tindakan:
+- Membaca `.scratch/surrender-action/spec.md` dan tiket backend terkait.
+- Menambahkan `SURRENDER_BACKEND_PLAN.md`.
+- Menambahkan target `surrender` ke API contract, implementation plan, database action type, dan test plan.
+- Menetapkan payload publik harus `{}` dan finalisasi memakai jalur `gameOver` generik yang sudah ada.
+
+Batas scope:
+- Tidak mengubah `src/game/**`, komponen/halaman frontend, `app/lib/**`, `app/proxy.ts`, atau root `docs/**`.
+- Implementasi source belum dilakukan pada commit perencanaan ini.
+- Push tidak dilakukan.
+
+## 2026-11-08 — Implementasi dan verifikasi backend surrender
+
+Tujuan:
+- Mengekspos transisi engine `surrender(state)` melalui endpoint action backend tanpa mengubah source engine atau frontend.
+- Membuktikan finalisasi `gameOver` tersimpan dan active-save pointer dilepas.
+
+Implementasi:
+- Menambahkan action `surrender` dengan payload strict `{}` pada schema Zod, shared API contract, persisted action type, dan adapter engine.
+- Meneruskan state langsung ke fungsi engine tanpa menyalin rumus atau mengubah field gameplay di backend.
+- Memprioritaskan `GAME_ENDED` ketika action dikirim ke run yang telah final, meskipun active-save pointer sudah dilepas.
+- Menambahkan regression test adapter/schema serta runner `npm run test:surrender`.
+- Memperbarui kontrak, implementation plan, rencana surrender, dan panduan Postman/frontend.
+
+Commit:
+- `e0f1093 docs(backend): define surrender action contract`.
+- `b90b3e5 feat(game): expose surrender through backend actions`.
+- `fb44647 test(api): verify surrender finalization flow`.
+- Commit dokumentasi closeout dibuat setelah pemeriksaan final.
+
+Validasi aktual:
+- `npm.cmd run test`: lulus, 14 file dan 47 test.
+- `npm.cmd run typecheck`: lulus.
+- `npm.cmd run lint`: lulus tanpa warning.
+- `npm.cmd run build`: lulus production build.
+- `npm.cmd run test:surrender`: lulus terhadap MongoDB development setelah origin runner disamakan dengan `APP_ORIGIN`.
+- Smoke test membuktikan payload tambahan ditolak `400`, surrender sukses `200`, final run dapat dibaca `200`, active save menjadi `404`, dan action setelah final ditolak `409 GAME_ENDED`.
+
+Database dan scope:
+- Smoke test menambahkan satu user/run development dan mempertahankannya untuk audit; tidak ada reset atau penghapusan data.
+- Tidak mengubah `src/game/**`, `src/ui/**`, root `docs/**`, atau file game engine.
+- Tidak mengubah `app/components/**`, `app/app/(game)/**`, `app/lib/**`, atau `app/proxy.ts` milik frontend.
+- `.env` lokal tidak diubah atau di-commit.
+- Push tidak dilakukan.
+
+## 2026-11-08 — Perencanaan persistent game timeline
+
+Tujuan:
+- Menindaklanjuti spec dan tiket baru `.scratch/game-runs-timeline/` tanpa mengubah frontend atau game engine.
+- Menetapkan `game_runs.timeline` dan `GameView.timeline` sebagai kontrak backend untuk hydrate frontend.
+
+Tindakan:
+- Menambahkan `TIMELINE_BACKEND_PLAN.md` dengan pembagian scope tiket 01–02 backend dan tiket 03 frontend.
+- Memperbarui API contract, database schema, implementation plan, dan test plan.
+- Menetapkan entry ID deterministik, append atomik, fallback dokumen lama, dan timeline oldest-first.
+- Mengubah kontrak retry identik dari `409 DUPLICATE_ACTION` menjadi replay sukses `200` tanpa write kedua sesuai spec terbaru.
+
+Batas scope:
+- Tidak mengubah `src/game/**`, root `docs/**`, `app/components/**`, `app/lib/**`, `app/app/(game)/**`, atau `app/proxy.ts`.
+- Implementasi source belum dilakukan pada commit perencanaan ini.
+- Push tidak dilakukan.
+
+## 2026-11-08 — Implementasi dan verifikasi persistent game timeline
+
+Tujuan:
+- Menyelesaikan tiket backend timeline 01–02 dan menyediakan kontrak siap konsumsi untuk tiket frontend 03.
+- Menjaga timeline, state, action log, report/event, serta active-save pointer tetap konsisten dalam transaksi yang sama.
+
+Implementasi:
+- Menambahkan tipe publik `TimelineEntry`, category, tone, dan icon serta field wajib `GameView.timeline`.
+- Menambahkan `game_runs.timeline: []` pada run baru dan fallback `[]` untuk dokumen prototype lama.
+- Menambahkan generator copy server-safe dari snapshot sebelum/sesudah dengan ID `${actionId}:${index}`.
+- Menyimpan timeline oldest-first secara atomik bersama state/revision dan seluruh side effect action.
+- Mengubah retry identik menjadi replay sukses `200`; payload berbeda tetap `ACTION_PAYLOAD_CONFLICT`.
+- Menambahkan entry surrender dan mempertahankan `continueFromReport` tanpa entry sesuai perilaku timeline yang ada.
+- Menambahkan runner `test:timeline` dan assertion timeline pada collection Postman.
+
+Commit:
+- `f77cf92 docs(backend): define persistent timeline contract`.
+- `5a05ae2 feat(game): expose persisted timeline in game views`.
+- `d56d3c1 feat(game): append idempotent action timeline`.
+- `4c2ac31 test(api): verify persistent action timeline`.
+- Commit dokumentasi closeout dibuat setelah pemeriksaan final.
+
+Validasi aktual:
+- `npm.cmd run test`: lulus, 16 file dan 52 test.
+- `npm.cmd run typecheck`: lulus.
+- `npm.cmd run lint`: lulus tanpa warning.
+- `npm.cmd run build`: lulus production build.
+- `npm.cmd run test:timeline`: lulus terhadap MongoDB development; empty, append, replay, conflict, rejected action, final replay, dan GET persistence terverifikasi.
+- `npm.cmd run test:surrender`: lulus sebagai regression.
+- `npm.cmd run test:campaign`: lulus 42 action sampai hari 20, revision 42, phase `victory`.
+
+Database, handoff, dan scope:
+- Smoke tests menambahkan user/run development dan mempertahankannya untuk audit; tidak ada reset atau penghapusan data.
+- Frontend harus mengerjakan tiket 03 dengan hydrate dari `initialGame.timeline` dan mengganti timeline lokal dari setiap response action.
+- Tidak mengubah `src/game/**`, `src/ui/**`, root `docs/**`, atau file engine.
+- Tidak mengubah `app/components/**`, `app/lib/**`, `app/app/(game)/**`, atau `app/proxy.ts` milik frontend.
+- `.env` lokal tidak diubah atau di-commit.
+- Push tidak dilakukan.
+
+## 2026-11-08 — Audit kompatibilitas patch validasi engine terbaru
+
+Tujuan:
+- Mengintegrasikan commit rekan `fba69be` dan memastikan backend timeline/surrender tetap sinkron sebelum push.
+
+Tindakan:
+- Menjalankan `git fetch origin --prune` dan menemukan patch engine baru pada remote branch.
+- Membaca spec/tiket `engine-validation-patch` serta diff `src/game/events.ts`, `src/game/battle.ts`, dan kontrak engine.
+- Memastikan patch tidak mengubah API publik, `GameState.version`, balancing, atau bentuk persisted state.
+- Merge dilakukan memakai strategi Git `ort`; file engine/root docs berasal utuh dari commit rekan dan tidak diedit backend.
+- Memasang dependency root sesuai lockfile agar test engine dapat dijalankan langsung pada checkout gabungan.
+
+Validasi setelah merge:
+- Root `npm.cmd run typecheck`: lulus.
+- Root `npm.cmd test`: lulus, 2 file dan 30 test engine/UI.
+- App `npm.cmd run typecheck`: lulus.
+- App `npm.cmd run test`: lulus, 16 file dan 52 test backend.
+- App `npm.cmd run lint`: lulus tanpa warning.
+- App `npm.cmd run build`: lulus production build.
+- App `npm.cmd run test:timeline`: lulus.
+- App `npm.cmd run test:surrender`: lulus.
+- App `npm.cmd run test:campaign`: lulus 42 action sampai `victory` pada engine terbaru.
+
+Catatan dependency dan data:
+- `npm ci` root tidak mengubah source atau lockfile; `node_modules` tetap ignored.
+- Audit instalasi root melaporkan 1 moderate dan 2 critical vulnerability dependency development. `npm audit fix --force` tidak dijalankan karena dapat membuat perubahan breaking di luar scope.
+- Smoke test menambah data development untuk audit dan tidak melakukan delete/reset.
+- Push tidak dilakukan.

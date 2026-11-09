@@ -1,9 +1,9 @@
 # Environment and Deployment Runbook
 
-Status: **Draft untuk review backend dan deployment owner**  
+Status: **Active runbook for Gemini backend**
 Pemilik: Backend  
 Target: MongoDB Atlas + Vercel  
-Terakhir diperbarui: 2026-11-06
+Terakhir diperbarui: 2026-11-08
 
 ## 1. Tujuan
 
@@ -11,12 +11,12 @@ Dokumen ini menjadi runbook konfigurasi local, test, Preview, dan Production. Ni
 
 ## 2. Pembagian environment
 
-| Environment | Tujuan | Database | OpenAI |
+| Environment | Tujuan | Database | AI runtime |
 |---|---|---|---|
-| Local | Pengembangan developer | DB development personal/team | Key project developer atau fallback |
+| Local | Pengembangan developer | DB development personal/team | Gemini key developer atau fallback |
 | Test | Automated integration test | DB test terisolasi | Mock default |
-| Preview | Review integrasi Vercel | DB preview/staging | Key service account non-production |
-| Production | Demo/release | DB production | Key service account production |
+| Preview | Review integrasi Vercel | DB preview/staging | Dedicated non-production key |
+| Production | Demo/release | DB production | Dedicated production key |
 
 Preview dan Production tidak boleh berbagi database. Test tidak boleh menunjuk database development/production.
 
@@ -33,12 +33,15 @@ Preview dan Production tidak boleh berbagi database. Test tidak boleh menunjuk d
 | `JWT_AUDIENCE` | Tidak | `city-defense-web` | Server |
 | `BCRYPT_SALT_ROUNDS` | Tidak | `12` | Server |
 | `APP_ORIGIN` | Tidak | `http://localhost:3000` | Server |
-| `OPENAI_API_KEY` | Ya | tidak didokumentasikan | Server |
-| `OPENAI_MODEL` | Tidak | ditentukan saat setup | Server |
-| `OPENAI_TIMEOUT_MS` | Tidak | `10000` | Server |
-| `OPENAI_MAX_RETRIES` | Tidak | `1` | Server |
-| `OPENAI_MAX_OUTPUT_TOKENS` | Tidak | `800` | Server |
-| `OPENAI_PROMPT_VERSION` | Tidak | `event-v1` | Server |
+| `AI_PROVIDER` | Tidak | `gemini` | Server |
+| `GEMINI_API_KEY` | Ya untuk runtime Gemini | tidak didokumentasikan | Server |
+| `GEMINI_MODEL` | Ya untuk runtime Gemini | ditentukan saat setup | Server |
+| `AI_API_KEY` | Hanya adapter alternatif | tidak didokumentasikan | Server |
+| `AI_MODEL` | Hanya adapter alternatif | ditentukan adapter | Server |
+| `AI_TIMEOUT_MS` | Tidak | `10000` | Server |
+| `AI_MAX_RETRIES` | Tidak | `1` | Server |
+| `AI_MAX_OUTPUT_TOKENS` | Tidak | `800` | Server |
+| `AI_PROMPT_VERSION` | Tidak | `event-advisor-en-v1` | Server |
 | `LOG_LEVEL` | Tidak | `info` | Server |
 | `NODE_ENV` | Tidak | dikelola runtime | Server |
 
@@ -114,14 +117,16 @@ Detail collection dan index mengikuti [DATABASE_SCHEMA_V3.md](./DATABASE_SCHEMA_
 
 Backend automation tidak melakukan `git push` atau production promotion tanpa tindakan user.
 
-## 6. OpenAI credentials
+## 6. Gemini and alternative-provider credentials
 
-- Local: developer memakai API key dari project OpenAI miliknya sendiri.
-- Preview/Production: gunakan project service account khusus environment/aplikasi.
+- Gemini adalah provider default melalui `AI_PROVIDER=gemini`.
+- Local: developer boleh memakai Gemini API key miliknya sendiri atau fallback-only.
+- Preview/Production: gunakan key khusus environment/aplikasi, bukan key pribadi permanen anggota tim.
 - Batasi permission dan budget/rate limit project sesuai kebutuhan.
 - Rotasi key bila anggota tim berubah atau secret diduga bocor.
 - Setelah rotasi, perbarui Vercel secret lalu redeploy; jangan menyimpan key lama di file.
-- Provider adapter membaca key/model dari environment sehingga pergantian akun tidak mengubah kode.
+- Provider alternatif hanya valid setelah adapter backend tersedia; `AI_API_KEY`/`AI_MODEL` tidak mengaktifkan provider yang belum diimplementasikan.
+- Provider adapter membaca key/model dari environment sehingga pergantian akun tidak mengubah frontend atau engine.
 
 Runtime detail mengikuti [AI_EVENT_RUNTIME.md](./AI_EVENT_RUNTIME.md).
 
@@ -141,7 +146,7 @@ Sebelum Production:
 - Preview contract test lulus;
 - frontend smoke lulus;
 - Atlas index dan ruleset version benar;
-- `APP_ORIGIN`, cookie Secure, `JWT_SECRET`, database, dan OpenAI secret terkonfigurasi;
+- `APP_ORIGIN`, cookie Secure, `JWT_SECRET`, database, dan Gemini secret terkonfigurasi;
 - fallback AI diuji;
 - rollback owner dan versi commit diketahui.
 
@@ -160,7 +165,7 @@ Log terstruktur minimum:
 - route dan status;
 - latency;
 - user/run ID bila aman;
-- kategori database/engine/OpenAI error;
+- kategori database/engine/provider AI error;
 - source event `ai` atau `fallback`.
 
 Jangan log password, cookie, token, body auth, API key, atau MongoDB URI.
@@ -179,7 +184,7 @@ Metric minimum untuk demo:
 - Perubahan database dibuat backward-compatible jika memungkinkan.
 - Jangan menghapus field/index lama pada release yang sama dengan pengenalan penggantinya.
 - Seed/ruleset diberi versi sehingga run lama tetap dapat dibaca.
-- Jika masalah berasal dari OpenAI, aktifkan fallback tanpa mengubah state gameplay.
+- Jika masalah berasal dari provider AI, aktifkan fallback tanpa mengubah state gameplay.
 - Jika migration gagal, hentikan promotion dan catat status; jangan mencoba cleanup destruktif tanpa verifikasi target.
 
 ## 10. Recovery dan backup
@@ -196,7 +201,7 @@ Metric minimum untuk demo:
 - [ ] `MONGODB_URI` menunjuk database non-production.
 - [ ] Atlas network access tersedia.
 - [ ] Index setup dijalankan.
-- [ ] OpenAI key/model tersedia atau fallback local diaktifkan.
+- [ ] Gemini key/model tersedia atau fallback local diaktifkan.
 - [ ] Unit dan integration test dapat dijalankan.
 - [ ] Tidak ada secret di Git status/diff.
 
@@ -210,7 +215,7 @@ Metric minimum untuk demo:
 - [ ] JWT secret, issuer, audience, expiry, dan algoritma verifikasi benar.
 - [ ] Database target telah diverifikasi.
 - [ ] Index/seed version benar.
-- [ ] OpenAI service account key dan model benar.
+- [ ] `AI_PROVIDER`, Gemini key, dan model benar.
 - [ ] Fallback AI berhasil diuji.
 - [ ] API contract smoke lulus.
 - [ ] Frontend smoke lulus.

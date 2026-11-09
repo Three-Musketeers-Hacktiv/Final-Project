@@ -17,6 +17,8 @@ describe("parseServerEnv", () => {
     expect(environment.SESSION_TTL_SECONDS).toBe(604800);
     expect(environment.BCRYPT_SALT_ROUNDS).toBe(12);
     expect(environment.JWT_ISSUER).toBe("city-defense-api");
+    expect(environment.AI_PROVIDER).toBe("gemini");
+    expect(environment.AI_PROMPT_VERSION).toBe("event-advisor-en-v1");
   });
 
   it("rejects a short JWT secret", () => {
@@ -25,14 +27,24 @@ describe("parseServerEnv", () => {
     );
   });
 
-  it("converts empty optional OpenAI values to undefined", () => {
+  it("converts empty optional AI values to undefined", () => {
     const environment = parseServerEnv({
       ...validEnvironment,
-      OPENAI_API_KEY: "",
-      OPENAI_MODEL: "",
+      GEMINI_API_KEY: "",
+      GEMINI_MODEL: "",
+      AI_API_KEY: "",
+      AI_MODEL: "",
     });
 
-    expect(environment.OPENAI_API_KEY).toBeUndefined();
-    expect(environment.OPENAI_MODEL).toBeUndefined();
+    expect(environment.GEMINI_API_KEY).toBeUndefined();
+    expect(environment.GEMINI_MODEL).toBeUndefined();
+    expect(environment.AI_API_KEY).toBeUndefined();
+    expect(environment.AI_MODEL).toBeUndefined();
+  });
+
+  it("rejects an unsupported AI provider", () => {
+    expect(() => parseServerEnv({ ...validEnvironment, AI_PROVIDER: "openai" })).toThrow(
+      "AI_PROVIDER",
+    );
   });
 });

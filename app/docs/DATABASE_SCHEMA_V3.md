@@ -1,6 +1,6 @@
 # Database Schema v3 — Fantasy City Defense
 
-Status: **Draft untuk implementasi MongoDB Atlas**  
+Status: **Implemented for MongoDB Atlas**
 Database: MongoDB Atlas  
 State: `GameState.version === 3`  
 ID dokumen: `ObjectId`
@@ -23,8 +23,9 @@ Dokumen terkait:
 - `actionId` dan `startRequestId` tetap UUID/string idempotency dari frontend.
 - Timestamp disimpan sebagai BSON `Date` dalam UTC.
 - Semua document yang berubah memiliki `createdAt`; document mutable juga memiliki `updatedAt`.
-- Password plaintext, JWT lengkap, JWT signing secret, dan OpenAI API key tidak pernah disimpan.
+- Password plaintext, JWT lengkap, JWT signing secret, dan provider AI API key tidak pernah disimpan.
 - State lama dengan `version !== 3` ditolak; tidak dimigrasikan diam-diam.
+- State versi 3 sebelum patch `eventPlan` tidak otomatis dianggap kompatibel hanya karena angka versinya sama.
 
 ### Catatan penerapan perubahan nama REF
 
@@ -133,6 +134,7 @@ Aturan MVP:
 - Engine tetap membaca config source code.
 - Document ruleset yang sudah digunakan run immutable.
 - Perubahan balancing membuat ruleset metadata baru.
+- Existing `rulesetId` dengan fingerprint berbeda harus ditolak; fingerprint lama tidak boleh ditimpa.
 
 Indeks:
 
@@ -143,6 +145,19 @@ unique { rulesetId: 1 }
 ## 6. `game_runs`
 
 ```ts
+type TimelineCategory = "city" | "battle" | "event";
+type TimelineTone = "city" | "gain" | "loss" | "neutral";
+
+type TimelineEntry = {
+  id: string;
+  day: number;
+  category: TimelineCategory;
+  tone: TimelineTone;
+  icon: string;
+  highlight?: string;
+  text: string;
+};
+
 type GameRunDocument = {
   _id: ObjectId;
   userId: ObjectId;
@@ -150,6 +165,7 @@ type GameRunDocument = {
   startRequestId: string;
   startRequestPayloadHash: string;
   state: GameState;
+  timeline: TimelineEntry[];
   createdAt: Date;
   updatedAt: Date;
   endedAt: Date | null;
@@ -160,7 +176,12 @@ Aturan:
 
 - `state.runId === _id.toHexString()`.
 - `state.version === 3`.
+- `state.eventPlan` berisi tepat satu package tepercaya untuk hari 3, 7, 13, dan 17 sesuai hasil engine untuk `state.runId`.
 - `state.revision` hanya dinaikkan engine.
+- `timeline` disimpan di top-level run, bukan di dalam `GameState`, dan berurutan paling lama ke paling baru.
+- Run baru memakai `timeline: []`; dokumen lama tanpa field dinormalisasi sebagai `[]` saat read.
+- ID entry berbentuk `${actionId}:${index}` dan append terjadi atomik bersama update revision.
+- Timeline hanya dibuat backend dari hasil action sukses; request frontend tidak boleh memasok entry.
 - Backend tidak menyimpan total attack/defense ke state.
 - Run selesai immutable untuk gameplay.
 - `startRequestPayloadHash` mendeteksi penggunaan ID sama dengan payload berbeda.
@@ -196,6 +217,7 @@ type GameActionType =
   | "startBattle"
   | "continueFromReport"
   | "chooseReward"
+  | "surrender"
   | "attachActiveEvent";
 
 type GameActionDocument = {
@@ -220,6 +242,7 @@ Aturan:
 - `payload` hanya field command aman; tidak menyimpan cookie, password, atau secret.
 - `payloadHash` mendeteksi reuse actionId dengan payload berbeda.
 - `attachActiveEvent` adalah helper internal backend/engine dan tidak diterima endpoint action publik.
+- `surrender` adalah action publik dengan payload kosong; action sukses menghasilkan final state `gameOver`.
 
 Indeks:
 
@@ -406,7 +429,7 @@ type AuthRateLimitDocument = {
 Indeks:
 
 ```text
-unique { keyHash: 1, route: 1, windowStartedAt: 1 }
+unique { key: 1, windowStart: 1 }
 TTL    { expiresAt: 1 } expireAfterSeconds: 0
 ```
 
@@ -455,9 +478,10 @@ Saat continue:
 2. Load `game_runs` menggunakan `_id + userId`.
 3. Validasi state versi 3.
 4. Pastikan `state.runId` cocok dengan `_id`.
-5. Pastikan pointer revision cocok dengan state revision.
-6. Bila membaca properties, ambil seluruh delapan dari revision yang sama.
-7. Load active run event/report bila relevan.
+5. Validasi ruleset fingerprint dan `eventPlan` patched state.
+6. Pastikan pointer run dan revision cocok dengan state.
+7. Bila membaca properties, ambil seluruh delapan dari revision yang sama.
+8. Load active run event/report bila relevan.
 
 Backend tidak menyusun state kembali dari action log atau properties.
 

@@ -4,6 +4,13 @@ import { decorateActiveEvent, generateEventNarrative } from "@/server/ai/event-n
 import type { UserDocument } from "@/server/auth/types";
 import { applyGameAction, type EngineGameAction } from "@/server/game-engine/adapter";
 import { hashPayload } from "@/server/game/hash";
+import { assertActionIdempotency } from "@/server/game/idempotency";
+import { assertLoadableRun } from "@/server/game/load";
+import { describeTimelineAction } from "@/server/game/timeline";
+import {
+  toEventDay,
+  toPersistedNarrativeSource,
+} from "@/server/game/persisted-values";
 import {
   commitGameAction,
   createReportDocument,
@@ -13,6 +20,8 @@ import {
   findLatestReport,
   findRunByStartRequest,
   findRunForUser,
+  findRulesetById,
+  findSavePointer,
 } from "@/server/game/repository";
 import type { CreateRunInput, SubmitActionInput } from "@/server/game/schemas";
 import type {
@@ -35,6 +44,13 @@ async function viewForRun(run: GameRunDocument) {
   return toGameView(run, await findLatestReport(run._id));
 }
 
+async function validateRun(
+  run: GameRunDocument,
+  pointer?: NonNullable<UserDocument["saveGame"]>,
+): Promise<void> {
+  assertLoadableRun(run, await findRulesetById(run.gameRulesetId), pointer);
+}
+
 export async function createRun(user: UserDocument, input: CreateRunInput) {
   const payloadHash = hashPayload({ replaceActiveSave: input.replaceActiveSave });
   const existing = await findRunByStartRequest(user._id, input.startRequestId);
@@ -42,6 +58,7 @@ export async function createRun(user: UserDocument, input: CreateRunInput) {
     if (existing.startRequestPayloadHash !== payloadHash) {
       throw new ApiError(409, "START_REQUEST_CONFLICT", "startRequestId was already used with another payload");
     }
+    await validateRun(existing);
     return { run: existing, game: await viewForRun(existing), replayed: true };
   }
 
@@ -58,23 +75,46 @@ export async function createRun(user: UserDocument, input: CreateRunInput) {
   if (run.startRequestPayloadHash !== payloadHash) {
     throw new ApiError(409, "START_REQUEST_CONFLICT", "startRequestId was already used with another payload");
   }
+  await validateRun(run);
   return { run, game: await viewForRun(run), replayed: false };
 }
 
 export async function getCurrentGame(userId: ObjectId) {
-  const run = await findCurrentRun(userId);
-  if (!run) throw new ApiError(404, "NO_ACTIVE_SAVE", "No active save was found");
-  return { run, game: await viewForRun(run) };
+  const current = await findCurrentRun(userId);
+  if (!current) throw new ApiError(404, "NO_ACTIVE_SAVE", "No active save was found");
+  if (!current.run) {
+    throw new ApiError(409, "SAVE_POINTER_MISMATCH", "Active save does not reference a valid run");
+  }
+  await validateRun(current.run, current.pointer);
+  return { run: current.run, game: await viewForRun(current.run) };
 }
 
 export async function getGameById(userId: ObjectId, runId: string) {
   const run = await findRunForUser(parseRunId(runId), userId);
   if (!run) throw new ApiError(404, "RUN_NOT_FOUND", "Game run was not found");
+  await validateRun(run);
   return { run, game: await viewForRun(run) };
 }
 
 function toEngineAction(input: SubmitActionInput): EngineGameAction {
   return input as EngineGameAction;
+}
+
+async function replayCommittedAction(
+  run: GameRunDocument,
+  action: GameActionDocument,
+  payloadHash: string,
+) {
+  assertActionIdempotency(action, payloadHash, run.state.revision);
+  return {
+    action: {
+      actionId: action.actionId,
+      type: action.type,
+      revisionBefore: action.revisionBefore,
+      revisionAfter: action.revisionAfter,
+    },
+    game: await viewForRun(run),
+  };
 }
 
 export async function submitGameAction(
@@ -83,21 +123,23 @@ export async function submitGameAction(
   input: SubmitActionInput,
 ) {
   const runId = parseRunId(runIdValue);
-  const duplicate = await findAction(runId, input.actionId);
-  if (duplicate) {
-    const currentRun = await findRunForUser(runId, userId);
-    if (!currentRun) throw new ApiError(404, "RUN_NOT_FOUND", "Game run was not found");
-    throw new ApiError(409, "DUPLICATE_ACTION", "This action has already been applied", {
-      currentRevision: currentRun.state.revision.toString(),
-    });
-  }
-
+  const payloadHash = hashPayload({ type: input.type, payload: input.payload });
   const currentRun = await findRunForUser(runId, userId);
   if (!currentRun) throw new ApiError(404, "RUN_NOT_FOUND", "Game run was not found");
-  if (currentRun.endedAt) throw new ApiError(409, "GAME_ENDED", "Game run has ended");
-  if (currentRun.state.version !== 3) {
-    throw new ApiError(409, "UNSUPPORTED_STATE_VERSION", "Game state version is not supported");
+
+  const duplicate = await findAction(runId, input.actionId);
+  if (duplicate) {
+    await validateRun(currentRun);
+    return replayCommittedAction(currentRun, duplicate, payloadHash);
   }
+
+  if (currentRun.endedAt) throw new ApiError(409, "GAME_ENDED", "Game run has ended");
+
+  const pointer = await findSavePointer(userId);
+  if (!pointer) {
+    throw new ApiError(409, "SAVE_POINTER_MISMATCH", "Game run is not the active save");
+  }
+  await validateRun(currentRun, pointer);
   if (currentRun.state.revision !== input.expectedRevision) {
     throw new ApiError(409, "STALE_REVISION", "Game state has changed; reload the current game", {
       currentRevision: currentRun.state.revision.toString(),
@@ -121,13 +163,16 @@ export async function submitGameAction(
     nextState = decorateActiveEvent(result.state, narrativeResult);
     const eventDataId = new ObjectId();
     const narrative = narrativeResult.narrative;
+    const eventDay = toEventDay(result.state.activeEvent.day);
+    const narrativeSource = toPersistedNarrativeSource(narrativeResult.source);
     const eventData: EventDataDocument = {
       _id: eventDataId,
       gameRulesetId: currentRun.gameRulesetId,
       packageId: result.state.activeEvent.packageId,
-      day: result.state.activeEvent.day,
+      day: eventDay,
       narrative,
-      source: narrativeResult.source,
+      source: narrativeSource,
+      ...(narrativeResult.provider ? { provider: narrativeResult.provider } : {}),
       ...(narrativeResult.model ? { model: narrativeResult.model } : {}),
       promptVersion: narrativeResult.promptVersion,
       schemaVersion: 1,
@@ -142,15 +187,14 @@ export async function submitGameAction(
         eventDataId,
         eventId: result.state.activeEvent.eventId,
         packageId: result.state.activeEvent.packageId,
-        day: result.state.activeEvent.day,
-        narrativeSnapshot: { ...narrative, source: narrativeResult.source },
+        day: eventDay,
+        narrativeSnapshot: { ...narrative, source: narrativeSource },
         chosenChoiceId: null,
         createdAt: now,
         resolvedAt: null,
       },
     };
   }
-  const payloadHash = hashPayload({ type: input.type, payload: input.payload });
   const action: GameActionDocument = {
     _id: new ObjectId(),
     gameRunId: runId,
@@ -164,13 +208,23 @@ export async function submitGameAction(
     createdAt: now,
   };
   const ended = nextState.phase === "gameOver" || nextState.phase === "victory";
-  const nextRun: GameRunDocument = {
+  let nextRun: GameRunDocument = {
     ...currentRun,
     state: nextState,
+    timeline: currentRun.timeline ?? [],
     updatedAt: now,
     endedAt: ended ? now : null,
   };
   const report = createReportDocument(nextRun, action);
+  const timelineEntries = describeTimelineAction(
+    input,
+    toGameView(currentRun),
+    toGameView(nextRun, report),
+  );
+  nextRun = {
+    ...nextRun,
+    timeline: [...(currentRun.timeline ?? []), ...timelineEntries],
+  };
   const resolvedEvent = input.type === "chooseEventOption" && currentRun.state.activeEvent
     ? { eventId: currentRun.state.activeEvent.eventId, choiceId: input.payload.choiceId }
     : null;
@@ -181,13 +235,19 @@ export async function submitGameAction(
     if (error instanceof ApiError && error.code === "STALE_REVISION") {
       const committed = await findAction(runId, input.actionId);
       if (committed) {
-        throw new ApiError(409, "DUPLICATE_ACTION", "This action has already been applied", {
-          currentRevision: committed.revisionAfter.toString(),
-        });
+        const latest = await findRunForUser(runId, userId);
+        if (!latest) throw new ApiError(404, "RUN_NOT_FOUND", "Game run was not found");
+        return replayCommittedAction(latest, committed, payloadHash);
       }
     }
     if (error instanceof MongoServerError && error.code === 11000) {
-      throw new ApiError(409, "DUPLICATE_ACTION", "This action has already been applied");
+      const committed = await findAction(runId, input.actionId);
+      if (committed) {
+        const latest = await findRunForUser(runId, userId);
+        if (!latest) throw new ApiError(404, "RUN_NOT_FOUND", "Game run was not found");
+        return replayCommittedAction(latest, committed, payloadHash);
+      }
+      throw new ApiError(409, "STALE_REVISION", "Game state has changed; reload the current game");
     }
     throw error;
   }
