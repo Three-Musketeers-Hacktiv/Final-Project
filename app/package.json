@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
+    "typecheck:backend": "tsc --noEmit -p tsconfig.backend.json",
     "test": "vitest run",
     "test:campaign": "tsx scripts/run-campaign.ts",
     "test:surrender": "tsx scripts/run-surrender.ts",

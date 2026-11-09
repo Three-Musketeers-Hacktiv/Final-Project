@@ -38,6 +38,43 @@ describe("game engine adapter", () => {
     expect(createGameState("run-hard", "hard").difficulty).toBe("hard");
   });
 
+  it("accepts trusted pending and active consequence events", () => {
+    let state = createGameState("run-consequence-validation");
+    let scheduled = false;
+
+    while (state.day < 10) {
+      if (state.phase === "event" && state.activeEvent) {
+        if (state.activeEvent.isConsequence) {
+          expect(scheduled).toBe(true);
+          expect(() => assertPatchedGameState(state, state.runId)).not.toThrow();
+          return;
+        }
+        const choice = !scheduled
+          ? state.activeEvent.choices.find((candidate) => candidate.consequence)
+          : undefined;
+        const selected = choice ?? state.activeEvent.choices.find(
+          (candidate) => candidate.goldCost === 0 && !candidate.consequence,
+        ) ?? state.activeEvent.choices.find((candidate) => candidate.goldCost === 0)!;
+        const chosen = applyGameAction(state, {
+          type: "chooseEventOption",
+          payload: { choiceId: selected.id },
+        });
+        expect(chosen.ok).toBe(true);
+        if (!chosen.ok) return;
+        state = chosen.state;
+        scheduled ||= Boolean(choice?.consequence);
+      } else {
+        const advanced = applyGameAction(state, { type: "endPreparationDay", payload: {} });
+        expect(advanced.ok).toBe(true);
+        if (!advanced.ok) return;
+        state = advanced.state;
+      }
+      expect(() => assertPatchedGameState(state, state.runId)).not.toThrow();
+    }
+
+    throw new Error("Fixture did not produce a consequence event before wave one");
+  });
+
   it("rejects an event plan copied from another run", () => {
     const state = createGameState("run-one");
     let other = createGameState("run-two");
