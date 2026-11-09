@@ -42,7 +42,7 @@ export {
   prepSegmentForDay,
   incomeAmountForDay,
 } from "./calendar";
-export { hasUnresolvedEvent, enterCalendarDay } from "./dayEnter";
+export { hasUnresolvedEvent } from "./dayEnter";
 export {
   getDifficultyModifiers,
   isDifficulty,

@@ -91,11 +91,18 @@ const state = createInitialState({ runId: "run-…", difficulty: "normal" });
 
 ### Day / wave transitions
 
-- No public `enterDay(day)`.
+- No public `enterDay(day)` and no public `enterCalendarDay` (internal helper only).
 - Advance with `endPreparationDay` or `chooseReward` (after waves 1–9 → next prep day).
 - Battle days grant no income / no economy actions.
 - Unresolved scheduled **or** consequence event → `EVENT_REQUIRED`.
+- After `chooseEventOption`, the engine may immediately activate the next unfinished mandatory event for the **same day** (`phase: "event"`). Do not assume one event per day.
 - Wave 10 win → `continueFromReport` → `victory` (no reward).
+
+### Event gold costs
+
+- Trusted packages store **base** `goldCost`.
+- `activeEvent.choices[].goldCost` is the **effective** cost after difficulty scaling (`scaleEventGoldCost`).
+- `chooseEventOption` charges from the trusted package + the same scale (once). UI/AI must not invent or re-scale costs.
 
 ### Error codes (stable for UI)
 

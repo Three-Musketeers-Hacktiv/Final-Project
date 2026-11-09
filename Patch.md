@@ -62,8 +62,9 @@ createInitialState({ runId, difficulty?: "normal" })
 
 - `rewardsForWave(wave)`
 - `eventPackagesForDecade(decade)`
-- `shiftPlanEntryDay` (engine-internal collision helper; exported for tests/adapters)
+- `shiftPlanEntryDay` (collision helper; exported for tests/adapters — does not delete entries)
 - `isDifficulty` / `getDifficultyModifiers` / calendar helpers (`nextBattleDay`, …)
+- **Not public:** `enterCalendarDay` (module-internal; use `endPreparationDay` / `chooseReward`)
 
 ### Return type
 
@@ -77,7 +78,7 @@ Unchanged: `ActionResult` = `{ ok: true; state } | { ok: false; error }`. Succes
 - Each decade: hash picks 2 prep days (skip day 1, prefer avoid last pre-battle day, min gap 2).
 - Packages pooled by **decade**, not by calendar day.
 - Same `runId` ⇒ same days + packages.
-- Consequence collision: consequence wins; scheduled entry shifts forward in-segment.
+- Consequence collision: consequence wins; scheduled entry shifts forward (later decade if needed — never silently deleted). New consequences prefer free days; defer to the next prep segment when the current one is full.
 
 ---
 
@@ -117,6 +118,9 @@ HP 0 → gameOver
 - [ ] Variable 2–4 event choices + consequence badge
 - [ ] Per-wave reward buttons from current wave set
 - [ ] Drop hardcoded event days and old reward ids
+- [ ] After `chooseEventOption`, re-read `phase`/`activeEvent` (same-day chain may keep `event`)
+- [ ] Display `activeEvent.choices[].goldCost` as charged cost (already difficulty-scaled)
+- [ ] Never call `enterDay` / `enterCalendarDay`
 
 **Backend**
 
@@ -125,14 +129,32 @@ HP 0 → gameOver
 - [ ] Loosen day validators to 1–100 / engine helpers
 - [ ] AI schema 2–4 labels + consequence continuation context
 - [ ] Reject v3 saves
+- [ ] After `chooseEventOption`, regenerate narrative if `activeEvent` is still set / `eventId` changed
+- [ ] `ensureLocalEvent` on load when mandatory event unfinished but `activeEvent` is null
+- [ ] Do not expose or call `enterCalendarDay`
+- [ ] Pass effective `goldCost` from `activeEvent` to AI; decorate labels only
 
 ---
 
-## 9. Verify
+## 9. v4 bugfix — consequence queue / calendar API / event gold
+
+Engine-only fix (save `version: 4` unchanged). Details for FE/BE: [FOR_FRONTEND.md](./docs/FOR_FRONTEND.md) · [FOR_BACKEND.md](./docs/FOR_BACKEND.md).
+
+| Topic | Rule |
+|---|---|
+| Consequence scheduling | Never share `triggerDay` with another pending or scheduled day when a free prep day exists. Prefer delay window → rest of segment → **defer to next prep segment** after battle. Do not silently drop. |
+| Same-day queue | After `chooseEventOption`, engine may immediately activate the next unfinished consequence/scheduled event for the **same day** (`phase: "event"`, new `activeEvent`). Callers must not assume one event per day. |
+| Plan shift | `shiftPlanEntryDay` moves scheduled entries forward (later decade if needed); it does **not** delete them when the current segment is full. |
+| Calendar API | `enterCalendarDay` is **engine-internal only** (not exported from `src/game`). Advance only via `endPreparationDay` / `chooseReward`. |
+| Event gold | Package config keeps **base** `goldCost`. `activeEvent.choices[].goldCost` is the **effective** cost after difficulty scale. Charge uses the same scale from the trusted package (once). Free stays `0`. |
+
+---
+
+## 10. Verify
 
 ```bash
 npm run typecheck
 npm test
 ```
 
-Engine tests: `src/game/game.test.ts` (calendar, difficulty, plan, consequences, rewards, victory fixture).
+Engine tests: `src/game/game.test.ts` (calendar, difficulty, plan, consequences, queue/chain, event gold, rewards, victory fixture).

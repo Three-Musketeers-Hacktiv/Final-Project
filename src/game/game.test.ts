@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import * as gameApi from "./index";
 import {
   attachActiveEvent,
   chooseEventOption,
@@ -8,6 +9,7 @@ import {
   decorateActiveEvent,
   endPreparationDay,
   ensureLocalEvent,
+  eventPackageById,
   gameConfig,
   getEffectiveStats,
   getRepairCost,
@@ -20,12 +22,15 @@ import {
   repairCity,
   resolveBattle,
   rewardsForWave,
+  scaleEventGoldCost,
+  shiftPlanEntryDay,
   startBattle,
   surrender,
   upgradeCity,
   upgradeTroops,
   upgradeWall,
   type GameState,
+  type PendingConsequence,
 } from "./index";
 
 function mustOk(result: { ok: true; state: GameState } | { ok: false; error: unknown }): GameState {
@@ -402,5 +407,173 @@ describe("campaign integration", () => {
     const first = mustOk(ensureLocalEvent(state));
     const second = mustOk(ensureLocalEvent(first));
     expect(second.revision).toBe(first.revision);
+  });
+});
+
+describe("public API surface", () => {
+  it("does not export enterCalendarDay", () => {
+    expect("enterCalendarDay" in gameApi).toBe(false);
+  });
+
+  it("rejects a second economic action on the same day", () => {
+    let state = createInitialState({ runId: "action-slot", difficulty: "normal" });
+    state = mustOk(upgradeWall(state));
+    const second = upgradeTroops(state);
+    expect(second.ok).toBe(false);
+    if (!second.ok) expect(second.error.code).toBe("NO_ACTION_LEFT");
+  });
+
+  it("rejects actions after the game has ended", () => {
+    const ended = mustOk(surrender(createInitialState({ runId: "ended-run" })));
+    expect(upgradeWall(ended).ok).toBe(false);
+    expect(endPreparationDay(ended).ok).toBe(false);
+  });
+});
+
+describe("event gold cost scaling", () => {
+  function withEnvoyDay(difficulty: "easy" | "normal" | "hard"): GameState {
+    const state = createInitialState({ runId: `gold-${difficulty}`, difficulty });
+    return {
+      ...state,
+      day: 5,
+      phase: "preparation",
+      activeEvent: null,
+      gold: 100,
+      eventPlan: [
+        { day: 5, packageId: "d1-envoy-b", eventId: "d1-envoy-b" },
+        ...state.eventPlan.filter((entry) => entry.day !== 5 && entry.day >= 10),
+      ],
+    };
+  }
+
+  it.each([
+    ["easy", 17],
+    ["normal", 20],
+    ["hard", 23],
+  ] as const)("shows and charges scaled gold for %s", (difficulty, expectedCost) => {
+    let state = mustOk(ensureLocalEvent(withEnvoyDay(difficulty)));
+    const pay = state.activeEvent!.choices.find((choice) => choice.id === "d1-envoy-b-pay");
+    expect(pay?.goldCost).toBe(expectedCost);
+    expect(pay?.goldCost).toBe(scaleEventGoldCost(20, difficulty));
+    const before = state.gold;
+    state = mustOk(chooseEventOption(state, "d1-envoy-b-pay"));
+    expect(state.gold).toBe(before - expectedCost);
+  });
+
+  it("rejects when gold is one below the effective cost without mutating state", () => {
+    let state = mustOk(ensureLocalEvent(withEnvoyDay("hard")));
+    state = { ...state, gold: 22, revision: 7 };
+    const snapshot = JSON.stringify(state);
+    const result = chooseEventOption(state, "d1-envoy-b-pay");
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error.code).toBe("INSUFFICIENT_GOLD");
+    expect(JSON.stringify(state)).toBe(snapshot);
+  });
+
+  it("keeps free choices at zero and decorate does not double-scale", () => {
+    let state = mustOk(ensureLocalEvent(withEnvoyDay("easy")));
+    const free = state.activeEvent!.choices.find((choice) => choice.goldCost === 0);
+    expect(free).toBeTruthy();
+    const beforeCost = state.activeEvent!.choices.find((choice) => choice.id === "d1-envoy-b-pay")!.goldCost;
+    const decorated = decorateActiveEvent(state, {
+      title: "t",
+      description: "d",
+      choices: state.activeEvent!.choices.map((choice) => ({ id: choice.id, label: `L:${choice.id}` })),
+      source: "ai",
+    });
+    expect(decorated.activeEvent!.choices.find((choice) => choice.id === "d1-envoy-b-pay")!.goldCost).toBe(
+      beforeCost,
+    );
+    const again = mustOk(ensureLocalEvent(decorated));
+    expect(again.activeEvent!.choices.find((choice) => choice.id === "d1-envoy-b-pay")!.goldCost).toBe(
+      beforeCost,
+    );
+  });
+});
+
+describe("consequence collision and queue", () => {
+  it("review-1 schedules distinct trigger days and clears day 9 without recovery helper", () => {
+    let state = createInitialState({ runId: "review-1", difficulty: "normal" });
+    expect(pickEventPlan("review-1").filter((entry) => entry.day < 10).map((entry) => entry.day)).toEqual([
+      6, 8,
+    ]);
+
+    state = skipToDay(state, 6);
+    expect(state.activeEvent?.eventId).toBe("d1-supplies-a");
+    state = mustOk(chooseEventOption(state, "d1-supplies-a-gold"));
+    expect(state.pendingConsequences).toHaveLength(1);
+
+    state = skipToDay(state, 8);
+    expect(state.activeEvent?.eventId).toBe("d1-labor-b");
+    state = mustOk(chooseEventOption(state, "d1-labor-b-discount"));
+    expect(state.pendingConsequences).toHaveLength(2);
+    const triggerDays = state.pendingConsequences.map((entry) => entry.triggerDay);
+    expect(new Set(triggerDays).size).toBe(2);
+
+    const firstTrigger = Math.min(...triggerDays);
+    state = skipToDay(state, firstTrigger);
+    expect(state.phase).toBe("event");
+    expect(state.activeEvent?.isConsequence).toBe(true);
+    while (state.phase === "event" && state.activeEvent) {
+      const free = state.activeEvent.choices.find((choice) => choice.goldCost === 0)!;
+      state = mustOk(chooseEventOption(state, free.id));
+    }
+    expect(state.pendingConsequences.filter((entry) => entry.triggerDay === firstTrigger)).toHaveLength(0);
+    expect(endPreparationDay(state).ok).toBe(true);
+  });
+
+  it("chains a second same-day consequence without ensureLocalEvent", () => {
+    const first: PendingConsequence = {
+      id: "c-unrest-wave1::origin-a::choice-a::9",
+      originEventId: "origin-a",
+      originChoiceId: "choice-a",
+      packageId: "c-unrest-wave1",
+      triggerDay: 9,
+    };
+    const second: PendingConsequence = {
+      id: "c-raid-wave1::origin-b::choice-b::9",
+      originEventId: "origin-b",
+      originChoiceId: "choice-b",
+      packageId: "c-raid-wave1",
+      triggerDay: 9,
+    };
+    let state = createInitialState({ runId: "same-day-queue" });
+    state = {
+      ...state,
+      day: 9,
+      phase: "preparation",
+      activeEvent: null,
+      pendingConsequences: [first, second],
+      eventPlan: state.eventPlan.filter((entry) => entry.day !== 9),
+      completedEventIds: [],
+    };
+    state = mustOk(ensureLocalEvent(state));
+    expect(state.activeEvent?.eventId).toBe(first.id);
+    const freeFirst = state.activeEvent!.choices.find((choice) => choice.goldCost === 0)!;
+    state = mustOk(chooseEventOption(state, freeFirst.id));
+    expect(state.phase).toBe("event");
+    expect(state.activeEvent?.eventId).toBe(second.id);
+    expect(state.completedEventIds).toContain(first.id);
+    expect(state.pendingConsequences.map((entry) => entry.id)).toEqual([second.id]);
+
+    const serialized = JSON.parse(JSON.stringify(state)) as GameState;
+    const freeSecond = serialized.activeEvent!.choices.find((choice) => choice.goldCost === 0)!;
+    state = mustOk(chooseEventOption(serialized, freeSecond.id));
+    expect(state.phase).toBe("preparation");
+    expect(state.activeEvent).toBeNull();
+    expect(state.pendingConsequences).toHaveLength(0);
+    expect(state.completedEventIds.filter((id) => id === first.id || id === second.id)).toHaveLength(2);
+    expect(endPreparationDay(state).ok).toBe(true);
+  });
+
+  it("shifts a colliding scheduled plan forward instead of deleting it", () => {
+    const pkg = eventPackageById("d1-scouts-a");
+    expect(pkg).toBeTruthy();
+    const plan = [{ day: 9, packageId: "d1-scouts-a", eventId: "d1-scouts-a" }];
+    const shifted = shiftPlanEntryDay(plan, 9, new Set([9]));
+    expect(shifted).toHaveLength(1);
+    expect(shifted[0]!.eventId).toBe("d1-scouts-a");
+    expect(shifted[0]!.day).toBeGreaterThan(9);
+    expect(isPreparationDay(shifted[0]!.day)).toBe(true);
   });
 });

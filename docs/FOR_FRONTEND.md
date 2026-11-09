@@ -11,10 +11,12 @@ See [CAMPAIGN_100_DAY_CONTRACT.md](./CAMPAIGN_100_DAY_CONTRACT.md), [DEV1_CONTRA
 
 ## Do not
 
-- Call removed APIs: `enterDay`, old single-track ATK+DEF `upgradeCity`, `applyReward`.
+- Call removed / internal APIs: `enterDay`, `enterCalendarDay`, old single-track ATK+DEF `upgradeCity`, `applyReward`.
 - Hardcode event days (`3/7/13/17`) or legacy choice/reward ids.
 - Trust AI numbers; only display narrative and submit choice **IDs** from `activeEvent`.
 - Assume `rewardChosenId` still exists — use `rewardsChosenByWave`.
+- Re-scale `activeEvent.choices[].goldCost` in the UI (engine already applied difficulty).
+- Assume at most one mandatory event per day.
 
 ## New game
 
@@ -69,18 +71,22 @@ Prefer `actionId` + `expectedRevision` if BE supports them.
 ## Event / reward wiring
 
 1. Read `activeEvent.choices` (length 2–4). Button value = `choice.id`.
-2. Consequence events: same modal; optional copy that this is a continuation.
-3. Rewards: ids like `w1-income`, `w2-gold`, … — **from current wave’s set**, never the old `reward-gold` trio alone.
-4. Optional selectors: `getEffectiveStats`, `getWavePreview`, `rewardsForWave`.
+2. Show `choice.goldCost` as the gold that will be charged (`0` = free). Values are **effective** (difficulty-scaled); do not multiply again.
+3. Consequence events: same modal; optional copy that this is a continuation (`isConsequence`).
+4. After every successful `chooseEventOption`, re-read `phase` + `activeEvent`. If still `event`, keep/open the modal for the **next** mandatory event (same-day chain). Do not auto-advance the day.
+5. Rewards: ids like `w1-income`, `w2-gold`, … — **from current wave’s set**, never the old `reward-gold` trio alone.
+6. Optional selectors: `getEffectiveStats`, `getWavePreview`, `rewardsForWave`.
 
 ## Error codes → UI
 
-Same engine codes as [DEV1_CONTRACT.md](./DEV1_CONTRACT.md). Notable: `EVENT_REQUIRED` must force the event modal even if phase was tampered.
+Same engine codes as [DEV1_CONTRACT.md](./DEV1_CONTRACT.md). Notable: `EVENT_REQUIRED` must force the event modal / refresh even if the UI thought the phase was `preparation`.
 
 ## Smoke checklist
 
 1. New game with difficulty → day 1 income applied; costs reflect difficulty.  
 2. First event day comes from `eventPlan` (not hardcoded 3).  
 3. Skip choice can later open a consequence event.  
-4. Wave 1–9 → reward → next prep day; wave 10 → victory.  
-5. Refresh on `battleReport` does not change HP again.
+4. Same-day chain: resolving one consequence can immediately open another `event` without ending the day.  
+5. Easy vs hard: paid event choices show different gold amounts for the same choice id.  
+6. Wave 1–9 → reward → next prep day; wave 10 → victory.  
+7. Refresh on `battleReport` does not change HP again.

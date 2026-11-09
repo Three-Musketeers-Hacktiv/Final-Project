@@ -1,4 +1,4 @@
-import { eventPackageById } from "./config";
+import { eventPackageById, gameConfig } from "./config";
 import {
   isBattleDay,
   isPreparationDay,
@@ -9,7 +9,12 @@ import {
 import { scaleEventGoldCost } from "./difficulty";
 import { applyEffects } from "./effects";
 import { hashString, planEntryForDay, resolveEventPackage, shiftPlanEntryDay } from "./eventPlan";
-import { toActiveEvent, toConsequenceActiveEvent, validateChoiceList } from "./activeEvent";
+import {
+  scaleChoicesForDifficulty,
+  toActiveEvent,
+  toConsequenceActiveEvent,
+  validateChoiceList,
+} from "./activeEvent";
 import { fail, isEnded, ok } from "./result";
 import type {
   ActiveEvent,
@@ -20,6 +25,27 @@ import type {
 } from "./types";
 
 export { toActiveEvent } from "./activeEvent";
+
+function occupiedEventDays(state: GameState): Set<number> {
+  return new Set([
+    ...state.eventPlan.map((entry) => entry.day),
+    ...state.pendingConsequences.map((entry) => entry.triggerDay),
+  ]);
+}
+
+function freePrepDaysBetween(
+  start: number,
+  end: number,
+  occupied: Set<number>,
+): number[] {
+  const days: number[] = [];
+  for (let day = start; day <= end; day += 1) {
+    if (!isPreparationDay(day) || isBattleDay(day)) continue;
+    if (occupied.has(day)) continue;
+    days.push(day);
+  }
+  return days;
+}
 
 type EventIdentity = Pick<ActiveEvent, "eventId" | "packageId" | "day"> & {
   isConsequence?: boolean;
@@ -124,10 +150,7 @@ export function attachActiveEvent(state: GameState, event: ActiveEvent): ActionR
     phase: "event",
     activeEvent: {
       ...event,
-      choices: trusted.pkg.choices.map((choice) => ({
-        ...choice,
-        effects: [...choice.effects],
-      })),
+      choices: scaleChoicesForDifficulty(trusted.pkg.choices, state.difficulty),
       title: event.title || trusted.pkg.title,
       description: event.description || trusted.pkg.description,
       isConsequence: trusted.kind === "consequence" ? true : event.isConsequence,
@@ -145,15 +168,23 @@ export function ensureLocalEvent(state: GameState): ActionResult {
     if (state.activeEvent?.eventId === pending.id) return ok(state);
     const pkg = eventPackageById(pending.packageId);
     if (!pkg) return ok(state);
-    return attachActiveEvent(state, toConsequenceActiveEvent(pkg, pending, state.day, "local"));
+    return attachActiveEvent(
+      state,
+      toConsequenceActiveEvent(pkg, pending, state.day, "local", state.difficulty),
+    );
   }
 
   const pkg = resolveEventPackage(state.day, state.eventPlan);
   if (!pkg || state.completedEventIds.includes(pkg.eventId)) return ok(state);
   if (state.activeEvent?.eventId === pkg.eventId) return ok(state);
-  return attachActiveEvent(state, toActiveEvent(pkg, "local", state.day));
+  return attachActiveEvent(state, toActiveEvent(pkg, "local", state.day, state.difficulty));
 }
 
+/**
+ * Free (unoccupied) prep days for a consequence trigger.
+ * Prefer the delay window, then the rest of the current segment, then later segments.
+ * Never returns an occupied day (no silent same-day collision fallback).
+ */
 function candidateConsequenceDays(
   state: GameState,
   fromDay: number,
@@ -163,28 +194,40 @@ function candidateConsequenceDays(
   const segment = prepSegmentForDay(fromDay);
   const battle = nextBattleDay(fromDay);
   if (!segment || battle == null) return [];
+  const occupied = occupiedEventDays(state);
 
-  const preferredStart = Math.max(segment.start, battle - 3);
-  const preferredEnd = battle - 1;
-  const preferred: number[] = [];
-  for (let day = preferredStart; day <= preferredEnd; day += 1) {
-    if (!isPreparationDay(day)) continue;
-    if (day <= fromDay) continue;
-    preferred.push(day);
+  const delayFree = freePrepDaysBetween(
+    fromDay + minDelay,
+    Math.min(fromDay + maxDelay, battle - 1),
+    occupied,
+  );
+  if (delayFree.length > 0) return delayFree;
+
+  const preferredStart = Math.max(segment.start, fromDay + 1, battle - 3);
+  const preferredFree = freePrepDaysBetween(preferredStart, battle - 1, occupied);
+  if (preferredFree.length > 0) return preferredFree;
+
+  const segmentFree = freePrepDaysBetween(fromDay + 1, battle - 1, occupied);
+  if (segmentFree.length > 0) return segmentFree;
+
+  // Defer into later prep segments (after the next battle), still collision-free.
+  for (const laterBattle of gameConfig.battleDays) {
+    if (laterBattle <= battle) continue;
+    const laterSegment = prepSegmentForDay(laterBattle - 1);
+    if (!laterSegment) continue;
+    const deferred = freePrepDaysBetween(laterSegment.start, laterSegment.end, occupied);
+    if (deferred.length > 0) return deferred;
   }
 
-  const delayWindow: number[] = [];
-  for (let day = fromDay + minDelay; day <= fromDay + maxDelay; day += 1) {
-    if (!isPreparationDay(day) || isBattleDay(day)) continue;
-    if (day >= battle) continue;
-    delayWindow.push(day);
-  }
-
-  const pool = preferred.length > 0 ? preferred : delayWindow;
-  const scheduledDays = new Set(state.eventPlan.map((entry) => entry.day));
+  // Soft fallback: any future prep day without a pending (scheduled collision → shift).
   const pendingDays = new Set(state.pendingConsequences.map((entry) => entry.triggerDay));
-  const free = pool.filter((day) => !scheduledDays.has(day) && !pendingDays.has(day));
-  return free.length > 0 ? free : pool;
+  const soft: number[] = [];
+  for (let day = fromDay + 1; day <= gameConfig.lastDay; day += 1) {
+    if (!isPreparationDay(day) || isBattleDay(day)) continue;
+    if (pendingDays.has(day)) continue;
+    soft.push(day);
+  }
+  return soft;
 }
 
 function scheduleConsequence(
@@ -219,6 +262,54 @@ function scheduleConsequence(
   }
 
   return { pending, eventPlan };
+}
+
+/**
+ * After resolving an event, activate the next mandatory consequence/scheduled event
+ * for the current day so callers never need a recovery helper mid-day.
+ */
+function activateNextMandatoryEvent(state: GameState): {
+  phase: GameState["phase"];
+  activeEvent: GameState["activeEvent"];
+  eventPlan: GameState["eventPlan"];
+} {
+  const pending = pendingConsequenceForDay(state, state.day);
+  if (pending) {
+    const pkg = eventPackageById(pending.packageId);
+    if (pkg) {
+      let eventPlan = state.eventPlan;
+      if (resolveEventPackage(state.day, eventPlan)) {
+        const occupied = new Set<number>([
+          ...eventPlan.map((entry) => entry.day),
+          ...state.pendingConsequences.map((entry) => entry.triggerDay),
+          state.day,
+        ]);
+        eventPlan = shiftPlanEntryDay(eventPlan, state.day, occupied);
+      }
+      return {
+        phase: "event",
+        activeEvent: toConsequenceActiveEvent(
+          pkg,
+          pending,
+          state.day,
+          "local",
+          state.difficulty,
+        ),
+        eventPlan,
+      };
+    }
+  }
+
+  const scheduled = resolveEventPackage(state.day, state.eventPlan);
+  if (scheduled && !state.completedEventIds.includes(scheduled.eventId)) {
+    return {
+      phase: "event",
+      activeEvent: toActiveEvent(scheduled, "local", state.day, state.difficulty),
+      eventPlan: state.eventPlan,
+    };
+  }
+
+  return { phase: "preparation", activeEvent: null, eventPlan: state.eventPlan };
 }
 
 export function chooseEventOption(state: GameState, choiceId: string): ActionResult {
@@ -277,10 +368,11 @@ export function chooseEventOption(state: GameState, choiceId: string): ActionRes
       choice.consequence.minDelayDays,
       choice.consequence.maxDelayDays,
     );
-    if (scheduled) {
-      eventPlan = scheduled.eventPlan;
-      pendingConsequences = [...pendingConsequences, scheduled.pending];
+    if (!scheduled) {
+      return fail("INVALID_TRANSITION", "No free day available to schedule consequence");
     }
+    eventPlan = scheduled.eventPlan;
+    pendingConsequences = [...pendingConsequences, scheduled.pending];
   }
 
   if (trusted.kind === "consequence") {
@@ -288,18 +380,41 @@ export function chooseEventOption(state: GameState, choiceId: string): ActionRes
   }
 
   const dead = applied.cityHp <= 0;
-  return ok({
+  const completedEventIds = [...state.completedEventIds, completionId];
+  if (dead) {
+    return ok({
+      ...state,
+      gold: applied.gold,
+      cityHp: applied.cityHp,
+      cityMaxHp: applied.cityMaxHp,
+      effects: applied.effects,
+      activeEvent: null,
+      completedEventIds,
+      pendingConsequences,
+      eventPlan,
+      phase: "gameOver",
+      actionUsedToday: state.actionUsedToday,
+      revision: state.revision + 1,
+    });
+  }
+
+  const draft: GameState = {
     ...state,
     gold: applied.gold,
     cityHp: applied.cityHp,
     cityMaxHp: applied.cityMaxHp,
     effects: applied.effects,
     activeEvent: null,
-    completedEventIds: [...state.completedEventIds, completionId],
+    completedEventIds,
     pendingConsequences,
     eventPlan,
-    phase: dead ? "gameOver" : "preparation",
+    phase: "preparation",
     actionUsedToday: state.actionUsedToday,
+  };
+  const next = activateNextMandatoryEvent(draft);
+  return ok({
+    ...draft,
+    ...next,
     revision: state.revision + 1,
   });
 }

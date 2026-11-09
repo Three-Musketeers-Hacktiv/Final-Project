@@ -2,6 +2,25 @@ import { eventPackageById, eventPackagesForDecade, gameConfig } from "./config";
 import { isPreparationDay, previousBattleDay } from "./calendar";
 import type { EventPackage, EventPlanEntry } from "./types";
 
+function firstFreePrepDayAfter(
+  fromDay: number,
+  occupiedDays: Set<number>,
+  startDecade: number,
+): number | null {
+  for (let decade = startDecade; decade <= gameConfig.waves.length; decade += 1) {
+    const candidates = prepDaysForDecade(decade).filter(
+      (day) => day > fromDay && !occupiedDays.has(day),
+    );
+    if (candidates.length > 0) return candidates[0]!;
+  }
+  for (let day = fromDay + 1; day <= gameConfig.lastDay; day += 1) {
+    if (!isPreparationDay(day)) continue;
+    if (occupiedDays.has(day)) continue;
+    return day;
+  }
+  return null;
+}
+
 /** Stable non-crypto hash so the same runId always picks the same packages/days. */
 export function hashString(input: string): number {
   let hash = 2166136261;
@@ -91,7 +110,11 @@ export function resolveEventPackage(
   return eventPackageById(entry.packageId);
 }
 
-/** Shift a plan entry's day forward within the segment when a consequence claims the day. */
+/**
+ * Shift a plan entry's day forward when a consequence claims the day.
+ * Prefers the current decade, then later decades / any free prep day.
+ * Never silently deletes the entry; if no free day exists, leaves it unchanged.
+ */
 export function shiftPlanEntryDay(
   plan: EventPlanEntry[],
   fromDay: number,
@@ -102,12 +125,7 @@ export function shiftPlanEntryDay(
   const decade =
     gameConfig.waves.find((wave) => wave.day > fromDay)?.wave ??
     gameConfig.waves[gameConfig.waves.length - 1]!.wave;
-  const candidates = prepDaysForDecade(decade).filter(
-    (day) => day > fromDay && !occupiedDays.has(day),
-  );
-  if (candidates.length === 0) {
-    return plan.filter((item) => item.day !== fromDay);
-  }
-  const nextDay = candidates[0]!;
+  const nextDay = firstFreePrepDayAfter(fromDay, occupiedDays, decade);
+  if (nextDay == null) return plan;
   return plan.map((item) => (item.day === fromDay ? { ...item, day: nextDay } : item));
 }

@@ -70,7 +70,7 @@ type GameStateV4 = {
     day: number;
     title: string;
     description: string;
-    choices: Array<{ id: string; label: string; goldCost: number; effects: Effect[] }>; // 2–4
+    choices: Array<{ id: string; label: string; goldCost: number; effects: Effect[] }>; // 2–4; goldCost = effective
     source: "local" | "mock" | "fallback" | "ai";
     isConsequence?: boolean;
     originEventId?: string;
@@ -87,7 +87,10 @@ type GameStateV4 = {
 - AI may rewrite **title / description / labels only** via `decorateActiveEvent`.
 - **Never** invent gold/HP/defense numbers from the model.
 - Consequence events use `activeEvent.isConsequence === true`; still resolved with `chooseEventOption`.
-- Choice gold costs are scaled by difficulty inside the engine; UI should show costs from trusted choices (or a BE view), not invent them.
+- Package config keeps **base** choice gold; `activeEvent.choices[].goldCost` is already **difficulty-scaled (effective)**. UI shows that field as-is; charge uses the same scale from the trusted package once.
+- Consequences prefer free prep days (no shared `triggerDay`). If the current segment is full, they defer to the next prep segment — they are not silently dropped.
+- Same-day queue: finishing one mandatory event can immediately open another on the same day via `chooseEventOption` (no caller recovery helper required). `ensureLocalEvent` remains for save/load recovery.
+- Public calendar jumps are forbidden: do not call `enterCalendarDay` / `enterDay`.
 
 ## Rewards
 
@@ -114,17 +117,20 @@ Effect magnitudes (e.g. −18 HP) stay absolute in v1.
 1. `createRun` accepts `difficulty`; call `createInitialState({ runId, difficulty })`.
 2. Persist full v4 blob including `pendingConsequences` and `rewardsChosenByWave`.
 3. Stop hardcoding `[3,7,13,17]` / `[10,20]` in validators — use engine helpers / integer day range 1–100.
-4. AI schema: 2–4 choice labels; optional continuation context when `isConsequence`.
-5. Adapter trust gate: validate `eventPlan` / active event against engine packages; reject foreign effects.
+4. AI schema: 2–4 choice labels; optional continuation context when `isConsequence`; pass effective `goldCost` from `activeEvent`.
+5. After `chooseEventOption`, regenerate narrative when a chained `activeEvent` remains.
+6. `ensureLocalEvent` on load/serve if a mandatory event is unfinished but `activeEvent` is null.
+7. Adapter trust gate: validate `eventPlan` / active event against engine packages; reject foreign effects. Do not call `enterCalendarDay`.
 
 ## FE checklist (wiring later)
 
 1. New game difficulty selector → create-run payload.
 2. Calendar copy: “100 days” / wave N of 10.
-3. Event UI: map `activeEvent.choices` (variable length); show consequence badge if `isConsequence`.
-4. Reward UI: bind to current wave’s three options (not legacy `reward-gold` ids).
-5. Display `difficulty`, upcoming wave via `getWavePreview` or BE view.
-6. Do not hardcode event days or choice ids.
+3. Event UI: map `activeEvent.choices` (variable length); show consequence badge if `isConsequence`; show effective `goldCost`.
+4. After `chooseEventOption`, keep the event modal open if `phase` is still `event` (same-day chain).
+5. Reward UI: bind to current wave’s three options (not legacy `reward-gold` ids).
+6. Display `difficulty`, upcoming wave via `getWavePreview` or BE view.
+7. Do not hardcode event days or choice ids; do not call `enterCalendarDay`.
 
 ## Verify engine locally
 

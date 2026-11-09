@@ -60,7 +60,13 @@ export function enterCalendarDay(state: GameState, nextDay: number): GameState {
     const pkg = eventPackageById(pending.packageId);
     if (pkg) {
       phase = "event";
-      activeEvent = toConsequenceActiveEvent(pkg, pending, nextDay, "local");
+      activeEvent = toConsequenceActiveEvent(
+        pkg,
+        pending,
+        nextDay,
+        "local",
+        state.difficulty,
+      );
       // Consequence wins the day: shift any scheduled package forward.
       const occupied = new Set<number>([
         ...eventPlan.map((entry) => entry.day),
@@ -75,7 +81,7 @@ export function enterCalendarDay(state: GameState, nextDay: number): GameState {
     const pkg = resolveEventPackage(nextDay, eventPlan);
     if (pkg && !state.completedEventIds.includes(pkg.eventId)) {
       phase = "event";
-      activeEvent = toActiveEvent(pkg, "local", nextDay);
+      activeEvent = toActiveEvent(pkg, "local", nextDay, state.difficulty);
     }
   }
 

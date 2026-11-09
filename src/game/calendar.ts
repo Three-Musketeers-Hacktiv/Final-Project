@@ -53,6 +53,16 @@ export function incomeAmountForDay(state: GameState, day: number): number {
   return scaleIncome(base, mods.dailyIncome);
 }
 
+/** First unresolved consequence scheduled for `day` (stable array order). */
 export function pendingConsequenceForDay(state: GameState, day: number) {
-  return state.pendingConsequences.find((entry) => entry.triggerDay === day);
+  return state.pendingConsequences.find(
+    (entry) => entry.triggerDay === day && !state.completedEventIds.includes(entry.id),
+  );
+}
+
+/** All unresolved consequences for `day` in queue order. */
+export function pendingConsequencesForDay(state: GameState, day: number) {
+  return state.pendingConsequences.filter(
+    (entry) => entry.triggerDay === day && !state.completedEventIds.includes(entry.id),
+  );
 }

@@ -1,4 +1,5 @@
-import type { ActiveEvent, EventPackage, PendingConsequence } from "./types";
+import { scaleEventGoldCost } from "./difficulty";
+import type { ActiveEvent, Difficulty, EventChoice, EventPackage, PendingConsequence } from "./types";
 
 export function validateChoiceList(pkg: EventPackage): boolean {
   const count = pkg.choices.length;
@@ -8,10 +9,23 @@ export function validateChoiceList(pkg: EventPackage): boolean {
   return pkg.choices.some((choice) => choice.goldCost === 0);
 }
 
+/** Map trusted package choices into active-event choices with difficulty-scaled goldCost. */
+export function scaleChoicesForDifficulty(
+  choices: EventChoice[],
+  difficulty: Difficulty,
+): EventChoice[] {
+  return choices.map((choice) => ({
+    ...choice,
+    effects: [...choice.effects],
+    goldCost: scaleEventGoldCost(choice.goldCost, difficulty),
+  }));
+}
+
 export function toActiveEvent(
   pkg: EventPackage,
   source: ActiveEvent["source"] = "local",
   day?: number,
+  difficulty: Difficulty = "normal",
 ): ActiveEvent {
   return {
     eventId: pkg.eventId,
@@ -19,7 +33,7 @@ export function toActiveEvent(
     day: day ?? 0,
     title: pkg.title,
     description: pkg.description,
-    choices: pkg.choices.map((choice) => ({ ...choice, effects: [...choice.effects] })),
+    choices: scaleChoicesForDifficulty(pkg.choices, difficulty),
     source,
   };
 }
@@ -29,9 +43,10 @@ export function toConsequenceActiveEvent(
   pending: PendingConsequence,
   day: number,
   source: ActiveEvent["source"] = "local",
+  difficulty: Difficulty = "normal",
 ): ActiveEvent {
   return {
-    ...toActiveEvent(pkg, source, day),
+    ...toActiveEvent(pkg, source, day, difficulty),
     eventId: pending.id,
     packageId: pending.packageId,
     isConsequence: true,
