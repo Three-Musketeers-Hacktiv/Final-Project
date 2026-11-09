@@ -1,207 +1,138 @@
-# Patch — Game Engine (`development-game-engine` → current)
+# Patch — Game Engine (`version: 3` → `version: 4`)
 
-**Baseline:** branch `development-game-engine` (`cc9840e`)  
-**Target:** current `src/game` (save `version: 3`)  
-**Wiring:** [docs/FOR_FRONTEND.md](./docs/FOR_FRONTEND.md) · [docs/FOR_BACKEND.md](./docs/FOR_BACKEND.md) · [docs/DEV1_CONTRACT.md](./docs/DEV1_CONTRACT.md)
+**Baseline:** engine playtest `version: 3` (20 days / 2 waves)  
+**Target:** current `src/game` (`version: 4`, 100 days / 10 waves)  
+**Wiring:** [docs/CAMPAIGN_100_DAY_CONTRACT.md](./docs/CAMPAIGN_100_DAY_CONTRACT.md) · [docs/FOR_FRONTEND.md](./docs/FOR_FRONTEND.md) · [docs/FOR_BACKEND.md](./docs/FOR_BACKEND.md) · [docs/DEV1_CONTRACT.md](./docs/DEV1_CONTRACT.md)
 
-This document lists **breaking and behavioral changes** FE/BE must adopt when swapping the old engine for the new one. Rules stay inside `src/game`; callers only dispatch actions and render state.
+Earlier v1→v3 notes remain historically useful below the fold in git history; this document is the **v3→v4** checklist FE/BE must adopt.
 
 ---
 
 ## 1. Summary
 
-| Area | Old (`development-game-engine`) | New (current) |
+| Area | v3 | v4 |
 |---|---|---|
-| Save format | `version: 1` | `version: 3` (no migrate from v1/v2) |
-| Upgrades | Single `upgradeLevel` → ATK+DEF | Three tracks: `wallLevel` (DEF), `troopLevel` (ATK), `cityLevel` (MaxHP+income) |
-| Economy API | `upgradeCity` only | `upgradeWall` / `upgradeTroops` / `upgradeCity` + `repairCity` |
-| Day jump | Public `enterDay(day)` | **Removed** — only `endPreparationDay` / `chooseReward` |
-| Income marker | `incomeGrantedForDay: number \| null` | `incomeGrantedDays: number[]` |
-| Revision | None | `revision` increments on every successful mutating action |
-| Effects | snake_case (`gold_gain`, …) | camelCase (`grantGold`, …) |
-| Active effects shape | Arrays + `sourceId` | Flat: `defenseByWave`, single discount rate, `prepIncomeBonus` |
-| Events | 1 fixed package per day | Pool of **2 packages/day**; run picks via `eventPlan` seeded by `runId` |
-| Event IDs | `event-day-3`, `event-day-3-a` | Dynamic, e.g. `event-day-3-scouts`, `day3-scouts-pay` |
-| ActiveEvent | `choiceIds` + narrative fields | Full `choices` (costs/effects from trusted package) + `eventId` |
-| Narrative overlay | Not in engine | `decorateActiveEvent(state, overlay)` (labels only) |
-| Rewards | `applyReward` / kinds `gold` \| `income_bonus` \| `upgrade_discount` | `chooseReward` / kinds `grantGold` \| `prepIncomeBonus` \| `upgradeDiscount` |
-| Battle result | No `day` / HP-lost fields | Adds `day`, `cityHpLost`, `monsterHpLost` |
-| Config export | `GAME_CONFIG`, `EVENT_PACKAGES`, `WAVES` | `gameConfig` (+ helpers: `eventPackagesForDay`, `pickEventPlan`, …) |
-| Copy | Mixed / ID-centric | English fixture copy (“my lord”) |
-| Errors | No `INVALID_TRANSITION` | Adds `INVALID_TRANSITION` |
+| Save format | `version: 3` | **`version: 4`** (no migrate) |
+| Calendar | `lastDay: 20`, battles 10/20 | **`lastDay: 100`**, battles 10…100 |
+| Difficulty | none | `easy` \| `normal` \| `hard` |
+| Event days | Fixed 3/7/13/17 | **2 prep days / decade** via `pickEventPlan(runId)` |
+| Event choices | Tuple of 2 | **Array length 2–4** |
+| Consequences | none | `pendingConsequences` + delayed packages |
+| Rewards | Wave 1 only; `rewardChosenId` | Waves **1–9**; `rewardsChosenByWave` |
+| Economy | max 5, 50+20×L, income 25, repair 30 | max **18**, **45+30×L**, income **28**, repair **35/45** |
+| Effects | 4 kinds | + `healCity`, `maxHpBonus` |
+| Reward kinds | 3 | + heal / defense / maxHP / combo |
 
 ---
 
 ## 2. State migration map
 
-Do **not** load old saves into the new engine. Create a new run with `createInitialState`.
+Do **not** load v3 into v4. Create a new run with `createInitialState({ runId, difficulty })`.
 
-| Old field | New field | Notes |
+| v3 field | v4 field | Notes |
 |---|---|---|
-| `version: 1` | `version: 3` | Reject unsupported versions at BE boundary |
-| — | `revision: number` | Starts at `0`; +1 per successful action |
-| `upgradeLevel` | `wallLevel` + `troopLevel` + `cityLevel` | All start at `0` |
-| `incomeGrantedForDay` | `incomeGrantedDays` | List of prep days that already got income |
-| — | `eventPlan: EventPlanEntry[]` | Built at create: `pickEventPlan(runId)` |
-| `activeEvent.choiceIds` | `activeEvent.choices` | Full choice objects; pick by `choice.id` |
-| `activeEvent.packageId` only | `eventId` + `packageId` | Completion uses `eventId` in `completedEventIds` |
-| Effect types snake_case | camelCase union | See §4 |
-| `effects.defenseBonuses[]` | `effects.defenseByWave` | `{ 1?: number; 2?: number }` |
-| `effects.upgradeDiscounts[]` | `upgradeDiscountRate` + `upgradeDiscountUntilWave` | Max rate wins; no stack |
-| `effects.incomeBonus` | `effects.prepIncomeBonus` | Days 11–19 only |
+| `version: 3` | `version: 4` | Reject unsupported versions at BE |
+| — | `difficulty` | Required from product create-run |
+| `eventPlan` (4 entries) | `eventPlan` (20 entries) | Days chosen per decade |
+| — | `pendingConsequences` | Starts `[]` |
+| `rewardChosenId` | `rewardsChosenByWave` | Map wave → reward id |
+| `activeEvent.choices` pair | `choices[]` length 2–4 | May set `isConsequence` |
+| `effects.defenseByWave` `{1?,2?}` | `Record<number, number>` | Waves 1–10 |
+| `BattleResult.wave` `1\|2` | `number` | 1–10 |
 
 ---
 
-## 3. Public API rename / replace
+## 3. Public API
 
-### Keep (same role)
+### Keep
 
-- `createInitialState`
-- `repairCity`
-- `endPreparationDay`
-- `startBattle`
-- `continueFromReport`
-- `attachActiveEvent` / `ensureLocalEvent` / `chooseEventOption`
-- `getEffectiveStats` (shape changed — see below)
+- `upgradeWall` / `upgradeTroops` / `upgradeCity` / `repairCity`
+- `endPreparationDay` / `startBattle` / `continueFromReport` / `surrender`
+- `chooseEventOption` / `chooseReward`
+- `attachActiveEvent` / `ensureLocalEvent` / `decorateActiveEvent`
+- `pickEventPlan` / `resolveEventPackage` / `getEffectiveStats` / `getWavePreview`
 
-### Replace
+### Create run
 
-| Old | New |
-|---|---|
-| `upgradeCity` (ATK+DEF) | `upgradeWall` / `upgradeTroops` / `upgradeCity` (MaxHP+income) |
-| `enterDay(state, day)` | **Gone** — advance only via `endPreparationDay` or `chooseReward` |
-| `applyReward(state, id)` | `chooseReward(state, id)` |
-| `previewWave` / `WAVES` | `getWavePreview(state)` / `gameConfig.waves` |
-| `createRunId()` in engine | Pass `runId` into `createInitialState({ runId })` (caller/BE owns ID) |
-| `incomeForDay` | Internal; use `getEffectiveStats(state).dailyIncome` for display |
-| `resolveBattle` as public flow | Prefer `startBattle` (engine stores result once) |
+```ts
+createInitialState({ runId, difficulty?: "normal" })
+```
 
-### New exports
+### New helpers
 
-- `pickEventPlan(runId)` / `resolveEventPackage(day, plan?)`
-- `decorateActiveEvent(state, overlay)`
-- `eventPackagesForDay` / `eventPackageById` / `scheduledEventDays`
-- `getUpgradeCost(state, track)` / `getRepairCost()` / `getEffectiveAttack` / `getEffectiveDefense`
+- `rewardsForWave(wave)`
+- `eventPackagesForDecade(decade)`
+- `shiftPlanEntryDay` (engine-internal collision helper; exported for tests/adapters)
+- `isDifficulty` / `getDifficultyModifiers` / calendar helpers (`nextBattleDay`, …)
 
 ### Return type
 
-Old: `ActionResult<GameState>`  
-New: `ActionResult` = `{ ok: true; state } | { ok: false; error: { code; message } }`  
-Successful paths always bump `state.revision`.
+Unchanged: `ActionResult` = `{ ok: true; state } | { ok: false; error }`. Successful paths bump `revision`.
 
 ---
 
-## 4. Effect & reward enums
+## 4. Event plan (breaking)
 
-| Old `Effect.type` | New |
-|---|---|
-| `gold_gain` | `grantGold` |
-| `city_hp_loss` | `damageCity` |
-| `defense_bonus` | `nextWaveDefense` |
-| `upgrade_discount` | `upgradeDiscount` |
-
-| Old `RewardOption.kind` | New |
-|---|---|
-| `gold` | `grantGold` |
-| `income_bonus` | `prepIncomeBonus` |
-| `upgrade_discount` | `upgradeDiscount` |
-
-Reward IDs unchanged: `reward-gold`, `reward-income`, `reward-discount`.
+- **No** fixed days 3/7/13/17.
+- Each decade: hash picks 2 prep days (skip day 1, prefer avoid last pre-battle day, min gap 2).
+- Packages pooled by **decade**, not by calendar day.
+- Same `runId` ⇒ same days + packages.
+- Consequence collision: consequence wins; scheduled entry shifts forward in-segment.
 
 ---
 
-## 5. Event plan & IDs (breaking for Postman / FE)
+## 5. Rewards (breaking)
 
-Each scheduled day (`3, 7, 13, 17`) has **two** trusted packages. At `createInitialState`, the engine fills `eventPlan` with one package per day using a stable hash of `runId`.
+Legacy ids `reward-gold` / `reward-income` / `reward-discount` are **gone**.
 
-**Do not hardcode** old IDs (`event-day-3`, `event-day-3-a`, `day3-pay`, …).
-
-| Day | Package pool (`packageId` = `eventId`) |
-|---:|---|
-| 3 | `event-day-3-scouts`, `event-day-3-envoy` |
-| 7 | `event-day-7-supplies`, `event-day-7-labor` |
-| 13 | `event-day-13-caravan`, `event-day-13-guild` |
-| 17 | `event-day-17-barricades`, `event-day-17-watchfires` |
-
-Choice IDs follow the package, e.g. `day3-scouts-pay` / `day3-scouts-skip`.  
-UI and API clients must read `activeEvent.choices[].id` (or prepared narrative choices that reuse those IDs).
-
-AI / mock narrative may change **title, description, labels only**. Costs and effects always come from `config.ts` via `packageId`.
+Use per-wave ids (`w1-income`, `w2-gold`, …). After wave N (1–9) only that wave’s trio is valid. Wave 10 → victory, no reward.
 
 ---
 
-## 6. Economy & stats behavior
+## 6. Economy & difficulty
 
-- One successful economic action per preparation day: wall **or** troops **or** city **or** repair.
-- Cost: `ceil((50 + level × 20) × (1 − discount))`; discount applies to all three tracks; **not** to repair.
-- City upgrade: `cityMaxHp += 20`, `cityHp += 20` (capped at max) — not a full heal.
-- Track bonuses: wall DEF +2, troops ATK +5, city MaxHP +20 and daily income +8 per level; max level 5.
-- Playtest `dailyIncome`: **25** (not the older AGENTS table value of 15).
-- Effective stats selector now returns `wallCost`, `troopCost`, `cityCost`, `repairCost`, `dailyIncome` (no single `upgradeCost`).
+- Cost: difficulty scale then `ceil(cost × (1 − discount))`; repair never discounted.
+- Event **gold costs** scale by difficulty; effect magnitudes stay absolute.
+- Monster HP/ATK: `Math.max(1, Math.round(base × modifier))` at battle/preview time.
 
 ---
 
-## 7. Calendar / battle / reward flow (unchanged intent, stricter API)
+## 7. Calendar / battle / reward flow
 
 ```text
-prep (1–9) → events 3,7 → battleReady 10 → battleReport → reward → day 11
-prep (11–19) → events 13,17 → battleReady 20 → battleReport → victory
+prep days → optional event/consequence → battle every 10th day
+wave 1–9 win → report → reward → next prep day
+wave 10 win → report → victory
+HP 0 → gameOver
 ```
 
-- Unresolved scheduled event blocks spend and `endPreparationDay` → `EVENT_REQUIRED`.
-- `startBattle` computes once; reload must not re-apply damage (`BATTLE_ALREADY_RESOLVED`).
-- Wave 1 win → `continueFromReport` → `reward` → `chooseReward` enters day 11 with income.
-- Wave 2 win → `continueFromReport` → `victory` (no second reward).
-- City HP 0 → `gameOver` from any source.
-
-Removed: arbitrary `enterDay` jumps (were used to seed day 1). Day 1 income is applied inside `createInitialState` only.
-
 ---
 
-## 8. Files added / changed in `src/game`
-
-| File | Change |
-|---|---|
-| `types.ts` | v3 state, tracks, camelCase effects, `eventPlan` |
-| `config.ts` | `gameConfig`, 8 event packages, English copy |
-| `eventPlan.ts` | **new** — `pickEventPlan`, `resolveEventPackage` |
-| `narrative.ts` | **new** — `decorateActiveEvent` |
-| `economy.ts` | three upgrade entry points |
-| `events.ts` / `transitions.ts` / `calendar.ts` / `initialState.ts` | plan-aware |
-| `index.ts` | new public surface |
-| `game.test.ts` | dynamic choice IDs + plan determinism |
-| `result.ts` | shared `ok` / `fail` |
-
----
-
-## 9. FE / BE checklist
+## 8. FE / BE checklist
 
 **Frontend**
 
-- [ ] Bind three upgrade buttons + repair; drop single “upgrade city (ATK+DEF)” control
-- [ ] Render `wallLevel` / `troopLevel` / `cityLevel` and costs from selectors or BE view
-- [ ] Event UI: use `activeEvent.choices` IDs from server state (never legacy hardcoded IDs)
-- [ ] Reward kinds / labels from state or trusted config IDs only
-- [ ] Map new error `INVALID_TRANSITION`
-- [ ] Show `revision` only if debugging; always apply responses against latest state
+- [ ] Difficulty on new game
+- [ ] 100-day / wave N of 10 copy
+- [ ] Variable 2–4 event choices + consequence badge
+- [ ] Per-wave reward buttons from current wave set
+- [ ] Drop hardcoded event days and old reward ids
 
 **Backend**
 
-- [ ] Persist `GameState` v3 including `eventPlan` and `revision`
-- [ ] Reject / recreate runs still on v1 (`upgradeLevel`)
-- [ ] Action router: map client actions to new function names (§3)
-- [ ] Remove any `enterDay` usage
-- [ ] On create run: `createInitialState({ runId })` then optional narrative pre-gen using `eventPlan`
-- [ ] Apply AI text only through `decorateActiveEvent` (or equivalent merge that keeps costs/effects)
-- [ ] Dedupe with client `actionId`; use `revision` to reject stale writes
+- [ ] Persist `version: 4` + new fields
+- [ ] Create-run `difficulty`
+- [ ] Loosen day validators to 1–100 / engine helpers
+- [ ] AI schema 2–4 labels + consequence continuation context
+- [ ] Reject v3 saves
 
 ---
 
-## 10. Verify
+## 9. Verify
 
 ```bash
 npm run typecheck
 npm test
 ```
 
-Engine tests: `src/game/game.test.ts` (12 cases) covering income, economy, battle, events, rewards, and plan determinism.
+Engine tests: `src/game/game.test.ts` (calendar, difficulty, plan, consequences, rewards, victory fixture).
