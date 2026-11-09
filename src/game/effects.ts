@@ -50,10 +50,22 @@ export type MutableCity = {
   cityMaxHp: number;
 };
 
+/** Waves already cleared cannot receive new timed bonuses. */
+export type EffectApplyContext = {
+  wavesCleared: number;
+};
+
+function waveStillAhead(requested: number, ctx: EffectApplyContext | undefined): number {
+  if (!ctx) return requested;
+  const upcoming = Math.min(ctx.wavesCleared + 1, lastWaveNumber());
+  return requested < upcoming ? upcoming : requested;
+}
+
 export function applyEffect(
   effects: ActiveEffects,
   effect: Effect,
   state: MutableCity,
+  ctx?: EffectApplyContext,
 ): { effects: ActiveEffects; gold: number; cityHp: number; cityMaxHp: number } {
   const next = copyEffects(effects);
   let { gold, cityHp, cityMaxHp } = state;
@@ -72,17 +84,20 @@ export function applyEffect(
       cityHp = Math.min(cityMaxHp, cityHp + effect.amount);
       break;
     case "nextWaveDefense": {
-      const current = next.defenseByWave[effect.wave] ?? 0;
-      next.defenseByWave = { ...next.defenseByWave, [effect.wave]: current + effect.amount };
+      const wave = waveStillAhead(effect.wave, ctx);
+      const current = next.defenseByWave[wave] ?? 0;
+      next.defenseByWave = { ...next.defenseByWave, [wave]: current + effect.amount };
       break;
     }
-    case "upgradeDiscount":
+    case "upgradeDiscount": {
+      const untilWave = waveStillAhead(effect.untilWave, ctx);
       next.upgradeDiscountRate = Math.max(next.upgradeDiscountRate, effect.rate);
       next.upgradeDiscountUntilWave =
         next.upgradeDiscountUntilWave == null
-          ? effect.untilWave
-          : Math.max(next.upgradeDiscountUntilWave, effect.untilWave);
+          ? untilWave
+          : Math.max(next.upgradeDiscountUntilWave, untilWave);
       break;
+    }
     default: {
       const _never: never = effect;
       return _never;
@@ -95,9 +110,10 @@ export function applyEffects(
   effects: ActiveEffects,
   list: Effect[],
   state: MutableCity,
+  ctx?: EffectApplyContext,
 ): { effects: ActiveEffects; gold: number; cityHp: number; cityMaxHp: number } {
   return list.reduce(
-    (acc, effect) => applyEffect(acc.effects, effect, acc),
+    (acc, effect) => applyEffect(acc.effects, effect, acc, ctx),
     {
       effects: copyEffects(effects),
       gold: state.gold,

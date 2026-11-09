@@ -2,7 +2,7 @@
 
 Pure engine: [`src/game`](../src/game). Product FE/BE code is **not** updated yet — use this doc to wire them.
 
-Companion docs: [DEV1_CONTRACT.md](./DEV1_CONTRACT.md) · [FOR_FRONTEND.md](./FOR_FRONTEND.md) · [FOR_BACKEND.md](./FOR_BACKEND.md) · [Patch.md](../Patch.md) · [GAME_ENGINE_PATCH_HISTORY.md](./GAME_ENGINE_PATCH_HISTORY.md)
+Companion docs: [DEV1_CONTRACT.md](./DEV1_CONTRACT.md) · [FOR_FRONTEND.md](./FOR_FRONTEND.md) · [FOR_BACKEND.md](./FOR_BACKEND.md) · [ENGINE_TO_FE_CONTRACT.md](./ENGINE_TO_FE_CONTRACT.md) · [ENGINE_TO_BE_CONTRACT.md](./ENGINE_TO_BE_CONTRACT.md) · [Patch.md](../Patch.md) · [GAME_ENGINE_PATCH_HISTORY.md](./GAME_ENGINE_PATCH_HISTORY.md)
 
 ## What changed (v3 → v4)
 
@@ -15,7 +15,7 @@ Companion docs: [DEV1_CONTRACT.md](./DEV1_CONTRACT.md) · [FOR_FRONTEND.md](./FO
 | Event choices | Exactly 2 | **2–4**, ≥1 free |
 | Consequences | none | `pendingConsequences` + delayed trusted packages |
 | Rewards | Wave 1 only; `rewardChosenId` | Waves **1–9**; `rewardsChosenByWave` |
-| Economy | max 5, cost 50+20×L, income 25 | max **18**, cost **45+30×L**, income **28**, repair **35/45** |
+| Economy | max 5, cost 50+20×L, income 25 | max **18**, cost **45+30×L**, income **28**, repair **35/45**, wall **+3 DEF**, city **+35 MaxHP** |
 
 ## Create run
 
@@ -87,8 +87,8 @@ type GameStateV4 = {
 - AI may rewrite **title / description / labels only** via `decorateActiveEvent`.
 - **Never** invent gold/HP/defense numbers from the model.
 - Consequence events use `activeEvent.isConsequence === true`; still resolved with `chooseEventOption`.
-- Package config keeps **base** choice gold; `activeEvent.choices[].goldCost` is already **difficulty-scaled (effective)**. UI shows that field as-is; charge uses the same scale from the trusted package once.
-- Consequences prefer free prep days (no shared `triggerDay`). If the current segment is full, they defer to the next prep segment — they are not silently dropped.
+- Package config keeps **base** choice gold. Paid labels use the placeholder `{goldCost}`; `scaleChoicesForDifficulty` fills it with the **effective** cost once. `activeEvent.choices[].goldCost` is that same number. UI shows the field as-is; charge scales the trusted package base once. An AI **choice label** must not state a currency amount at all (`labelStatesCurrencyAmount`); any such claim falls back to the engine label. Description text is not scanned. See [ENGINE_TO_BE_CONTRACT.md](./ENGINE_TO_BE_CONTRACT.md) and [ENGINE_TO_FE_CONTRACT.md](./ENGINE_TO_FE_CONTRACT.md).
+- Consequences prefer free prep days before the package `targetWave` battle (`CONSEQUENCE_TARGET_WAVE`). If that window is full, scheduling swaps in the trusted successor package (`CONSEQUENCE_SUCCESSOR`) instead of granting a bonus for a wave that is already over. Timed defense and upgrade discounts applied after their wave has cleared are clamped to the upcoming wave. They are not silently dropped.
 - Same-day queue: finishing one mandatory event can immediately open another on the same day via `chooseEventOption` (no caller recovery helper required). `ensureLocalEvent` remains for save/load recovery.
 - Public calendar jumps are forbidden: do not call `enterCalendarDay` / `enterDay`.
 
@@ -103,8 +103,8 @@ type GameStateV4 = {
 
 | Modifier | Easy | Normal | Hard |
 |---|---:|---:|---:|
-| Monster HP | 0.75 | 1.0 | 1.30 |
-| Monster attack | 0.80 | 1.0 | 1.25 |
+| Monster HP | 0.75 | 1.0 | 1.20 |
+| Monster attack | 0.80 | 1.0 | 1.12 |
 | Upgrade cost | 0.85 | 1.0 | 1.20 |
 | Daily income | 1.15 | 1.0 | 0.90 |
 | Repair cost | 0.90 | 1.0 | 1.15 |
@@ -117,7 +117,7 @@ Effect magnitudes (e.g. −18 HP) stay absolute in v1.
 1. `createRun` accepts `difficulty`; call `createInitialState({ runId, difficulty })`.
 2. Persist full v4 blob including `pendingConsequences` and `rewardsChosenByWave`.
 3. Stop hardcoding `[3,7,13,17]` / `[10,20]` in validators — use engine helpers / integer day range 1–100.
-4. AI schema: 2–4 choice labels; optional continuation context when `isConsequence`; pass effective `goldCost` from `activeEvent`.
+4. AI schema: 2–4 choice labels; optional continuation context when `isConsequence`; pass effective `goldCost` from `activeEvent`. Do not put a gold amount in labels.
 5. After `chooseEventOption`, regenerate narrative when a chained `activeEvent` remains.
 6. `ensureLocalEvent` on load/serve if a mandatory event is unfinished but `activeEvent` is null.
 7. Adapter trust gate: validate `eventPlan` / active event against engine packages; reject foreign effects. Do not call `enterCalendarDay`.

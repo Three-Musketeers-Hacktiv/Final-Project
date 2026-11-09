@@ -57,6 +57,31 @@ describe("event narrative runtime", () => {
     expect(decorated.choices.every((choice) => choice.label.startsWith("Trusted counsel"))).toBe(true);
   });
 
+  it("keeps the engine label when AI claims a different gold price", async () => {
+    const state = stateAtFirstEvent();
+    const original = state.activeEvent!;
+    const paid = original.choices.find((choice) => choice.goldCost > 0);
+    expect(paid).toBeTruthy();
+    const generator: EventNarrativeGenerator = {
+      provider: "test",
+      model: "test-model",
+      async generate() {
+        return {
+          title: original.title,
+          description: original.description,
+          choices: original.choices.map((choice) => ({
+            id: choice.id,
+            label: choice.id === paid!.id ? "Pay 999 gold now" : "Hold the coin",
+          })),
+        };
+      },
+    };
+    const narrative = await generateEventNarrative(original, generator);
+    const decorated = decorateActiveEvent(state, narrative).activeEvent!;
+    expect(decorated.choices.find((choice) => choice.id === paid!.id)!.label).toBe(paid!.label);
+    expect(decorated.choices.find((choice) => choice.id === paid!.id)!.goldCost).toBe(paid!.goldCost);
+  });
+
   it("falls back when generated choice ids are untrusted", async () => {
     const event = stateAtFirstEvent().activeEvent!;
     const warning = vi.spyOn(console, "warn").mockImplementation(() => undefined);

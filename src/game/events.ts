@@ -1,4 +1,5 @@
 import { eventPackageById, gameConfig } from "./config";
+import { CONSEQUENCE_SUCCESSOR, CONSEQUENCE_TARGET_WAVE } from "./eventPackages";
 import {
   isBattleDay,
   isPreparationDay,
@@ -230,6 +231,40 @@ function candidateConsequenceDays(
   return soft;
 }
 
+function battleDayForWave(wave: number): number | null {
+  return gameConfig.waves.find((entry) => entry.wave === wave)?.day ?? null;
+}
+
+/**
+ * Keep a wave-locked package only when a prep day still exists before its battle.
+ * Otherwise walk the trusted successor map (still a config package, never a new effect).
+ */
+function resolveConsequencePackage(
+  state: GameState,
+  packageId: string,
+  minDelayDays: number,
+  maxDelayDays: number,
+): { packageId: string; candidates: number[] } | null {
+  const seen = new Set<string>();
+  let current = packageId;
+  while (!seen.has(current)) {
+    seen.add(current);
+    const candidates = candidateConsequenceDays(state, state.day, minDelayDays, maxDelayDays);
+    if (candidates.length === 0) return null;
+    const targetWave = CONSEQUENCE_TARGET_WAVE[current];
+    const deadline = targetWave == null ? null : battleDayForWave(targetWave);
+    const beforeTarget =
+      deadline == null ? candidates : candidates.filter((day) => day < deadline);
+    if (beforeTarget.length > 0) return { packageId: current, candidates: beforeTarget };
+    const successor = CONSEQUENCE_SUCCESSOR[current];
+    if (!successor || !eventPackageById(successor)) {
+      return { packageId: current, candidates };
+    }
+    current = successor;
+  }
+  return null;
+}
+
 function scheduleConsequence(
   state: GameState,
   originEventId: string,
@@ -238,16 +273,18 @@ function scheduleConsequence(
   minDelayDays: number,
   maxDelayDays: number,
 ): { pending: PendingConsequence; eventPlan: GameState["eventPlan"] } | null {
-  const candidates = candidateConsequenceDays(state, state.day, minDelayDays, maxDelayDays);
-  if (candidates.length === 0) return null;
+  const resolved = resolveConsequencePackage(state, packageId, minDelayDays, maxDelayDays);
+  if (!resolved) return null;
+  const { candidates } = resolved;
+  const resolvedPackageId = resolved.packageId;
   const index =
-    hashString(`${state.runId}:${originChoiceId}:${packageId}:trigger`) % candidates.length;
+    hashString(`${state.runId}:${originChoiceId}:${resolvedPackageId}:trigger`) % candidates.length;
   const triggerDay = candidates[index]!;
   const pending: PendingConsequence = {
-    id: `${packageId}::${originEventId}::${originChoiceId}::${triggerDay}`,
+    id: `${resolvedPackageId}::${originEventId}::${originChoiceId}::${triggerDay}`,
     originEventId,
     originChoiceId,
-    packageId,
+    packageId: resolvedPackageId,
     triggerDay,
   };
 
@@ -351,11 +388,16 @@ export function chooseEventOption(state: GameState, choiceId: string): ActionRes
   const goldCost = scaleEventGoldCost(choice.goldCost, state.difficulty);
   if (state.gold < goldCost) return fail("INSUFFICIENT_GOLD", "Not enough gold for this choice");
 
-  const applied = applyEffects(state.effects, choice.effects, {
-    gold: state.gold - goldCost,
-    cityHp: state.cityHp,
-    cityMaxHp: state.cityMaxHp,
-  });
+  const applied = applyEffects(
+    state.effects,
+    choice.effects,
+    {
+      gold: state.gold - goldCost,
+      cityHp: state.cityHp,
+      cityMaxHp: state.cityMaxHp,
+    },
+    { wavesCleared: state.wavesCleared },
+  );
 
   let eventPlan = state.eventPlan;
   let pendingConsequences = state.pendingConsequences;

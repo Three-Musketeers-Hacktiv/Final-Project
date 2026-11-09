@@ -23,13 +23,13 @@ export const SCHEDULED_EVENT_PACKAGES: EventPackage[] = [
     choices: [
       {
         id: "d1-scouts-a-pay-def",
-        label: "Reinforce the gate: pay 20 gold, defense +4 for wave 1",
+        label: "Reinforce the gate: pay {goldCost} gold, defense +4 for wave 1",
         goldCost: 20,
         effects: [{ type: "nextWaveDefense", amount: 4, wave: 1 }],
       },
       {
         id: "d1-scouts-a-bribe",
-        label: "Bribe the scouts: pay 10 gold for quiet",
+        label: "Bribe the scouts: pay {goldCost} gold for quiet",
         goldCost: 10,
         effects: [],
       },
@@ -52,7 +52,7 @@ export const SCHEDULED_EVENT_PACKAGES: EventPackage[] = [
     choices: [
       {
         id: "d1-envoy-b-pay",
-        label: "Fund the escort: pay 20 gold, defense +4 for wave 1",
+        label: "Fund the escort: pay {goldCost} gold, defense +4 for wave 1",
         goldCost: 20,
         effects: [{ type: "nextWaveDefense", amount: 4, wave: 1 }],
       },
@@ -81,7 +81,7 @@ export const SCHEDULED_EVENT_PACKAGES: EventPackage[] = [
     choices: [
       {
         id: "d1-supplies-a-pay",
-        label: "Buy supplies: pay 15 gold",
+        label: "Buy supplies: pay {goldCost} gold",
         goldCost: 15,
         effects: [],
       },
@@ -116,7 +116,7 @@ export const SCHEDULED_EVENT_PACKAGES: EventPackage[] = [
     choices: [
       {
         id: "d1-labor-b-pay",
-        label: "Pay the crews: pay 15 gold",
+        label: "Pay the crews: pay {goldCost} gold",
         goldCost: 15,
         effects: [],
       },
@@ -174,7 +174,7 @@ export const SCHEDULED_EVENT_PACKAGES: EventPackage[] = [
     choices: [
       {
         id: "d2-guild-b-pay",
-        label: "Pay the guild fee: 18 gold, 25% discount until wave 2",
+        label: "Pay the guild fee: {goldCost} gold, 25% discount until wave 2",
         goldCost: 18,
         effects: [{ type: "upgradeDiscount", rate: 0.25, untilWave: 2 }],
       },
@@ -203,7 +203,7 @@ export const SCHEDULED_EVENT_PACKAGES: EventPackage[] = [
     choices: [
       {
         id: "d2-patrol-a-pay",
-        label: "Fund patrols: pay 22 gold, defense +5 for wave 2",
+        label: "Fund patrols: pay {goldCost} gold, defense +5 for wave 2",
         goldCost: 22,
         effects: [{ type: "nextWaveDefense", amount: 5, wave: 2 }],
       },
@@ -240,7 +240,7 @@ export const SCHEDULED_EVENT_PACKAGES: EventPackage[] = [
     choices: [
       {
         id: "d2-omen-b-pay",
-        label: "Offer gold: pay 16 gold",
+        label: "Offer gold: pay {goldCost} gold",
         goldCost: 16,
         effects: [],
       },
@@ -353,7 +353,7 @@ function buildLaterDecades(): EventPackage[] {
       choices: [
         {
           id: `d${d}-threat-a-pay`,
-          label: `Fortify: pay ${18 + d} gold, defense +${3 + Math.floor(d / 3)} for wave ${w}`,
+          label: `Fortify: pay {goldCost} gold, defense +${3 + Math.floor(d / 3)} for wave ${w}`,
           goldCost: 18 + d,
           effects: [{ type: "nextWaveDefense", amount: 3 + Math.floor(d / 3), wave: w }],
         },
@@ -388,7 +388,7 @@ function buildLaterDecades(): EventPackage[] {
       choices: [
         {
           id: `d${d}-market-b-discount`,
-          label: `Buy goodwill: pay ${15 + d} gold for 25% upgrade discount until wave ${w}`,
+          label: `Buy goodwill: pay {goldCost} gold for 25% upgrade discount until wave ${w}`,
           goldCost: 15 + d,
           effects: [{ type: "upgradeDiscount", rate: 0.25, untilWave: w }],
         },
@@ -411,6 +411,56 @@ function buildLaterDecades(): EventPackage[] {
   return packages;
 }
 
+/**
+ * Wave a consequence package is written for. Scheduling prefers a prep day
+ * before that wave's battle; see CONSEQUENCE_SUCCESSOR when the window is full.
+ */
+export const CONSEQUENCE_TARGET_WAVE: Readonly<Record<string, number>> = {
+  "c-raid-wave1": 1,
+  "c-unrest-wave1": 1,
+  "c-shortage-wave2": 2,
+  "c-raid-wave2": 2,
+  "c-raid-mid": 5,
+  "c-unrest-mid": 5,
+  "c-raid-late": 8,
+  "c-unrest-late": 8,
+  "c-raid-finale": 10,
+  "c-unrest-finale": 10,
+};
+
+/**
+ * True when `scheduledPackageId` is the origin package or a package reached by
+ * walking `CONSEQUENCE_SUCCESSOR` forward from it. Does not accept unrelated packages.
+ */
+export function isTrustedConsequencePackage(
+  originPackageId: string,
+  scheduledPackageId: string,
+): boolean {
+  if (originPackageId === scheduledPackageId) return true;
+  const seen = new Set<string>();
+  let current = originPackageId;
+  while (!seen.has(current)) {
+    seen.add(current);
+    const next = CONSEQUENCE_SUCCESSOR[current];
+    if (!next) return false;
+    if (next === scheduledPackageId) return true;
+    current = next;
+  }
+  return false;
+}
+
+/** Trusted package to schedule when the original target wave can no longer be reached. */
+export const CONSEQUENCE_SUCCESSOR: Readonly<Record<string, string>> = {
+  "c-raid-wave1": "c-raid-wave2",
+  "c-unrest-wave1": "c-unrest-mid",
+  "c-shortage-wave2": "c-unrest-mid",
+  "c-raid-wave2": "c-raid-mid",
+  "c-raid-mid": "c-raid-late",
+  "c-unrest-mid": "c-unrest-late",
+  "c-raid-late": "c-raid-finale",
+  "c-unrest-late": "c-unrest-finale",
+};
+
 /** Consequence packages resolved later; still 2–4 choices with ≥1 free. */
 export const CONSEQUENCE_PACKAGES: EventPackage[] = [
   {
@@ -423,13 +473,13 @@ export const CONSEQUENCE_PACKAGES: EventPackage[] = [
     choices: [
       {
         id: "c-raid-wave1-pay",
-        label: "Pay militia: 20 gold to blunt the raid",
+        label: "Pay militia: {goldCost} gold to blunt the raid",
         goldCost: 20,
         effects: [],
       },
       {
         id: "c-raid-wave1-def",
-        label: "Rush barricades: pay 12 gold, defense +3 for wave 1",
+        label: "Rush barricades: pay {goldCost} gold, defense +3 for wave 1",
         goldCost: 12,
         effects: [{ type: "nextWaveDefense", amount: 3, wave: 1 }],
       },
@@ -450,7 +500,7 @@ export const CONSEQUENCE_PACKAGES: EventPackage[] = [
     choices: [
       {
         id: "c-unrest-wave1-pay",
-        label: "Buy peace: pay 15 gold",
+        label: "Buy peace: pay {goldCost} gold",
         goldCost: 15,
         effects: [],
       },
@@ -471,7 +521,7 @@ export const CONSEQUENCE_PACKAGES: EventPackage[] = [
     choices: [
       {
         id: "c-shortage-wave2-pay",
-        label: "Import stone: pay 18 gold",
+        label: "Import stone: pay {goldCost} gold",
         goldCost: 18,
         effects: [],
       },
@@ -498,7 +548,7 @@ export const CONSEQUENCE_PACKAGES: EventPackage[] = [
     choices: [
       {
         id: "c-raid-wave2-pay",
-        label: "Sortie with coin: pay 22 gold",
+        label: "Sortie with coin: pay {goldCost} gold",
         goldCost: 22,
         effects: [],
       },
@@ -526,7 +576,7 @@ export const CONSEQUENCE_PACKAGES: EventPackage[] = [
     choices: [
       {
         id: "c-raid-mid-pay",
-        label: "Hire mercenaries: pay 28 gold",
+        label: "Hire mercenaries: pay {goldCost} gold",
         goldCost: 28,
         effects: [],
       },
@@ -556,7 +606,7 @@ export const CONSEQUENCE_PACKAGES: EventPackage[] = [
     choices: [
       {
         id: "c-unrest-mid-pay",
-        label: "Distribute grain: pay 24 gold",
+        label: "Distribute grain: pay {goldCost} gold",
         goldCost: 24,
         effects: [],
       },
@@ -577,7 +627,7 @@ export const CONSEQUENCE_PACKAGES: EventPackage[] = [
     choices: [
       {
         id: "c-raid-late-pay",
-        label: "Emergency levy: pay 35 gold",
+        label: "Emergency levy: pay {goldCost} gold",
         goldCost: 35,
         effects: [],
       },
@@ -589,7 +639,7 @@ export const CONSEQUENCE_PACKAGES: EventPackage[] = [
       },
       {
         id: "c-raid-late-def",
-        label: "Last-minute wards: pay 20 gold (no HP loss)",
+        label: "Last-minute wards: pay {goldCost} gold (no HP loss)",
         goldCost: 20,
         effects: [],
       },
@@ -604,7 +654,7 @@ export const CONSEQUENCE_PACKAGES: EventPackage[] = [
     choices: [
       {
         id: "c-unrest-late-pay",
-        label: "Appease the crowd: pay 30 gold",
+        label: "Appease the crowd: pay {goldCost} gold",
         goldCost: 30,
         effects: [],
       },
@@ -625,7 +675,7 @@ export const CONSEQUENCE_PACKAGES: EventPackage[] = [
     choices: [
       {
         id: "c-raid-finale-pay",
-        label: "Burn the treasury: pay 40 gold",
+        label: "Burn the treasury: pay {goldCost} gold",
         goldCost: 40,
         effects: [],
       },
@@ -655,7 +705,7 @@ export const CONSEQUENCE_PACKAGES: EventPackage[] = [
     choices: [
       {
         id: "c-unrest-finale-pay",
-        label: "Grand feast: pay 36 gold",
+        label: "Grand feast: pay {goldCost} gold",
         goldCost: 36,
         effects: [],
       },

@@ -4,6 +4,7 @@ import {
   attachActiveEvent,
   chooseEventOption,
   chooseReward,
+  choiceLabelRespectsGoldCost,
   continueFromReport,
   createInitialState,
   decorateActiveEvent,
@@ -11,6 +12,8 @@ import {
   ensureLocalEvent,
   eventPackageById,
   gameConfig,
+  getDifficultyModifiers,
+  getEffectiveDefense,
   getEffectiveStats,
   getRepairCost,
   getUpgradeCost,
@@ -18,17 +21,20 @@ import {
   hashString,
   isBattleDay,
   isPreparationDay,
+  isTrustedConsequencePackage,
   pickEventPlan,
   repairCity,
   resolveBattle,
   rewardsForWave,
   scaleEventGoldCost,
+  scaleMonsterStat,
   shiftPlanEntryDay,
   startBattle,
   surrender,
   upgradeCity,
   upgradeTroops,
   upgradeWall,
+  type Effect,
   type GameState,
   type PendingConsequence,
 } from "./index";
@@ -64,6 +70,98 @@ function skipToDay(state: GameState, targetDay: number): GameState {
     throw new Error(`Cannot skip from phase ${current.phase} on day ${current.day}`);
   }
   return current;
+}
+
+function damageFrom(effects: Effect[]): number {
+  return effects.reduce((total, effect) => total + (effect.type === "damageCity" ? effect.amount : 0), 0);
+}
+
+function eventChoiceId(state: GameState): string {
+  const choices = state.activeEvent?.choices ?? [];
+  const survivable = choices.filter((choice) => {
+    if (choice.goldCost > state.gold) return false;
+    return state.cityHp - damageFrom(choice.effects) > 0;
+  });
+  const pool = survivable.length > 0 ? survivable : choices.filter((choice) => choice.goldCost === 0);
+  const scored = (pool.length > 0 ? pool : choices).map((choice) => {
+    let score = choice.goldCost === 0 ? 1 : 0;
+    for (const effect of choice.effects) {
+      if (effect.type === "nextWaveDefense") score += effect.amount * 8;
+      else if (effect.type === "upgradeDiscount") score += 24;
+      else if (effect.type === "maxHpBonus") score += effect.amount * 2;
+      else if (effect.type === "healCity") score += state.cityHp < state.cityMaxHp ? effect.amount : 0;
+      else if (effect.type === "grantGold") score += 3;
+      else if (effect.type === "damageCity") score -= effect.amount * 4;
+    }
+    if (choice.consequence) score -= 6;
+    if (choice.goldCost > 0) score -= 30;
+    return { id: choice.id, score };
+  });
+  scored.sort((left, right) => right.score - left.score || left.id.localeCompare(right.id));
+  return scored[0]!.id;
+}
+
+function rewardChoiceId(state: GameState): string {
+  const options = rewardsForWave(state.wavesCleared)!.options;
+  const hpRatio = state.cityHp / state.cityMaxHp;
+  const rank = (kind: string) => {
+    if (kind === "maxHpBonus") return 0;
+    if (kind === "nextWaveDefense" || kind === "combo") return 1;
+    if (kind === "healCity") return hpRatio < 0.9 ? 2 : 6;
+    if (kind === "upgradeDiscount") return 3;
+    if (kind === "prepIncomeBonus") return 4;
+    return 5;
+  };
+  return options.slice().sort((left, right) => rank(left.kind) - rank(right.kind) || left.id.localeCompare(right.id))[0]!.id;
+}
+
+function playCampaign(runId: string, difficulty: "easy" | "normal" | "hard"): GameState {
+  let state = createInitialState({ runId, difficulty });
+  for (let step = 0; step < 800 && state.phase !== "victory" && state.phase !== "gameOver"; step += 1) {
+    if (state.phase === "event" && state.activeEvent) {
+      state = mustOk(chooseEventOption(state, eventChoiceId(state)));
+      continue;
+    }
+    if (state.phase === "preparation") {
+      const hpRatio = state.cityHp / state.cityMaxHp;
+      if (!state.actionUsedToday && hpRatio < 0.8 && state.gold >= getRepairCost(state) && state.cityHp < state.cityMaxHp) {
+        state = mustOk(repairCity(state));
+      } else if (!state.actionUsedToday) {
+        const troopCost = getUpgradeCost(state, "troops");
+        const wallCost = getUpgradeCost(state, "wall");
+        const cityCost = getUpgradeCost(state, "city");
+        if (state.troopLevel < 12 && state.gold >= troopCost) {
+          state = mustOk(upgradeTroops(state));
+        } else if (state.wallLevel < 8 && state.gold >= wallCost) {
+          state = mustOk(upgradeWall(state));
+        } else if (state.cityLevel < 8 && state.gold >= cityCost) {
+          state = mustOk(upgradeCity(state));
+        } else if (state.troopLevel < gameConfig.maxTrackLevel && state.gold >= troopCost) {
+          state = mustOk(upgradeTroops(state));
+        } else if (state.wallLevel < gameConfig.maxTrackLevel && state.gold >= wallCost) {
+          state = mustOk(upgradeWall(state));
+        } else if (state.cityLevel < gameConfig.maxTrackLevel && state.gold >= cityCost) {
+          state = mustOk(upgradeCity(state));
+        }
+      }
+      if (state.phase === "preparation") state = mustOk(endPreparationDay(state));
+      continue;
+    }
+    if (state.phase === "battleReady") {
+      state = mustOk(startBattle(state));
+      continue;
+    }
+    if (state.phase === "battleReport") {
+      state = mustOk(continueFromReport(state));
+      continue;
+    }
+    if (state.phase === "reward") {
+      state = mustOk(chooseReward(state, rewardChoiceId(state)));
+      continue;
+    }
+    break;
+  }
+  return state;
 }
 
 function clearEventsIfAny(state: GameState): GameState {
@@ -117,7 +215,7 @@ describe("difficulty", () => {
     const easy = createInitialState({ runId: "diff-easy", difficulty: "easy" });
     const hard = createInitialState({ runId: "diff-hard", difficulty: "hard" });
     expect(getWavePreview(easy)!.hp).toBe(Math.max(1, Math.round(150 * 0.75)));
-    expect(getWavePreview(hard)!.hp).toBe(Math.max(1, Math.round(150 * 1.3)));
+    expect(getWavePreview(hard)!.hp).toBe(Math.max(1, Math.round(150 * 1.2)));
     expect(getUpgradeCost(easy, "wall")).toBeLessThan(getUpgradeCost(hard, "wall"));
     expect(getRepairCost(easy)).toBeLessThan(getRepairCost(hard));
     expect(getEffectiveStats(easy).dailyIncome).toBeGreaterThan(getEffectiveStats(hard).dailyIncome);
@@ -349,33 +447,40 @@ describe("campaign integration", () => {
     expect(state.rewardsChosenByWave["1"]).toBeTruthy();
   });
 
-  it("reaches victory after wave 10 with a focused fixture", () => {
-    let state = createInitialState({ runId: "victory-run", difficulty: "easy" });
-    state = {
-      ...state,
-      day: 100,
-      phase: "battleReady",
-      troopLevel: 18,
-      wallLevel: 18,
-      cityLevel: 12,
-      cityHp: 2000,
-      cityMaxHp: 2000,
-      gold: 500,
-      wavesCleared: 9,
-      effects: {
-        defenseByWave: { 10: 80 },
-        upgradeDiscountRate: 0,
-        upgradeDiscountUntilWave: null,
-        prepIncomeBonus: 0,
-      },
-      activeEvent: null,
-      pendingConsequences: [],
-      actionUsedToday: false,
-    };
-    state = mustOk(startBattle(state));
-    expect(state.battleResult?.won).toBe(true);
-    state = mustOk(continueFromReport(state));
+  it("wins wave 9 and the Demon King at the upgrade ceiling on easy and normal", () => {
+    const attack =
+      gameConfig.baseAttack + gameConfig.maxTrackLevel * gameConfig.troopAttackBonus;
+    const defense =
+      gameConfig.baseDefense + gameConfig.maxTrackLevel * gameConfig.wallDefenseBonus;
+    const cityHp =
+      gameConfig.cityMaxHp + gameConfig.maxTrackLevel * gameConfig.cityMaxHpBonus;
+    expect(attack).toBe(100);
+    expect(defense).toBe(56);
+    expect(cityHp).toBe(780);
+
+    for (const difficulty of ["easy", "normal"] as const) {
+      const mods = getDifficultyModifiers(difficulty);
+      for (const waveNumber of [9, 10]) {
+        const wave = gameConfig.waves.find((entry) => entry.wave === waveNumber)!;
+        const result = resolveBattle({
+          wave: wave.wave,
+          day: wave.day,
+          cityHp,
+          cityAttack: attack,
+          cityDefense: defense,
+          monsterHp: scaleMonsterStat(wave.hp, mods.monsterHp),
+          monsterAttack: scaleMonsterStat(wave.attack, mods.monsterAttack),
+        });
+        expect(result?.won, `${difficulty} wave ${waveNumber}`).toBe(true);
+      }
+    }
+  });
+
+  it("reaches victory on easy through public actions only", () => {
+    const state = playCampaign("easy-campaign", "easy");
     expect(state.phase).toBe("victory");
+    expect(state.wavesCleared).toBe(10);
+    expect(state.day).toBe(100);
   });
 
   it("rejects attach of a foreign event package", () => {
@@ -455,6 +560,8 @@ describe("event gold cost scaling", () => {
     const pay = state.activeEvent!.choices.find((choice) => choice.id === "d1-envoy-b-pay");
     expect(pay?.goldCost).toBe(expectedCost);
     expect(pay?.goldCost).toBe(scaleEventGoldCost(20, difficulty));
+    expect(pay?.label).toContain(`pay ${expectedCost} gold`);
+    expect(pay?.label.includes("{goldCost}")).toBe(false);
     const before = state.gold;
     state = mustOk(chooseEventOption(state, "d1-envoy-b-pay"));
     expect(state.gold).toBe(before - expectedCost);
@@ -474,6 +581,8 @@ describe("event gold cost scaling", () => {
     let state = mustOk(ensureLocalEvent(withEnvoyDay("easy")));
     const free = state.activeEvent!.choices.find((choice) => choice.goldCost === 0);
     expect(free).toBeTruthy();
+    expect(free?.label.includes("{goldCost}")).toBe(false);
+    expect(free?.label.match(/(\d+)\s*gold/i)).toBeNull();
     const beforeCost = state.activeEvent!.choices.find((choice) => choice.id === "d1-envoy-b-pay")!.goldCost;
     const decorated = decorateActiveEvent(state, {
       title: "t",
@@ -488,6 +597,91 @@ describe("event gold cost scaling", () => {
     expect(again.activeEvent!.choices.find((choice) => choice.id === "d1-envoy-b-pay")!.goldCost).toBe(
       beforeCost,
     );
+  });
+
+  it("drops an AI label whose gold claim disagrees with the effective cost", () => {
+    let state = mustOk(ensureLocalEvent(withEnvoyDay("easy")));
+    const engineLabel = state.activeEvent!.choices.find((choice) => choice.id === "d1-envoy-b-pay")!.label;
+    const decorated = decorateActiveEvent(state, {
+      title: "t",
+      description: "The envoy still wants coin, about 99 gold in the story.",
+      choices: state.activeEvent!.choices.map((choice) => ({
+        id: choice.id,
+        label: choice.id === "d1-envoy-b-pay" ? "Fund them: pay 99 gold" : choice.label,
+      })),
+      source: "ai",
+    });
+    expect(decorated.activeEvent!.choices.find((choice) => choice.id === "d1-envoy-b-pay")!.label).toBe(
+      engineLabel,
+    );
+    expect(decorated.activeEvent!.choices.find((choice) => choice.id === "d1-envoy-b-pay")!.goldCost).toBe(17);
+  });
+
+  it.each([
+    "Pay gold: 99",
+    "gold: 17",
+    "cost 17 coins",
+    "pay 17 gold",
+    "pay ninety-nine gold",
+    "twenty gold",
+    "treasury: 40",
+    "12 gp",
+  ])("falls back when an overlay states a currency amount (%s)", (overlayLabel) => {
+    let state = mustOk(ensureLocalEvent(withEnvoyDay("easy")));
+    const engineLabel = state.activeEvent!.choices.find((choice) => choice.id === "d1-envoy-b-pay")!.label;
+    const effects = state.activeEvent!.choices.find((choice) => choice.id === "d1-envoy-b-pay")!.effects;
+    expect(choiceLabelRespectsGoldCost(overlayLabel, 17)).toBe(false);
+    const decorated = decorateActiveEvent(state, {
+      title: "t",
+      description: "The story may still mention 99 gold.",
+      choices: state.activeEvent!.choices.map((choice) => ({
+        id: choice.id,
+        label: choice.id === "d1-envoy-b-pay" ? overlayLabel : "Hold the line",
+      })),
+      source: "ai",
+    });
+    const pay = decorated.activeEvent!.choices.find((choice) => choice.id === "d1-envoy-b-pay")!;
+    expect(pay.label).toBe(engineLabel);
+    expect(pay.goldCost).toBe(17);
+    expect(pay.effects).toEqual(effects);
+    expect(decorated.activeEvent!.description).toContain("99 gold");
+  });
+
+  it("keeps an overlay label that does not state a currency amount", () => {
+    let state = mustOk(ensureLocalEvent(withEnvoyDay("easy")));
+    const decorated = decorateActiveEvent(state, {
+      title: "t",
+      description: "d",
+      choices: state.activeEvent!.choices.map((choice) => ({
+        id: choice.id,
+        label: choice.id === "d1-envoy-b-pay" ? "Reinforce the gate quietly" : choice.label,
+      })),
+      source: "ai",
+    });
+    expect(decorated.activeEvent!.choices.find((choice) => choice.id === "d1-envoy-b-pay")!.label).toBe(
+      "Reinforce the gate quietly",
+    );
+    expect(choiceLabelRespectsGoldCost("Reinforce the gate quietly", 17)).toBe(true);
+  });
+
+  it("removes wave defense after that wave is resolved", () => {
+    let state = mustOk(ensureLocalEvent(withEnvoyDay("normal")));
+    state = mustOk(chooseEventOption(state, "d1-envoy-b-pay"));
+    expect(state.effects.defenseByWave[1]).toBe(4);
+    state = skipToDay(state, 10);
+    state = mustOk(startBattle(state));
+    expect(state.effects.defenseByWave[1]).toBeUndefined();
+  });
+});
+
+describe("consequence successor trust", () => {
+  it("accepts the origin package and forward successors only", () => {
+    expect(isTrustedConsequencePackage("c-raid-wave1", "c-raid-wave1")).toBe(true);
+    expect(isTrustedConsequencePackage("c-raid-wave1", "c-raid-wave2")).toBe(true);
+    expect(isTrustedConsequencePackage("c-raid-wave1", "c-raid-mid")).toBe(true);
+    expect(isTrustedConsequencePackage("c-raid-wave2", "c-raid-wave1")).toBe(false);
+    expect(isTrustedConsequencePackage("c-raid-wave1", "c-unrest-mid")).toBe(false);
+    expect(isTrustedConsequencePackage("c-raid-wave1", "c-foreign")).toBe(false);
   });
 });
 
@@ -564,6 +758,59 @@ describe("consequence collision and queue", () => {
     expect(state.pendingConsequences).toHaveLength(0);
     expect(state.completedEventIds.filter((id) => id === first.id || id === second.id)).toHaveLength(2);
     expect(endPreparationDay(state).ok).toBe(true);
+  });
+
+  it("late-3 defers a wave-1 raid into a package that still helps the next wave", () => {
+    let state = createInitialState({ runId: "late-3" });
+    expect(state.eventPlan.filter((entry) => entry.day < 10).map((entry) => entry.day)).toEqual([6, 8]);
+
+    state = skipToDay(state, 6);
+    const skip6 = state.activeEvent!.choices.find((choice) => choice.goldCost === 0 && choice.consequence);
+    expect(skip6).toBeTruthy();
+    state = mustOk(chooseEventOption(state, skip6!.id));
+
+    state = skipToDay(state, 8);
+    const skip8 = state.activeEvent!.choices.find((choice) => choice.goldCost === 0 && choice.consequence);
+    expect(skip8).toBeTruthy();
+    state = mustOk(chooseEventOption(state, skip8!.id));
+
+    const deferred = state.pendingConsequences.find((entry) => entry.triggerDay > 10);
+    expect(deferred).toBeTruthy();
+    expect(deferred!.packageId).not.toBe("c-raid-wave1");
+    expect(deferred!.triggerDay).toBeLessThan(20);
+
+    while (state.day < 10 && state.phase !== "gameOver") {
+      if (state.phase === "event" && state.activeEvent) {
+        state = mustOk(chooseEventOption(state, eventChoiceId(state)));
+        continue;
+      }
+      if (state.phase === "preparation") {
+        if (!state.actionUsedToday && state.cityHp < 120 && state.cityHp < state.cityMaxHp && state.gold >= getRepairCost(state)) {
+          state = mustOk(repairCity(state));
+        } else if (!state.actionUsedToday && state.troopLevel < 8 && state.gold >= getUpgradeCost(state, "troops")) {
+          state = mustOk(upgradeTroops(state));
+        } else if (!state.actionUsedToday && state.wallLevel < 4 && state.gold >= getUpgradeCost(state, "wall")) {
+          state = mustOk(upgradeWall(state));
+        }
+        if (state.phase === "preparation") state = mustOk(endPreparationDay(state));
+      }
+    }
+    state = mustOk(startBattle(state));
+    expect(state.battleResult?.won).toBe(true);
+    state = mustOk(continueFromReport(state));
+    state = mustOk(chooseReward(state, rewardsForWave(1)!.options[0]!.id));
+
+    state = skipToDay(state, deferred!.triggerDay);
+    expect(state.activeEvent?.packageId).toBe(deferred!.packageId);
+    expect(state.activeEvent?.packageId).not.toBe("c-raid-wave1");
+    const defenseChoice = state.activeEvent!.choices.find((choice) =>
+      choice.effects.some((effect) => effect.type === "nextWaveDefense"),
+    );
+    expect(defenseChoice).toBeTruthy();
+    const before = getEffectiveDefense(state, 2);
+    state = mustOk(chooseEventOption(state, defenseChoice!.id));
+    expect(state.effects.defenseByWave[1]).toBeUndefined();
+    expect(getEffectiveDefense(state, 2)).toBeGreaterThan(before);
   });
 
   it("shifts a colliding scheduled plan forward instead of deleting it", () => {

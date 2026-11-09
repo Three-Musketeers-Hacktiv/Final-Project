@@ -146,7 +146,9 @@ Engine-only fix (save `version: 4` unchanged). Details for FE/BE: [FOR_FRONTEND.
 | Same-day queue | After `chooseEventOption`, engine may immediately activate the next unfinished consequence/scheduled event for the **same day** (`phase: "event"`, new `activeEvent`). Callers must not assume one event per day. |
 | Plan shift | `shiftPlanEntryDay` moves scheduled entries forward (later decade if needed); it does **not** delete them when the current segment is full. |
 | Calendar API | `enterCalendarDay` is **engine-internal only** (not exported from `src/game`). Advance only via `endPreparationDay` / `chooseReward`. |
-| Event gold | Package config keeps **base** `goldCost`. `activeEvent.choices[].goldCost` is the **effective** cost after difficulty scale. Charge uses the same scale from the trusted package (once). Free stays `0`. |
+| Event gold | Package config keeps **base** `goldCost` and `{goldCost}` in paid labels. Activation fills the label with the **effective** cost. Charge uses the same scale from the trusted package (once). Free stays `0`. An AI label that names a different gold amount is discarded. |
+| Consequence wave | Prefer a prep day before `CONSEQUENCE_TARGET_WAVE`. If that window is full, schedule `CONSEQUENCE_SUCCESSOR`. Apply-time clamp sends stale defense/discount to the upcoming wave. |
+| Late-game balance | Waves 5–10 are tuned to the gold a normal prep stretch can spend; hard monster HP 1.20 / ATK 1.12; wall defense +3 and city MaxHP +35. Save `version` stays 4. |
 
 ---
 

@@ -275,3 +275,25 @@ Hasil saat patch: typecheck OK; Vitest 27/27 hijau (`src/game/game.test.ts` + `s
 ---
 
 Bila menambah patch engine berikutnya, **tambahkan seksi baru di bawah §12** (tanggal, masalah, file, tes, hasil verifikasi) dan folder `.scratch/<nama-fitur>/` sesuai [agents/issue-tracker.md](./agents/issue-tracker.md).
+
+---
+
+## 13. Demon King, consequence wave, label harga (2026-11-09)
+
+Diterapkan di `development-backend-v3` (engine v4 yang sama, plus perbaikan antrian consequence). Save tetap `version: 4`.
+
+| Masalah | Perbaikan |
+|---|---|
+| Demon King tidak terkalahkan pada plafon upgrade | Wave 5–10 diturunkan di `config.ts` supaya progresi (bukan hanya boss) bisa dilewati dengan upgrade sungguhan; hard monster HP 1.20 / ATK 1.12; wall +3 DEF; city +35 MaxHP |
+| Consequence memberi bonus wave yang sudah lewat | Jadwal mengutamakan hari sebelum `targetWave`; jika penuh, paket diganti successor tepercaya; apply menggeser defense/discount ke wave berikutnya |
+| Label harga ≠ biaya efektif | Placeholder `{goldCost}` diisi saat scale; label AI yang menyebut angka lain dibuang |
+
+Tes: plafon wave 9–10 easy/normal, kampanye 100 hari easy lewat aksi publik, repro `late-3`, expiry defense, label easy/hard.
+
+---
+
+## 14. Label AI tanpa nominal + kontrak successor (2026-11-09)
+
+- Overlay label yang menyebut nominal mata uang (urutan apa pun, digit, angka tertulis, alias `gold`/`coin`/`treasury`/`gp`) ditolak; `decorateActiveEvent` memakai label engine. Deskripsi tidak dipindai.
+- `isTrustedConsequencePackage` diekspor agar BE menerima successor di `CONSEQUENCE_SUCCESSOR`, bukan hanya paket asal.
+- Kontrak implementasi: [ENGINE_TO_BE_CONTRACT.md](./ENGINE_TO_BE_CONTRACT.md), [ENGINE_TO_FE_CONTRACT.md](./ENGINE_TO_FE_CONTRACT.md). Kode `app/` dan `src/ui/` tidak diubah pada patch ini.

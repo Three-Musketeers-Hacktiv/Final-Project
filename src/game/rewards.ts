@@ -11,11 +11,16 @@ function applyRewardOption(state: GameState, reward: RewardOption): {
   effects: GameState["effects"];
 } {
   if (reward.kind === "combo" && reward.effects) {
-    const applied = applyEffects(state.effects, reward.effects, {
-      gold: state.gold,
-      cityHp: state.cityHp,
-      cityMaxHp: state.cityMaxHp,
-    });
+    const applied = applyEffects(
+      state.effects,
+      reward.effects,
+      {
+        gold: state.gold,
+        cityHp: state.cityHp,
+        cityMaxHp: state.cityMaxHp,
+      },
+      { wavesCleared: state.wavesCleared },
+    );
     return applied;
   }
 

@@ -9,16 +9,26 @@ export function validateChoiceList(pkg: EventPackage): boolean {
   return pkg.choices.some((choice) => choice.goldCost === 0);
 }
 
+/** Fill trusted `{goldCost}` placeholders with the already-scaled cost. */
+export function materializeChoiceLabel(label: string, goldCost: number): string {
+  if (!label.includes("{goldCost}")) return label;
+  return label.replaceAll("{goldCost}", String(goldCost));
+}
+
 /** Map trusted package choices into active-event choices with difficulty-scaled goldCost. */
 export function scaleChoicesForDifficulty(
   choices: EventChoice[],
   difficulty: Difficulty,
 ): EventChoice[] {
-  return choices.map((choice) => ({
-    ...choice,
-    effects: [...choice.effects],
-    goldCost: scaleEventGoldCost(choice.goldCost, difficulty),
-  }));
+  return choices.map((choice) => {
+    const goldCost = scaleEventGoldCost(choice.goldCost, difficulty);
+    return {
+      ...choice,
+      effects: [...choice.effects],
+      goldCost,
+      label: materializeChoiceLabel(choice.label, goldCost),
+    };
+  });
 }
 
 export function toActiveEvent(

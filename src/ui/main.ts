@@ -236,7 +236,7 @@ function actionsHtml(wallCost: number, troopCost: number, cityCost: number, repa
     const choices = state.activeEvent.choices
       .map(
         (choice) =>
-          `<button type="button" class="primary" data-action="choice:${esc(choice.id)}">${esc(choice.label)}</button>`,
+          `<button type="button" class="primary" data-action="choice:${esc(choice.id)}">${esc(choice.label)} (${choice.goldCost > 0 ? `${choice.goldCost} gold` : "Free"})</button>`,
       )
       .join("");
     return `${choices}${fresh}`;

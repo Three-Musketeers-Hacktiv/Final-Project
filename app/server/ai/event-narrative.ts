@@ -3,6 +3,7 @@ import { z } from "zod";
 
 import { getServerEnv } from "@/server/config/env";
 import type { GameState } from "@/server/game-engine/adapter";
+import { trustedChoiceLabel } from "../../../src/game/narrative";
 
 type ActiveEvent = NonNullable<GameState["activeEvent"]>;
 
@@ -100,7 +101,7 @@ export class GeminiEventNarrativeGenerator implements EventNarrativeGenerator {
       }),
       config: {
         systemInstruction:
-          "Provide the narrative and choices as if a loyal city advisor is recommending options to his lord, using English. Address the player as \"my lord\". Preserve every supplied choice id exactly. Do not invent choices, change gold costs, invent effects, or invent gameplay rules. Choice labels may be rephrased, but their mechanical meaning must remain aligned with the trusted summaries.",
+          "Provide the narrative and choices as if a loyal city advisor is recommending options to his lord, using English. Address the player as \"my lord\". Preserve every supplied choice id exactly. Do not invent choices, change gold costs, invent effects, or invent gameplay rules. Choice labels may be rephrased, but do not state a gold amount in the label. The effective cost is trustedChoices[].goldCost and is shown separately by the client.",
         responseMimeType: "application/json",
         responseJsonSchema: generatedEventNarrativeJsonSchema,
         maxOutputTokens: env.AI_MAX_OUTPUT_TOKENS,
@@ -189,7 +190,7 @@ export function decorateActiveEvent(state: GameState, result: NarrativeResult): 
       description: result.narrative.description,
       choices: event.choices.map((choice) => ({
         ...choice,
-        label: labels.get(choice.id) ?? choice.label,
+        label: trustedChoiceLabel(choice.label, labels.get(choice.id), choice.goldCost),
       })),
       source: result.source,
     },

@@ -1,4 +1,9 @@
 export {
+  CONSEQUENCE_SUCCESSOR,
+  CONSEQUENCE_TARGET_WAVE,
+  isTrustedConsequencePackage,
+} from "./eventPackages";
+export {
   eventPackageById,
   eventPackageForDay,
   eventPackagesForDay,
@@ -31,7 +36,13 @@ export {
 export { upgradeWall, upgradeTroops, upgradeCity, repairCity } from "./economy";
 export { endPreparationDay, startBattle, continueFromReport, surrender } from "./transitions";
 export { attachActiveEvent, chooseEventOption, ensureLocalEvent, toActiveEvent } from "./events";
-export { decorateActiveEvent, narrativeChoiceIdsMatch } from "./narrative";
+export {
+  choiceLabelRespectsGoldCost,
+  decorateActiveEvent,
+  labelStatesCurrencyAmount,
+  narrativeChoiceIdsMatch,
+  trustedChoiceLabel,
+} from "./narrative";
 export { chooseReward } from "./rewards";
 export { resolveBattle } from "./battle";
 export {
