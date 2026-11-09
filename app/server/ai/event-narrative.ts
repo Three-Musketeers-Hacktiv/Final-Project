@@ -9,16 +9,10 @@ type ActiveEvent = NonNullable<GameState["activeEvent"]>;
 export const generatedEventNarrativeSchema = z.object({
   title: z.string().min(1).max(120),
   description: z.string().min(1).max(1200),
-  choices: z.tuple([
-    z.object({
-      id: z.string().min(1),
-      label: z.string().min(1).max(240),
-    }).strict(),
-    z.object({
-      id: z.string().min(1),
-      label: z.string().min(1).max(240),
-    }).strict(),
-  ]),
+  choices: z.array(z.object({
+    id: z.string().min(1),
+    label: z.string().min(1).max(240),
+  }).strict()).min(2).max(4),
 }).strict();
 
 const generatedEventNarrativeJsonSchema = {
@@ -31,7 +25,7 @@ const generatedEventNarrativeJsonSchema = {
     choices: {
       type: "array",
       minItems: 2,
-      maxItems: 2,
+      maxItems: 4,
       items: {
         type: "object",
         additionalProperties: false,
@@ -93,6 +87,9 @@ export class GeminiEventNarrativeGenerator implements EventNarrativeGenerator {
         day: event.day,
         eventId: event.eventId,
         packageId: event.packageId,
+        isConsequence: event.isConsequence ?? false,
+        originEventId: event.originEventId ?? null,
+        originChoiceId: event.originChoiceId ?? null,
         originalTitle: event.title,
         originalDescription: event.description,
         trustedChoices: event.choices.map((choice) => ({
@@ -119,10 +116,7 @@ function fallbackNarrative(event: ActiveEvent): GeneratedEventNarrative {
   return {
     title: event.title,
     description: event.description,
-    choices: [
-      { id: event.choices[0].id, label: event.choices[0].label },
-      { id: event.choices[1].id, label: event.choices[1].label },
-    ],
+    choices: event.choices.map((choice) => ({ id: choice.id, label: choice.label })),
   };
 }
 
@@ -193,10 +187,10 @@ export function decorateActiveEvent(state: GameState, result: NarrativeResult): 
       ...event,
       title: result.narrative.title,
       description: result.narrative.description,
-      choices: [
-        { ...event.choices[0], label: labels.get(event.choices[0].id) ?? event.choices[0].label },
-        { ...event.choices[1], label: labels.get(event.choices[1].id) ?? event.choices[1].label },
-      ],
+      choices: event.choices.map((choice) => ({
+        ...choice,
+        label: labels.get(choice.id) ?? choice.label,
+      })),
       source: result.source,
     },
   };

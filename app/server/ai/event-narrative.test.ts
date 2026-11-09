@@ -16,12 +16,14 @@ beforeAll(() => {
 });
 
 function stateAtFirstEvent() {
-  const initial = createGameState("run-ai-test");
-  const dayTwo = applyGameAction(initial, { type: "endPreparationDay", payload: {} });
-  if (!dayTwo.ok) throw new Error("Could not advance to day two");
-  const dayThree = applyGameAction(dayTwo.state, { type: "endPreparationDay", payload: {} });
-  if (!dayThree.ok || !dayThree.state.activeEvent) throw new Error("Could not enter event day");
-  return dayThree.state;
+  let state = createGameState("run-ai-test");
+  while (!state.activeEvent && state.day < 10) {
+    const advanced = applyGameAction(state, { type: "endPreparationDay", payload: {} });
+    if (!advanced.ok) throw new Error("Could not enter event day");
+    state = advanced.state;
+  }
+  if (!state.activeEvent) throw new Error("Could not enter event day");
+  return state;
 }
 
 describe("event narrative runtime", () => {
@@ -35,10 +37,10 @@ describe("event narrative runtime", () => {
         return {
           title: "An Urgent Counsel",
           description: "My lord, the city awaits your decision.",
-          choices: [
-            { id: original.choices[1].id, label: "Choose the second counsel" },
-            { id: original.choices[0].id, label: "Choose the first counsel" },
-          ],
+          choices: [...original.choices].reverse().map((choice, index) => ({
+            id: choice.id,
+            label: `Trusted counsel ${index + 1}`,
+          })),
         };
       },
     };
@@ -51,7 +53,8 @@ describe("event narrative runtime", () => {
     expect(decorated.title).toBe("An Urgent Counsel");
     expect(decorated.choices[0].goldCost).toBe(original.choices[0].goldCost);
     expect(decorated.choices[0].effects).toEqual(original.choices[0].effects);
-    expect(decorated.choices[0].label).toBe("Choose the first counsel");
+    expect(decorated.choices).toHaveLength(original.choices.length);
+    expect(decorated.choices.every((choice) => choice.label.startsWith("Trusted counsel"))).toBe(true);
   });
 
   it("falls back when generated choice ids are untrusted", async () => {
@@ -64,10 +67,10 @@ describe("event narrative runtime", () => {
         return {
           title: "Invalid",
           description: "Invalid",
-          choices: [
-            { id: "invented-one", label: "Invalid" },
-            { id: "invented-two", label: "Invalid" },
-          ],
+          choices: event.choices.map((_, index) => ({
+            id: `invented-${index}`,
+            label: "Invalid",
+          })),
         };
       },
     };
