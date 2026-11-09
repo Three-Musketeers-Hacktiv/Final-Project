@@ -10,8 +10,8 @@ From `state.activeEvent` (present while `phase === "event"`):
 |---|---|
 | `title`, `description` | Narrative. Description may mention gold; do not parse it for a price. |
 | `choices[].id` | Send back to `chooseEventOption`. Do not invent ids. |
-| `choices[].label` | Flavor only. After an AI overlay, a label may contain **no** currency amount. The engine drops an overlay label that states one and keeps the local label. |
-| `choices[].goldCost` | **Only** price to display and the amount that will be charged. Already difficulty-scaled. `0` means free. Do not multiply again. Do not read a number out of `label`. |
+| `choices[].label` | Display text only. If an AI or stored overlay mentions `gold`, `coin`, `treasury`, or `gp`, the engine replaces that label with the trusted local label. That fallback is normal, not an error. The local label may still show the materialized price. |
+| `choices[].goldCost` | **Only** price to display and the amount that will be charged. Already difficulty-scaled. `0` means free. Do not multiply again. Do not parse `label` for a price. |
 | `choices[].effects` | Mechanical summary. Include `healCity` and `maxHpBonus` as well as gold, damage, defense, and discount. |
 | `isConsequence` | Show a consequence badge when true. Same choice control as a scheduled event. |
 
@@ -32,6 +32,7 @@ Local packages materialize `{goldCost}` inside the engine label before the clien
 ## Do not
 
 - Rescale `goldCost`.
-- Treat the label as the price.
+- Treat the label as the price, including after a fallback to the engine label.
+- Treat a fallback label as a failed request.
 - Hide the price line because the label looks free.
 - Close the modal while `phase === "event"`.

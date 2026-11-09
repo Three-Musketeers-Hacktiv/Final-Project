@@ -5,6 +5,7 @@ import {
   chooseEventOption,
   chooseReward,
   choiceLabelRespectsGoldCost,
+  labelStatesCurrencyAmount,
   continueFromReport,
   createInitialState,
   decorateActiveEvent,
@@ -618,6 +619,8 @@ describe("event gold cost scaling", () => {
   });
 
   it.each([
+    "Pay 99 pieces of gold",
+    "Pay gold worth 99",
     "Pay gold: 99",
     "gold: 17",
     "cost 17 coins",
@@ -626,10 +629,13 @@ describe("event gold cost scaling", () => {
     "twenty gold",
     "treasury: 40",
     "12 gp",
-  ])("falls back when an overlay states a currency amount (%s)", (overlayLabel) => {
+    "Spend treasury carefully",
+  ])("falls back when an overlay mentions a currency term (%s)", (overlayLabel) => {
     let state = mustOk(ensureLocalEvent(withEnvoyDay("easy")));
+    const snapshot = JSON.stringify(state);
     const engineLabel = state.activeEvent!.choices.find((choice) => choice.id === "d1-envoy-b-pay")!.label;
     const effects = state.activeEvent!.choices.find((choice) => choice.id === "d1-envoy-b-pay")!.effects;
+    expect(labelStatesCurrencyAmount(overlayLabel)).toBe(true);
     expect(choiceLabelRespectsGoldCost(overlayLabel, 17)).toBe(false);
     const decorated = decorateActiveEvent(state, {
       title: "t",
@@ -640,11 +646,54 @@ describe("event gold cost scaling", () => {
       })),
       source: "ai",
     });
+    expect(JSON.stringify(state)).toBe(snapshot);
     const pay = decorated.activeEvent!.choices.find((choice) => choice.id === "d1-envoy-b-pay")!;
     expect(pay.label).toBe(engineLabel);
+    expect(pay.label).toContain("17");
     expect(pay.goldCost).toBe(17);
     expect(pay.effects).toEqual(effects);
     expect(decorated.activeEvent!.description).toContain("99 gold");
+  });
+
+  it("keeps free and grantGold mechanics when a currency overlay falls back", () => {
+    const supplies = {
+      ...createInitialState({ runId: "gold-grant", difficulty: "easy" }),
+      day: 5,
+      phase: "preparation" as const,
+      activeEvent: null,
+      gold: 100,
+      eventPlan: [{ day: 5, packageId: "d1-supplies-a", eventId: "d1-supplies-a" }],
+    };
+    let state = mustOk(ensureLocalEvent(supplies));
+    const snapshot = JSON.stringify(state);
+    const free = state.activeEvent!.choices.find((choice) => choice.id === "d1-supplies-a-hurt")!;
+    const grant = state.activeEvent!.choices.find((choice) => choice.id === "d1-supplies-a-gold")!;
+    expect(free.goldCost).toBe(0);
+    expect(grant.effects).toEqual([{ type: "grantGold", amount: 12 }]);
+    const decorated = decorateActiveEvent(state, {
+      title: "t",
+      description: "Merchants mention gold in the story.",
+      choices: state.activeEvent!.choices.map((choice) => ({
+        id: choice.id,
+        label:
+          choice.id === free.id
+            ? "Refuse and keep your gold"
+            : choice.id === grant.id
+              ? "Take extra gold now"
+              : "Quiet refusal",
+      })),
+      source: "ai",
+    });
+    expect(JSON.stringify(state)).toBe(snapshot);
+    const freeAfter = decorated.activeEvent!.choices.find((choice) => choice.id === free.id)!;
+    const grantAfter = decorated.activeEvent!.choices.find((choice) => choice.id === grant.id)!;
+    expect(freeAfter.label).toBe(free.label);
+    expect(freeAfter.goldCost).toBe(0);
+    expect(freeAfter.effects).toEqual(free.effects);
+    expect(grantAfter.label).toBe(grant.label);
+    expect(grantAfter.goldCost).toBe(0);
+    expect(grantAfter.effects).toEqual([{ type: "grantGold", amount: 12 }]);
+    expect(decorated.activeEvent!.description).toContain("gold");
   });
 
   it("keeps an overlay label that does not state a currency amount", () => {

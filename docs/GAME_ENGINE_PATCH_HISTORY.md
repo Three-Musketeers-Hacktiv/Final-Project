@@ -294,6 +294,6 @@ Tes: plafon wave 9–10 easy/normal, kampanye 100 hari easy lewat aksi publik, r
 
 ## 14. Label AI tanpa nominal + kontrak successor (2026-11-09)
 
-- Overlay label yang menyebut nominal mata uang (urutan apa pun, digit, angka tertulis, alias `gold`/`coin`/`treasury`/`gp`) ditolak; `decorateActiveEvent` memakai label engine. Deskripsi tidak dipindai.
+- Overlay label yang memuat istilah mata uang `gold`/`coin`/`treasury`/`gp` ditolak, tanpa parsing susunan harga; `decorateActiveEvent` memakai label engine. Deskripsi tidak dipindai.
 - `isTrustedConsequencePackage` diekspor agar BE menerima successor di `CONSEQUENCE_SUCCESSOR`, bukan hanya paket asal.
 - Kontrak implementasi: [ENGINE_TO_BE_CONTRACT.md](./ENGINE_TO_BE_CONTRACT.md), [ENGINE_TO_FE_CONTRACT.md](./ENGINE_TO_FE_CONTRACT.md). Kode `app/` dan `src/ui/` tidak diubah pada patch ini.
