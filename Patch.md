@@ -19,7 +19,7 @@ Earlier v1→v3 notes remain historically useful below the fold in git history; 
 | Event choices | Tuple of 2 | **Array length 2–4** |
 | Consequences | none | `pendingConsequences` + delayed packages |
 | Rewards | Wave 1 only; `rewardChosenId` | Waves **1–9**; `rewardsChosenByWave` |
-| Economy | max 5, 50+20×L, income 25, repair 30 | max **18**, **45+30×L**, income **28**, repair **35/45** |
+| Economy | max 5, 50+20×L, income 25, repair 30 | max **18**, **45+30×L**, income **28**, repair **25/60** |
 | Effects | 4 kinds | + `healCity`, `maxHpBonus` |
 | Reward kinds | 3 | + heal / defense / maxHP / combo |
 
@@ -148,7 +148,7 @@ Engine-only fix (save `version: 4` unchanged). Details for FE/BE: [FOR_FRONTEND.
 | Calendar API | `enterCalendarDay` is **engine-internal only** (not exported from `src/game`). Advance only via `endPreparationDay` / `chooseReward`. |
 | Event gold | Package config keeps **base** `goldCost` and `{goldCost}` in paid labels. Activation fills the label with the **effective** cost. Charge uses the same scale from the trusted package (once). Free stays `0`. An AI label that names a different gold amount is discarded. |
 | Consequence wave | Prefer a prep day before `CONSEQUENCE_TARGET_WAVE`. If that window is full, schedule `CONSEQUENCE_SUCCESSOR`. Apply-time clamp sends stale defense/discount to the upcoming wave. |
-| Late-game balance | Waves 5–10 are tuned to the gold a normal prep stretch can spend; hard monster HP 1.20 / ATK 1.12; wall defense +3 and city MaxHP +35. Save `version` stays 4. |
+| Late-game balance | Normal wave table is 150/22 through 600/64; hard monster HP 1.08 / ATK 1.06, upgrade 1.08, income 0.95, repair 1.05. Wall defense +3 and city MaxHP +35. Save `version` stays 4; suggested ruleset id `campaign-v4-100-day-v2`. |
 
 ---
 

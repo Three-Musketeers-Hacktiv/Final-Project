@@ -15,7 +15,7 @@ Companion docs: [DEV1_CONTRACT.md](./DEV1_CONTRACT.md) · [FOR_FRONTEND.md](./FO
 | Event choices | Exactly 2 | **2–4**, ≥1 free |
 | Consequences | none | `pendingConsequences` + delayed trusted packages |
 | Rewards | Wave 1 only; `rewardChosenId` | Waves **1–9**; `rewardsChosenByWave` |
-| Economy | max 5, cost 50+20×L, income 25 | max **18**, cost **45+30×L**, income **28**, repair **35/45**, wall **+3 DEF**, city **+35 MaxHP** |
+| Economy | max 5, cost 50+20×L, income 25 | max **18**, cost **45+30×L**, income **28**, repair **25/60**, wall **+3 DEF**, city **+35 MaxHP** |
 
 ## Create run
 
@@ -103,14 +103,33 @@ type GameStateV4 = {
 
 | Modifier | Easy | Normal | Hard |
 |---|---:|---:|---:|
-| Monster HP | 0.75 | 1.0 | 1.20 |
-| Monster attack | 0.80 | 1.0 | 1.12 |
-| Upgrade cost | 0.85 | 1.0 | 1.20 |
-| Daily income | 1.15 | 1.0 | 0.90 |
-| Repair cost | 0.90 | 1.0 | 1.15 |
-| Event gold costs | 0.85 | 1.0 | 1.15 |
+| Monster HP | 0.75 | 1.0 | 1.08 |
+| Monster attack | 0.80 | 1.0 | 1.06 |
+| Upgrade cost | 0.85 | 1.0 | 1.08 |
+| Daily income | 1.15 | 1.0 | 0.95 |
+| Repair cost | 0.90 | 1.0 | 1.05 |
+| Event gold costs | 0.85 | 1.0 | 1.08 |
 
 Effect magnitudes (e.g. −18 HP) stay absolute in v1.
+
+Normal uses the base wave table below (multiplier 1). Easy and hard scale HP and attack with the multipliers above. Repair on normal is 25 gold for up to 60 HP.
+
+| Wave | Day | HP | Attack |
+|---:|---:|---:|---:|
+| 1 | 10 | 150 | 22 |
+| 2 | 20 | 200 | 28 |
+| 3 | 30 | 240 | 34 |
+| 4 | 40 | 290 | 36 |
+| 5 | 50 | 340 | 40 |
+| 6 | 60 | 390 | 44 |
+| 7 | 70 | 440 | 48 |
+| 8 | 80 | 490 | 54 |
+| 9 | 90 | 540 | 58 |
+| 10 | 100 | 600 | 64 |
+
+## Ruleset fingerprint
+
+Save `version` stays **4**. This balance changes repair, the wave table, and hard multipliers, so the config fingerprint changes. Backend must store a new immutable ruleset id — suggested `campaign-v4-100-day-v2` — and reject an older id whose stored fingerprint does not match the engine. Do not overwrite the previous fingerprint in place. The adapter still owns the id; the engine does not persist it.
 
 ## BE checklist (wiring later)
 

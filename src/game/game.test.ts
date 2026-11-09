@@ -214,12 +214,16 @@ describe("difficulty", () => {
 
   it("scales monster stats and economy on easy/hard", () => {
     const easy = createInitialState({ runId: "diff-easy", difficulty: "easy" });
+    const normal = createInitialState({ runId: "diff-normal-cost", difficulty: "normal" });
     const hard = createInitialState({ runId: "diff-hard", difficulty: "hard" });
     expect(getWavePreview(easy)!.hp).toBe(Math.max(1, Math.round(150 * 0.75)));
-    expect(getWavePreview(hard)!.hp).toBe(Math.max(1, Math.round(150 * 1.2)));
-    expect(getUpgradeCost(easy, "wall")).toBeLessThan(getUpgradeCost(hard, "wall"));
-    expect(getRepairCost(easy)).toBeLessThan(getRepairCost(hard));
-    expect(getEffectiveStats(easy).dailyIncome).toBeGreaterThan(getEffectiveStats(hard).dailyIncome);
+    expect(getWavePreview(hard)!.hp).toBe(Math.max(1, Math.round(150 * 1.08)));
+    expect(getUpgradeCost(easy, "wall")).toBeLessThan(getUpgradeCost(normal, "wall"));
+    expect(getUpgradeCost(hard, "wall")).toBeGreaterThanOrEqual(getUpgradeCost(normal, "wall"));
+    expect(getRepairCost(easy)).toBeLessThan(getRepairCost(normal));
+    expect(getRepairCost(hard)).toBeGreaterThanOrEqual(getRepairCost(normal));
+    expect(getEffectiveStats(easy).dailyIncome).toBeGreaterThan(getEffectiveStats(normal).dailyIncome);
+    expect(getEffectiveStats(hard).dailyIncome).toBeLessThanOrEqual(getEffectiveStats(normal).dailyIncome);
   });
 });
 
@@ -555,7 +559,7 @@ describe("event gold cost scaling", () => {
   it.each([
     ["easy", 17],
     ["normal", 20],
-    ["hard", 23],
+    ["hard", 22],
   ] as const)("shows and charges scaled gold for %s", (difficulty, expectedCost) => {
     let state = mustOk(ensureLocalEvent(withEnvoyDay(difficulty)));
     const pay = state.activeEvent!.choices.find((choice) => choice.id === "d1-envoy-b-pay");
@@ -570,7 +574,7 @@ describe("event gold cost scaling", () => {
 
   it("rejects when gold is one below the effective cost without mutating state", () => {
     let state = mustOk(ensureLocalEvent(withEnvoyDay("hard")));
-    state = { ...state, gold: 22, revision: 7 };
+    state = { ...state, gold: 21, revision: 7 };
     const snapshot = JSON.stringify(state);
     const result = chooseEventOption(state, "d1-envoy-b-pay");
     expect(result.ok).toBe(false);
