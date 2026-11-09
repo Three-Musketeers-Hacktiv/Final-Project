@@ -9,6 +9,8 @@ import {
   ensureRequiredEvent,
   getEngineCompatibility,
   getEngineRulesetMetadata,
+  readEffectiveStats,
+  readWavePreview,
 } from "./adapter";
 
 describe("game engine adapter", () => {
@@ -22,7 +24,7 @@ describe("game engine adapter", () => {
 
   it("fingerprints the engine-owned ruleset", () => {
     const metadata = getEngineRulesetMetadata();
-    expect(metadata.rulesetId).toBe("campaign-v4-100-day-v2");
+    expect(metadata.rulesetId).toBe("campaign-v4-100-day-v3");
     expect(metadata.stateVersion).toBe(4);
     expect(metadata.configFingerprint).toMatch(/^[a-f\d]{64}$/);
   });
@@ -39,6 +41,27 @@ describe("game engine adapter", () => {
   it("preserves the selected difficulty", () => {
     expect(createGameState("run-easy", "easy").difficulty).toBe("easy");
     expect(createGameState("run-hard", "hard").difficulty).toBe("hard");
+  });
+
+  it("delegates the latest repair, wave, and hard difficulty balance", () => {
+    const normal = createGameState("run-latest-normal", "normal");
+    const hard = createGameState("run-latest-hard", "hard");
+    expect(readEffectiveStats(normal).repairCost).toBe(25);
+    expect(readEffectiveStats(hard).repairCost).toBe(27);
+    expect(readWavePreview(normal)).toMatchObject({ wave: 1, hp: 150, attack: 22 });
+    expect(readWavePreview(hard)).toMatchObject({ wave: 1, hp: 162, attack: 23 });
+    expect(readWavePreview({ ...normal, wavesCleared: 9 })).toMatchObject({
+      wave: 10,
+      hp: 600,
+      attack: 64,
+    });
+
+    const damaged = { ...normal, cityHp: 50, actionUsedToday: false };
+    const repaired = applyGameAction(damaged, { type: "repairCity", payload: {} });
+    expect(repaired.ok).toBe(true);
+    if (!repaired.ok) return;
+    expect(repaired.state.cityHp).toBe(110);
+    expect(repaired.state.gold).toBe(damaged.gold - 25);
   });
 
   it("accepts trusted pending and active consequence events", () => {
