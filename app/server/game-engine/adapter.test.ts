@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 
+import { eventPackageById } from "../../../src/game";
+
 import {
   applyGameAction,
   assertPatchedGameState,
@@ -118,7 +120,7 @@ describe("game engine adapter", () => {
 
     const deferred = state.pendingConsequences.find((entry) => entry.triggerDay > 10);
     expect(deferred).toBeTruthy();
-    expect(deferred?.packageId).not.toBe("c-raid-wave1");
+    expect(deferred?.packageId).toBe("c-raid-wave2");
     expect(() => assertPatchedGameState(state, state.runId)).not.toThrow();
 
     const foreignPackageId = "c-unrest-mid";
@@ -131,6 +133,29 @@ describe("game engine adapter", () => {
       ...state,
       pendingConsequences: state.pendingConsequences.map((entry) =>
         entry.id === deferred!.id ? forged : entry),
+    }, state.runId)).toThrow("invalid pending consequence");
+
+    expect(() => assertPatchedGameState({
+      ...state,
+      pendingConsequences: [...state.pendingConsequences, deferred!],
+    }, state.runId)).toThrow("invalid pending consequence");
+
+    const reverseOrigin = state.eventPlan
+      .map((entry) => eventPackageById(entry.packageId))
+      .flatMap((pkg) => pkg ? pkg.choices.map((choice) => ({ pkg, choice })) : [])
+      .find(({ choice }) => choice.consequence?.packageId === "c-raid-wave2");
+    expect(reverseOrigin).toBeTruthy();
+    const reverseDay = 19;
+    const reverse = {
+      packageId: "c-raid-wave1",
+      originEventId: reverseOrigin!.pkg.eventId,
+      originChoiceId: reverseOrigin!.choice.id,
+      triggerDay: reverseDay,
+      id: `c-raid-wave1::${reverseOrigin!.pkg.eventId}::${reverseOrigin!.choice.id}::${reverseDay}`,
+    };
+    expect(() => assertPatchedGameState({
+      ...state,
+      pendingConsequences: [reverse],
     }, state.runId)).toThrow("invalid pending consequence");
   });
 

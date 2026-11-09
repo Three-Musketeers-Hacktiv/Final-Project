@@ -58,7 +58,7 @@ describe("event narrative runtime", () => {
     expect(decorated.choices.every((choice) => choice.label.startsWith("Trusted counsel"))).toBe(true);
   });
 
-  it("keeps the engine label when AI claims a different gold price", async () => {
+  it("keeps the engine label when AI mentions a currency term", async () => {
     const state = stateAtFirstEvent();
     const original = state.activeEvent!;
     const paid = original.choices.find((choice) => choice.goldCost > 0);
@@ -72,7 +72,7 @@ describe("event narrative runtime", () => {
           description: original.description,
           choices: original.choices.map((choice) => ({
             id: choice.id,
-            label: choice.id === paid!.id ? "Pay 999 gold now" : "Hold the coin",
+            label: choice.id === paid!.id ? "Protect the treasury" : "Hold position",
           })),
         };
       },
@@ -121,7 +121,7 @@ describe("event narrative runtime", () => {
       description: "My lord, this advice was generated earlier.",
       choices: event.choices.map((choice) => ({
         id: choice.id,
-        label: choice.id === paid.id ? "Pay 999 gold" : "Wait and observe",
+        label: choice.id === paid.id ? "Protect the treasury" : "Wait and observe",
       })),
     }, {
       source: "ai",
