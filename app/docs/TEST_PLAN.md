@@ -135,6 +135,10 @@ Backend menyediakan contoh request/response dan koleksi API yang mengikuti [API_
 - cookie behavior sesuai environment;
 - response event source `ai` dan `fallback` memiliki bentuk identik.
 - event/choice ID pada contract test diambil dari response run/event aktif.
+- biaya event efektif tidak diskalakan ulang dan label AI yang menyebut istilah mata uang, dengan atau tanpa angka, memakai label engine;
+- consequence successor package sah diterima, sedangkan package asing dan ID rusak ditolak;
+- same-day event queue mengembalikan event berikutnya dan recovery active-event yang hilang tidak menggandakan revision/effect;
+- provider failure mencoba katalog AI valid sebelum fallback, dan stored narrative dengan choice ID asing ditolak.
 
 Postman CLI yang tersedia dapat digunakan untuk menjalankan collection pada local atau Preview URL. Collection dan environment file yang aman boleh disimpan di area backend; secret environment lokal tidak boleh di-commit.
 

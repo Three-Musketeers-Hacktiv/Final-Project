@@ -1,6 +1,6 @@
 # Engine V4 Backend Integration
 
-Status: **Backend implemented; cross-team gates recorded below**
+Status: **Backend synchronized; frontend build handoff remains**
 Owner: Backend  
 Engine source: `../../src/game` and `../../docs/FOR_BACKEND.md` (read-only)  
 Last updated: 2026-11-09
@@ -22,6 +22,23 @@ This document records the backend changes required by game-engine patch v4. Back
 - Public action names remain unchanged, including `surrender`.
 - Gemini remains the default narrative provider, with Zod validation and trusted local fallback.
 
+## Latest patch delta (2026-11-09)
+
+- Trusted balancing now uses wall defense `+3`, city maximum HP `+35`, hard monster HP multiplier `1.20`, and hard monster attack multiplier `1.12`. Backend obtains these values and its fingerprint from engine config.
+- `activeEvent.choices[].goldCost` is already difficulty-scaled. It is the effective cost; backend and frontend must not scale it again.
+- AI choice labels may not mention supported currency terms (`gold`, `coin(s)`, `treasury`, `gp`), even without an amount. Backend supplies effective costs as prompt context, but labels are accepted only through the engine trusted-label policy. Descriptions remain narrative-only and are not scanned.
+- A consequence may move to a trusted successor package when its original window is occupied. Backend uses `isTrustedConsequencePackage`, not strict package equality.
+- Choosing an event can immediately activate another consequence on the same day. The response must decorate that new active event.
+- Narrative recovery order is: same run/event, configured Gemini generation, shared valid AI narrative for the ruleset/package/day after generation failure, then trusted local fallback.
+- The new immutable ruleset ID is `campaign-v4-100-day-v2`. Existing `v1` runs are not silently migrated because the config fingerprint changed.
+
+## Latest patch implementation tickets
+
+1. Version the immutable ruleset and use the engine successor-chain validator.
+2. Update balancing regression tests and cover the `late-3` successor schedule.
+3. Add stored narrative lookup while preserving trusted decoration and source metadata.
+4. Verify same-day chaining, a full campaign, typecheck, lint, build, and tests without editing frontend or engine files.
+
 ## Backend work items
 
 1. Replace the v3 adapter/ruleset with v4 metadata and reconstruct the trusted event plan using the persisted run difficulty.
@@ -40,6 +57,7 @@ The v4 ruleset uses a new immutable ruleset ID and config fingerprint. Existing 
 ## Verification gates
 
 - Backend-focused typecheck is clean.
-- Backend unit/contract tests pass, including v3 rejection, all difficulty values, dynamic days, 2–4 choices, and consequence-event validation.
-- Campaign runner targets `victory` through normal API actions over 100 days and ten battles. The current live automatic strategy reaches a valid `gameOver` on day 50; a known winning engine fixture/strategy remains a cross-team gate.
-- Full repository checks are reported separately; frontend failures caused by its still-v3 assumptions are handed off and are not fixed from the backend scope.
+- Backend unit/contract tests pass, including dynamic days, 2–4 choices, trusted successor consequences, stored narrative validation, and missing-event recovery.
+- Latest campaign runner reaches `victory` through 215 normal API actions, 21 events, 100 days, and ten battles against MongoDB Atlas.
+- Root engine typecheck and all 56 root tests pass; all 61 backend tests and backend typecheck pass; backend lint passes.
+- Production build compiles, then fails only on existing frontend v3 assumptions: missing create-run difficulty and outdated reward config/kinds. These frontend-owned files were not changed.

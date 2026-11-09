@@ -4,6 +4,7 @@ import { applyGameAction, createGameState } from "@/server/game-engine/adapter";
 import {
   decorateActiveEvent,
   generateEventNarrative,
+  restoreEventNarrative,
   type EventNarrativeGenerator,
 } from "./event-narrative";
 
@@ -57,7 +58,7 @@ describe("event narrative runtime", () => {
     expect(decorated.choices.every((choice) => choice.label.startsWith("Trusted counsel"))).toBe(true);
   });
 
-  it("keeps the engine label when AI claims a different gold price", async () => {
+  it("keeps the engine label when AI mentions a currency term", async () => {
     const state = stateAtFirstEvent();
     const original = state.activeEvent!;
     const paid = original.choices.find((choice) => choice.goldCost > 0);
@@ -71,7 +72,7 @@ describe("event narrative runtime", () => {
           description: original.description,
           choices: original.choices.map((choice) => ({
             id: choice.id,
-            label: choice.id === paid!.id ? "Pay 999 gold now" : "Hold the coin",
+            label: choice.id === paid!.id ? "Protect the treasury" : "Hold position",
           })),
         };
       },
@@ -109,5 +110,44 @@ describe("event narrative runtime", () => {
       event.choices.map((choice) => choice.id),
     );
     warning.mockRestore();
+  });
+
+  it("restores stored text through trusted ids and label decoration", () => {
+    const state = stateAtFirstEvent();
+    const event = state.activeEvent!;
+    const paid = event.choices.find((choice) => choice.goldCost > 0)!;
+    const restored = restoreEventNarrative(event, {
+      title: "Stored counsel",
+      description: "My lord, this advice was generated earlier.",
+      choices: event.choices.map((choice) => ({
+        id: choice.id,
+        label: choice.id === paid.id ? "Protect the treasury" : "Wait and observe",
+      })),
+    }, {
+      source: "ai",
+      provider: "gemini",
+      model: "stored-model",
+      promptVersion: "stored-v1",
+    });
+
+    const decorated = decorateActiveEvent(state, restored).activeEvent!;
+    expect(restored.source).toBe("ai");
+    expect(decorated.title).toBe("Stored counsel");
+    expect(decorated.choices.find((choice) => choice.id === paid.id)?.label).toBe(paid.label);
+    expect(decorated.choices.find((choice) => choice.id === paid.id)?.goldCost).toBe(paid.goldCost);
+  });
+
+  it("rejects a stored narrative with untrusted choice ids", () => {
+    const event = stateAtFirstEvent().activeEvent!;
+    expect(() => restoreEventNarrative(event, {
+      title: "Invalid stored counsel",
+      description: "Invalid",
+      choices: event.choices.map((_, index) => ({ id: `forged-${index}`, label: "Invalid" })),
+    }, {
+      source: "ai",
+      provider: "gemini",
+      model: null,
+      promptVersion: "stored-v1",
+    })).toThrow("untrusted choice ids");
   });
 });

@@ -894,3 +894,86 @@ Handoff/kendala lintas tim:
 - Live campaign runner berakhir valid di `gameOver` hari 50 setelah wave 4 dengan strategi otomatis saat ini, bukan `victory` hari 100. Ini bukan error API/backend; balancing/strategi kemenangan v4 perlu fixture atau rute aksi yang disepakati engine sebelum gate campaign victory dapat dinyatakan lulus.
 - Source frontend, source engine, dan root docs tidak diedit oleh implementasi backend.
 - Push tidak dilakukan.
+
+## 2026-11-09 — Audit patch balancing dan event terbaru
+
+Scope:
+- Membaca ulang kontrak dan implementasi engine terbaru setelah commit rekan `95489bc` dan `fb1055d` tersedia di branch lokal.
+- Membatasi seluruh perubahan backend pada `app/**`; frontend, `src/**`, dan root `docs/**` tetap read-only.
+
+Temuan:
+- Config tepercaya mengubah bonus wall, bonus city MaxHP, dan multiplier hard sehingga fingerprint ruleset lama tidak boleh dipakai ulang.
+- Biaya pilihan event pada active state sudah merupakan biaya efektif setelah difficulty scaling.
+- Consequence dapat memakai trusted successor package; validasi equality backend lama terlalu ketat.
+- Event consequence dapat langsung muncul setelah pilihan event pada hari yang sama.
+- Narasi tersimpan perlu dipakai ulang sebelum local fallback agar teks AI stabil dan panggilan provider tidak boros.
+- Baseline root typecheck dan 52 test lulus. Backend typecheck lulus; backend test menghasilkan 56 lulus dan 1 gagal karena assertion wall lama masih mengharapkan defense 4, sementara hasil tepercaya terbaru adalah 5.
+
+Rencana commit:
+1. Dokumentasi sinkronisasi patch terbaru.
+2. Ruleset v2, successor consequence validation, dan regression test balancing.
+3. Reuse narasi run/katalog AI serta test validasi/dekorasi.
+4. Closeout dokumentasi setelah campaign, typecheck, test, lint, dan build aktual dijalankan.
+
+## 2026-11-09 — Implementasi dan closeout patch balancing/event terbaru
+
+Implementasi backend:
+- Mengubah immutable ruleset menjadi `campaign-v4-100-day-v2` agar config fingerprint terbaru tidak bertabrakan dengan run v1.
+- Mengganti strict consequence package equality dengan `isTrustedConsequencePackage` dan menambah regression untuk seed `late-3` serta package asing.
+- Menyesuaikan timeline wall upgrade dengan bonus defense terbaru (`2 → 5`).
+- Memvalidasi ulang narasi tersimpan, menjaga effective gold cost engine, dan memakai trusted-label policy untuk menolak istilah mata uang pada label AI.
+- Menambahkan reuse snapshot `runs_event`; setelah Gemini tidak tersedia/gagal, backend mencoba katalog `event_data` AI valid sebelum fallback lokal.
+- Menambahkan recovery `ensureLocalEvent` pada load/action boundary. Recovery dilipat ke public action tanpa revision tambahan; same-day successor event dapat dipersistenkan dalam transaksi yang sama.
+- Memperbarui kontrak API, AI runtime, schema database, test plan, implementation plan, panduan frontend/Postman, dan dokumen integrasi v4.
+
+Commit berkala (identitas Git pengguna):
+- `b7c9f9a docs(backend): plan latest engine patch sync`
+- `c6fa597 fix(game): trust successor consequences and version ruleset`
+- `a5f2da5 feat(events): reuse validated stored narratives`
+- `2470584 fix(events): recover missing active events on load`
+
+Validasi aktual:
+- Root `npm.cmd run typecheck`: lulus.
+- Root `npm.cmd test`: lulus, 2 file / 52 test.
+- Backend `npm.cmd run typecheck:backend`: lulus.
+- Backend `npm.cmd test`: lulus, 16 file / 61 test.
+- Backend `npm.cmd run lint`: lulus.
+- Live `npm.cmd run test:campaign`: lulus melalui 217 action, 22 event, 10 battle, dan berakhir `victory` hari 100. Test membuat data development Atlas dan tidak menghapusnya.
+- `npm.cmd run build`: compile berhasil, lalu typecheck gagal hanya pada frontend-owned `NewGameButton.tsx`, `PhaseDialogs.tsx`, dan `RewardDialog.tsx` yang masih memakai kontrak v3. File tersebut tidak diubah sesuai batas scope.
+
+Scope dan operasional:
+- Tidak ada perubahan pada root `src/**`, root `docs/**`, atau file frontend.
+- `.env` tidak diubah. Campaign memakai override proses `CAMPAIGN_ORIGIN` yang sama dengan `APP_ORIGIN`.
+- Server development yang dipakai smoke test sudah dihentikan.
+- Push tidak dilakukan.
+
+## 2026-11-09 — Sinkronisasi patch currency-term narrative
+
+Integrasi remote:
+- Menjalankan `git fetch origin --prune` dan menemukan branch lokal 5 commit lebih maju serta remote 1 commit berbeda.
+- Merge `origin/development-backend-v3` dilakukan dengan strategi `ort` tanpa conflict. Commit rekan `7b555be` masuk utuh pada root `src/game/**` dan `docs/**`; file tersebut tidak diedit backend.
+- Patch tidak mengubah `GameState.version`, `gameConfig`, balancing, atau fingerprint ruleset. Ruleset backend tetap `campaign-v4-100-day-v2`.
+
+Penyesuaian backend:
+- Prompt Gemini sekarang melarang semua istilah mata uang yang didukung engine (`gold`, `coin(s)`, `treasury`, `gp`), bukan hanya nominal/harga.
+- Regression AI memakai label tanpa angka `Protect the treasury` dan membuktikan fallback ke label engine untuk narasi baru maupun tersimpan.
+- Regression consequence `late-3` memastikan successor tepat `c-raid-wave2`, serta menolak package asing, duplicate pending ID, dan reverse successor chain.
+- Dokumentasi AI, API, implementation plan, integration contract, dan test plan diselaraskan dengan aturan terbaru.
+
+Validasi sebelum closeout:
+- Root `npm.cmd run typecheck`: lulus.
+- Root `npm.cmd test`: lulus, 2 file / 56 test.
+- Backend `npm.cmd run typecheck:backend`: lulus.
+- Backend targeted test: lulus, 2 file / 17 test.
+- Backend full test: lulus, 16 file / 61 test.
+- Backend lint: lulus.
+- Live campaign terbaru: lulus sampai `victory` hari 100 melalui 215 action, 21 event, dan 10 battle. Data development Atlas dipertahankan untuk audit.
+
+Commit backend:
+- `6bb5695 fix(events): reject currency terms in AI labels`
+
+Scope:
+- Implementasi backend hanya mengubah `app/**`.
+- Root engine/docs yang terlihat pada merge berasal dari commit rekan dan tidak dimodifikasi backend.
+- Server development untuk smoke test sudah dihentikan dan `.env` tidak diubah.
+- Push tidak dilakukan.

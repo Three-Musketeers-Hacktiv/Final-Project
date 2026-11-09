@@ -307,6 +307,7 @@ type EventDataDocument = {
     choices: Array<{ id: string; label: string }>; // 2-4
   };
   source: "ai" | "fallback" | "mock";
+  provider?: string;
   model?: string;
   promptVersion: string;
   schemaVersion: 1;
@@ -320,6 +321,7 @@ Aturan:
 - Tidak menyimpan arbitrary cost/effects dari model.
 - `packageId`, day, dan choice IDs diverifikasi terhadap engine package.
 - Katalog valid dapat dipakai banyak run.
+- Reuse hanya mengambil document valid `source: "ai"` untuk `gameRulesetId + packageId + day` yang sama, terbaru lebih dahulu.
 - Document yang sudah dirujuk run tidak diedit; buat variasi baru.
 - Tidak menyimpan raw API key, username pemain, atau data pribadi.
 
@@ -356,6 +358,8 @@ type RunEventDocument = {
 Aturan:
 
 - Narrative snapshot membekukan cerita yang diterima run.
+- Snapshot `gameRunId + eventId` dipakai ulang sebelum memanggil provider agar refresh/recovery tidak menulis cerita kedua.
+- Reuse katalog membuat `runs_event` baru yang menunjuk `event_data` lama; document katalog tidak diduplikasi.
 - Resolusi pilihan hanya mengubah `runs_event` milik run tersebut.
 - Cost/effects tetap di engine/state; bukan sumber dari snapshot narasi.
 
