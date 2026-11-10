@@ -2,6 +2,8 @@
 
 Keputusan terkunci · 6 Nov 2026 · Spek: [`.scratch/split-three-upgrades/`](../.scratch/split-three-upgrades/)
 
+> **Historis.** Keputusan tiga jalur tetap berlaku; angka cap/biaya/version di dokumen ini adalah era v3. Nilai aktif: [`../docs/game-engine/CONFIGURATION.md`](../docs/game-engine/CONFIGURATION.md).
+
 ## Ringkasan
 
 Pisahkan upgrade tunggal menjadi tiga jalur (tembok/DEF, pasukan/ATK, kota/MaxHP+income) dengan satu slot aksi harian bersama, repair tetap ada, angka playtest default, dan bump state version ke 3.

@@ -1,32 +1,40 @@
 # Fantasy City Defense
 
-Prototipe single-player 20 hari · Next.js · MongoDB · game engine TypeScript murni  
+Single-player · Next.js · MongoDB · game engine TypeScript murni  
 Deadline: **13 November 2026**
+
+**Engine aktif (kode):** campaign **100 hari**, **10 wave**, tiga jalur upgrade (cap **18**), difficulty `easy|normal|hard`, `GameState.version: 4`.  
+Referensi lengkap: [`docs/game-engine/README.md`](./docs/game-engine/README.md).  
+Kontrak ringkas: [`docs/DEV1_CONTRACT.md`](./docs/DEV1_CONTRACT.md), [`docs/CAMPAIGN_100_DAY_CONTRACT.md`](./docs/CAMPAIGN_100_DAY_CONTRACT.md).
+
+> `MVP.md` / `PRD.md` / bagian persyaratan di `AGENTS.md` masih memuat brief prototipe **20 hari / v3**. Itu adalah kebutuhan/sejarah produk yang belum diselaraskan penuh — bukan sumber aturan engine saat ini. Lihat [`docs/game-engine/DOCUMENTATION_SYNC.md`](./docs/game-engine/DOCUMENTATION_SYNC.md).
 
 ## Baca dulu (semua role)
 
 | Dokumen | Isi |
 |---|---|
-| [MVP.md](./MVP.md) | Lingkup wajib & kriteria selesai |
-| [PRD.md](./PRD.md) | Aturan produk (fase, ekonomi, battle, event, reward) |
-| [AGENTS.md](./AGENTS.md) | Spek detail mesin untuk Developer Engine |
-| [docs/DEV1_CONTRACT.md](./docs/DEV1_CONTRACT.md) | Kontrak `GameState` v3 / API / error codes |
-| [plans/feature-freeze-playtest.md](./plans/feature-freeze-playtest.md) | Freeze fitur + todos FE/BE minggu ini |
-| [plans/game-engine-modules.md](./plans/game-engine-modules.md) | Daftar modul engine + batas tanggung jawab |
+| [docs/game-engine/README.md](./docs/game-engine/README.md) | **Referensi utama** perilaku engine v4 / 100 hari |
+| [docs/DEV1_CONTRACT.md](./docs/DEV1_CONTRACT.md) | Kontrak `GameState` v4 / API / error codes |
+| [docs/CAMPAIGN_100_DAY_CONTRACT.md](./docs/CAMPAIGN_100_DAY_CONTRACT.md) | Wire FE/BE ke campaign 100 hari |
+| [MVP.md](./MVP.md) | Lingkup MVP (masih banyak angka 20-hari — lihat banner di file) |
+| [PRD.md](./PRD.md) | Aturan produk (sebagian historis vs engine) |
+| [AGENTS.md](./AGENTS.md) | Instruksi agent + persyaratan tertulis (ada konflik dengan kode) |
+| [plans/feature-freeze-playtest.md](./plans/feature-freeze-playtest.md) | Freeze fitur + todos FE/BE |
+| [plans/game-engine-modules.md](./plans/game-engine-modules.md) | Peta modul (sebagian usang — tautkan ke docs/game-engine) |
 | [docs/database/Database_proposal.md](./docs/database/Database_proposal.md) | Schema MongoDB & makna field |
 | [docs/database/FLOW_DATABASE.md](./docs/database/FLOW_DATABASE.md) | Alur Mulai / Aksi / Event / Battle / Auth |
 
-### Keputusan yang menggantikan dokumen lama
+### Keputusan yang masih berlaku di engine
 
 - **Tidak ada rekrutmen unit** (tidak ada HP pasukan individual / formasi).
-- **Tiga jalur upgrade:** tembok (DEF), pasukan (ATK kota), kota (MaxHP + income) — state `version: 3`.
+- **Tiga jalur upgrade:** tembok (DEF), pasukan (ATK kota), kota (MaxHP + income) — state `version: 4`.
 - Satu slot aksi harian: salah satu dari tiga upgrade **atau** repair.
-- Diskon = **diskon upgrade** ke ketiga jalur, bukan diskon rekrut.
-- Playtest: `dailyIncome` **25**; bonus income kota **+8** / level.
+- Diskon = **diskon upgrade** ke ketiga jalur, bukan diskon rekrut; repair tidak didiskon.
+- Playtest terkunci di kode: `dailyIncome` **28**; biaya `45 + level × 30`; max level **18**; repair **25/60**; wall **+3 DEF**; city **+35 MaxHP** / income **+5**.
 - Fase battle: `battleReady` → `battleReport` (bukan `battle`).
 - Persistensi produk = **MongoDB + auth**, bukan hanya localStorage.
-- Prototipe = **20 hari**; setelah playtest oke → produksi **50 hari** ([PRD.md](./PRD.md) §12).
-- Engine prototipe siap integrasi; **lanjutan utama = Backend + Frontend**.
+- Campaign di engine = **100 hari / 10 wave** (bukan 20 atau 50).
+- Engine siap diintegrasikan; cek gap adapter di kontrak FE/BE dan `app/docs/`.
 
 ---
 
@@ -46,15 +54,15 @@ flowchart LR
   BE -->|state + selectors untuk UI| FE
 ```
 
-### Engine (Developer 1) — status: siap integrasi
+### Engine (Developer 1) — status: siap integrasi (v4)
 
 **Sudah ada**
 
-- Modul murni di `src/game/` (kalender, ekonomi 3 jalur, event, battle, reward, transisi).
-- `GameState` `version: 3` (`wallLevel`, `troopLevel`, `cityLevel`); `revision` naik hanya jika state berubah.
-- API publik: create, `upgradeWall` / `upgradeTroops` / `upgradeCity`, repair, end day, event, battle, reward + selectors.
-- Unit test + integration test alur 20 hari.
-- Opsional harness: [docs/HARNESS.md](./docs/HARNESS.md). Try UI: `npm run play`.
+- Modul murni di `src/game/` (kalender 100 hari, ekonomi 3 jalur, eventPlan + consequence, battle, reward per wave, difficulty, transisi).
+- `GameState` `version: 4` (`wallLevel`, `troopLevel`, `cityLevel`, `difficulty`, `eventPlan`, `pendingConsequences`, `rewardsChosenByWave`); `revision` naik pada aksi sukses.
+- API publik: create, upgrade ×3, repair, end day, event, battle, reward, surrender + selectors.
+- Unit/integration test di `src/game` dan `tests/game-engine` (alur 100 hari).
+- Try UI: `npm run play`. Catatan harness lama: [docs/HARNESS.md](./docs/HARNESS.md) (sebagian script/contoh masih era 20-hari).
 
 **Sekarang**
 
@@ -69,19 +77,20 @@ flowchart LR
 **Kerjakan (urutan disarankan)**
 
 1. Auth: register/login username + passwordHash; sesi; `User.saveGame` / `gameHistory`.
-2. Mulai permainan baru: `createInitialState` → commit `game_runs` + properties awal + empat `runs_event` (katalog `event_data` / AI narasi / fallback).
-3. Lanjutkan save: baca `game_runs.state` + properties revisi yang sama; tolak `version` ≠ 3 dengan jelas.
+2. Mulai permainan baru: `createInitialState({ runId, difficulty })` → commit `game_runs` + properties awal + `runs_event` sesuai `eventPlan` (bukan empat hari tetap).
+3. Lanjutkan save: baca `game_runs.state` + properties revisi yang sama; tolak `version` ≠ **4** dengan jelas.
 4. Endpoint submit aksi: `runId`, `actionId`, `expectedRevision`, `type`, `payload` → load state → panggil engine → transaksi commit.
-5. Types aksi minimal: `upgradeWall` | `upgradeTroops` | `upgradeCity` | `repairCity` | `endPreparationDay` | `chooseEventOption` | `startBattle` | `continueFromReport` | `chooseReward` | `attachActiveEvent`.
-6. Persist: `game_runs.state`, `game_actions`, `game_properties` (gold, cityHp, cityMaxHp, wallLevel, troopLevel, cityLevel, attack, defense dari **selector engine**), update save pointer.
-7. Event: AI/mock hanya narasi; validasi `packageId`/hari; fallback; jangan ganti event aktif setelah fallback.
+5. Types aksi minimal: `upgradeWall` | `upgradeTroops` | `upgradeCity` | `repairCity` | `endPreparationDay` | `chooseEventOption` | `startBattle` | `continueFromReport` | `chooseReward` | `attachActiveEvent` | `surrender`.
+6. Persist: `game_runs.state` v4 (termasuk `difficulty`, `eventPlan`, `pendingConsequences`, `rewardsChosenByWave`), `game_actions`, `game_properties` dari **selector engine**, update save pointer.
+7. Event: AI/mock hanya narasi; validasi `packageId`/hari dari plan; fallback; jangan ganti event aktif setelah fallback; dukung consequence.
 8. Battle: panggil engine sekali; simpan `game_report`; refresh baca hasil, tidak re-resolve.
 9. Tolak `DUPLICATE_ACTION` / revisi stale; jangan hitung biaya/damage di luar engine.
 
 **Jangan**
 
 - Menyalin rumus damage/biaya/transisi di luar pemanggilan engine.
-- Mengasumsikan field `upgradeLevel` tunggal (sudah diganti v3).
+- Mengasumsikan field `upgradeLevel` tunggal atau `rewardChosenId` (sudah diganti jalur tiga + `rewardsChosenByWave`).
+- Mengasumsikan FE/BE sudah lengkap hanya karena dokumen integrasi ada — verifikasi runtime.
 
 Acuan schema: [docs/database/schema_new.completed.drawio](./docs/database/schema_new.completed.drawio).
 
@@ -92,7 +101,7 @@ Acuan schema: [docs/database/schema_new.completed.drawio](./docs/database/schema
 1. Auth UI + new game / continue (wire ke API BE).
 2. Dashboard fase: hari, fase, gold, HP/MaxHP, **tiga level**, ATK/DEF/income, aksi tersisa, ancaman, efek + expiry.
 3. Panel aksi: tiga upgrade + repair + lanjut hari; preview biaya dari API/selector.
-4. Alur event (dua pilihan), battle playback dari log tersimpan, laporan, reward, layar menang/kalah.
+4. Alur event (2–4 pilihan + consequence), battle playback dari log tersimpan, laporan, reward per wave 1–9, layar menang/kalah.
 5. Error code dari server (`INSUFFICIENT_GOLD`, `EVENT_REQUIRED`, `STALE_REVISION`, dll.) tanpa spekulasi state lokal.
 6. Double-submit: `actionId` unik per klik; setelah sukses pakai state server terbaru.
 7. Mode Auto lanjut hari (timer 5s di UI saja; tidak auto-beli) — [plans/auto-run-20-dan-50.md](./plans/auto-run-20-dan-50.md).
@@ -166,7 +175,7 @@ Harness mock narasi (jika diaktifkan): lihat [docs/HARNESS.md](./docs/HARNESS.md
 
 | File | Status |
 |---|---|
-| MVP / PRD v2.1 | Acuan produk: tiga jalur upgrade, income 25 |
+| MVP / PRD v2.1 | Acuan produk tertulis (sebagian 20-hari); engine aktif lihat docs/game-engine |
 | AGENTS + DEV1_CONTRACT | Acuan engine v3 |
 | plans/feature-freeze-playtest | Todos FE/BE + freeze |
 | plans/ | Diskusi modul & roadmap |

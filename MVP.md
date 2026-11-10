@@ -2,11 +2,17 @@
 
 Versi 2.1 · Deadline 13 November 2026 · Tim: Engine · Backend · Frontend
 
-Dokumen ini menggantikan lingkup MVP yang masih menyebut rekrutmen unit atau upgrade tunggal ATK+DEF. Acuan aturan mesin: [AGENTS.md](./AGENTS.md), [docs/DEV1_CONTRACT.md](./docs/DEV1_CONTRACT.md). Acuan state & DB: [docs/database/Database_proposal.md](./docs/database/Database_proposal.md). Modul engine: [plans/game-engine-modules.md](./plans/game-engine-modules.md). Prioritas minggu ini: [plans/feature-freeze-playtest.md](./plans/feature-freeze-playtest.md).
+> **Status sinkronisasi**  
+> Lingkup tertulis MVP di bawah masih **20 hari / 2 wave / `version: 3`**, dan menunda kampanye 100 hari.  
+> **Engine di repo sudah mengimplementasikan 100 hari / 10 wave / `version: 4`.**  
+> Pertahankan kebutuhan MVP sebagai target produk yang perlu keputusan tim (apakah MVP diganti ke 100 hari, atau 20 hari tetap sebagai cakupan demo).  
+> Referensi engine aktif: [`docs/game-engine/README.md`](./docs/game-engine/README.md).
+
+Dokumen ini menggantikan lingkup MVP yang masih menyebut rekrutmen unit atau upgrade tunggal ATK+DEF. Acuan aturan mesin historis: [AGENTS.md](./AGENTS.md); kontrak hidup: [docs/DEV1_CONTRACT.md](./docs/DEV1_CONTRACT.md). Acuan state & DB: [docs/database/Database_proposal.md](./docs/database/Database_proposal.md). Modul engine: [plans/game-engine-modules.md](./plans/game-engine-modules.md). Prioritas minggu ini: [plans/feature-freeze-playtest.md](./plans/feature-freeze-playtest.md).
 
 ## Tujuan
 
-Prototipe web single-player: lord mempertahankan kota fantasy selama **20 hari** dan **2 wave**. Bisa dimainkan end-to-end, state konsisten, aturan TypeScript terpisah dari UI dan penyimpanan.
+Prototipe web single-player: lord mempertahankan kota fantasy selama **20 hari** dan **2 wave** (target tertulis MVP). Bisa dimainkan end-to-end, state konsisten, aturan TypeScript terpisah dari UI dan penyimpanan.
 
 Inspirasi alur event: pilihan terjadwal yang mengubah trajectory kota (mirip jeda pilihan di [1in8b](https://1in8b.life/en/)), bukan micro-management unit.
 
@@ -14,7 +20,7 @@ Inspirasi alur event: pilihan terjadwal yang mengubah trajectory kota (mirip jed
 
 | Role | Status prototipe |
 |---|---|
-| **Engine** | Siap integrasi: `src/game` murni, state `version: 3`, tiga jalur upgrade, tes 20 hari |
+| **Engine** | Siap integrasi: `src/game` murni, state `version: 4`, campaign 100 hari / 10 wave, tiga jalur upgrade, difficulty, tes di `tests/game-engine` (melampaui lingkup tertulis 20 hari di tabel bawah) |
 | **Backend** | **Lanjutkan** auth, Mongo, API aksi → panggil engine → commit |
 | **Frontend** | **Lanjutkan** UI produk + wire API; Auto lanjut hari (timer UI) |
 

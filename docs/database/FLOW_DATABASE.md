@@ -2,7 +2,9 @@
 
 Dokumen ini menjelaskan rancangan penyimpanan untuk game single-player. Nama koleksi mengikuti [schema_new.completed.drawio](schema_new.completed.drawio). Detail field ada di [Database_proposal.md](Database_proposal.md). Diagram yang dapat diedit: [database_flow.drawio](database_flow.drawio).
 
-Alur ini adalah rancangan integrasi Next.js, mesin permainan, dan MongoDB. Backend penyimpanannya belum diimplementasikan. Tidak ada seeding data dalam dokumen ini.
+> **Catatan:** beberapa langkah di bawah masih menyebut hari event tetap 3/7/13/17 dan `version: 3`. Engine aktif memakai `eventPlan` per run dan `version: 4` — lihat [`../game-engine/README.md`](../game-engine/README.md). Sesuaikan alur create-run saat mengimplementasikan persistensi.
+
+Alur ini adalah rancangan integrasi Next.js, mesin permainan, dan MongoDB. Status implementasi backend aktual ada di `app/docs/` (bukan diasumsikan dari teks historis “belum diimplementasikan” saja). Tidak ada seeding data dalam dokumen ini.
 
 ## 1. Mulai baru atau lanjutkan permainan
 

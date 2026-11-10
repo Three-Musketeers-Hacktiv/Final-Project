@@ -1,0 +1,1441 @@
+{
+  "source": {
+    "paired": "tests/game-engine/reports/paired-simulation-latest.json",
+    "hardEval": "tests/game-engine/reports/hard-eval-latest.json",
+    "pairedRows": 108,
+    "hardRows": 90,
+    "unfinished": 0
+  },
+  "repairRule": "HP di bawah 80% MaxHP didahulukan dari upgrade",
+  "chartA": {
+    "normal": {
+      "attack": {
+        "sample": 6,
+        "finished": 6,
+        "unfinished": 0,
+        "wins": 6,
+        "losses": 0,
+        "winPct": 100,
+        "lossPct": 0,
+        "medianLossWave": null,
+        "lossWaves": []
+      },
+      "defense": {
+        "sample": 6,
+        "finished": 6,
+        "unfinished": 0,
+        "wins": 6,
+        "losses": 0,
+        "winPct": 100,
+        "lossPct": 0,
+        "medianLossWave": null,
+        "lossWaves": []
+      },
+      "economy": {
+        "sample": 6,
+        "finished": 6,
+        "unfinished": 0,
+        "wins": 6,
+        "losses": 0,
+        "winPct": 100,
+        "lossPct": 0,
+        "medianLossWave": null,
+        "lossWaves": []
+      },
+      "balanced": {
+        "sample": 6,
+        "finished": 6,
+        "unfinished": 0,
+        "wins": 6,
+        "losses": 0,
+        "winPct": 100,
+        "lossPct": 0,
+        "medianLossWave": null,
+        "lossWaves": []
+      }
+    },
+    "hard": {
+      "attack": {
+        "sample": 6,
+        "finished": 6,
+        "unfinished": 0,
+        "wins": 1,
+        "losses": 5,
+        "winPct": 16.7,
+        "lossPct": 83.3,
+        "medianLossWave": 9,
+        "lossWaves": [
+          9,
+          9,
+          9,
+          9,
+          9
+        ]
+      },
+      "defense": {
+        "sample": 6,
+        "finished": 6,
+        "unfinished": 0,
+        "wins": 1,
+        "losses": 5,
+        "winPct": 16.7,
+        "lossPct": 83.3,
+        "medianLossWave": 7,
+        "lossWaves": [
+          9,
+          7,
+          7,
+          9,
+          7
+        ]
+      },
+      "economy": {
+        "sample": 6,
+        "finished": 6,
+        "unfinished": 0,
+        "wins": 1,
+        "losses": 5,
+        "winPct": 16.7,
+        "lossPct": 83.3,
+        "medianLossWave": 10,
+        "lossWaves": [
+          10,
+          10,
+          10,
+          10,
+          10
+        ]
+      },
+      "balanced": {
+        "sample": 6,
+        "finished": 6,
+        "unfinished": 0,
+        "wins": 4,
+        "losses": 2,
+        "winPct": 66.7,
+        "lossPct": 33.3,
+        "medianLossWave": 9,
+        "lossWaves": [
+          9,
+          9
+        ]
+      }
+    }
+  },
+  "chartB": {
+    "normal": {
+      "attack": {
+        "off": {
+          "sample": 6,
+          "finished": 6,
+          "unfinished": 0,
+          "wins": 0,
+          "losses": 6,
+          "winPct": 0,
+          "lossPct": 100,
+          "medianLossWave": 4,
+          "lossWaves": [
+            4,
+            4,
+            4,
+            4,
+            4,
+            3
+          ]
+        },
+        "on": {
+          "sample": 6,
+          "finished": 6,
+          "unfinished": 0,
+          "wins": 6,
+          "losses": 0,
+          "winPct": 100,
+          "lossPct": 0,
+          "medianLossWave": null,
+          "lossWaves": []
+        }
+      },
+      "defense": {
+        "off": {
+          "sample": 6,
+          "finished": 6,
+          "unfinished": 0,
+          "wins": 0,
+          "losses": 6,
+          "winPct": 0,
+          "lossPct": 100,
+          "medianLossWave": 4,
+          "lossWaves": [
+            5,
+            4,
+            4,
+            4,
+            4,
+            3
+          ]
+        },
+        "on": {
+          "sample": 6,
+          "finished": 6,
+          "unfinished": 0,
+          "wins": 6,
+          "losses": 0,
+          "winPct": 100,
+          "lossPct": 0,
+          "medianLossWave": null,
+          "lossWaves": []
+        }
+      },
+      "economy": {
+        "off": {
+          "sample": 6,
+          "finished": 6,
+          "unfinished": 0,
+          "wins": 0,
+          "losses": 6,
+          "winPct": 0,
+          "lossPct": 100,
+          "medianLossWave": 4,
+          "lossWaves": [
+            5,
+            4,
+            4,
+            4,
+            4,
+            4
+          ]
+        },
+        "on": {
+          "sample": 6,
+          "finished": 6,
+          "unfinished": 0,
+          "wins": 6,
+          "losses": 0,
+          "winPct": 100,
+          "lossPct": 0,
+          "medianLossWave": null,
+          "lossWaves": []
+        }
+      },
+      "balanced": {
+        "off": {
+          "sample": 6,
+          "finished": 6,
+          "unfinished": 0,
+          "wins": 0,
+          "losses": 6,
+          "winPct": 0,
+          "lossPct": 100,
+          "medianLossWave": 4,
+          "lossWaves": [
+            5,
+            4,
+            4,
+            4,
+            4,
+            4
+          ]
+        },
+        "on": {
+          "sample": 6,
+          "finished": 6,
+          "unfinished": 0,
+          "wins": 6,
+          "losses": 0,
+          "winPct": 100,
+          "lossPct": 0,
+          "medianLossWave": null,
+          "lossWaves": []
+        }
+      }
+    },
+    "hard": {
+      "attack": {
+        "off": {
+          "sample": 6,
+          "finished": 6,
+          "unfinished": 0,
+          "wins": 0,
+          "losses": 6,
+          "winPct": 0,
+          "lossPct": 100,
+          "medianLossWave": 2,
+          "lossWaves": [
+            3,
+            2,
+            2,
+            2,
+            3,
+            2
+          ]
+        },
+        "on": {
+          "sample": 6,
+          "finished": 6,
+          "unfinished": 0,
+          "wins": 1,
+          "losses": 5,
+          "winPct": 16.7,
+          "lossPct": 83.3,
+          "medianLossWave": 9,
+          "lossWaves": [
+            9,
+            9,
+            9,
+            9,
+            9
+          ]
+        }
+      },
+      "defense": {
+        "off": {
+          "sample": 6,
+          "finished": 6,
+          "unfinished": 0,
+          "wins": 0,
+          "losses": 6,
+          "winPct": 0,
+          "lossPct": 100,
+          "medianLossWave": 3,
+          "lossWaves": [
+            3,
+            3,
+            3,
+            2,
+            3,
+            2
+          ]
+        },
+        "on": {
+          "sample": 6,
+          "finished": 6,
+          "unfinished": 0,
+          "wins": 1,
+          "losses": 5,
+          "winPct": 16.7,
+          "lossPct": 83.3,
+          "medianLossWave": 7,
+          "lossWaves": [
+            9,
+            7,
+            7,
+            9,
+            7
+          ]
+        }
+      },
+      "economy": {
+        "off": {
+          "sample": 6,
+          "finished": 6,
+          "unfinished": 0,
+          "wins": 0,
+          "losses": 6,
+          "winPct": 0,
+          "lossPct": 100,
+          "medianLossWave": 3,
+          "lossWaves": [
+            3,
+            3,
+            3,
+            3,
+            3,
+            3
+          ]
+        },
+        "on": {
+          "sample": 6,
+          "finished": 6,
+          "unfinished": 0,
+          "wins": 1,
+          "losses": 5,
+          "winPct": 16.7,
+          "lossPct": 83.3,
+          "medianLossWave": 10,
+          "lossWaves": [
+            10,
+            10,
+            10,
+            10,
+            10
+          ]
+        }
+      },
+      "balanced": {
+        "off": {
+          "sample": 6,
+          "finished": 6,
+          "unfinished": 0,
+          "wins": 0,
+          "losses": 6,
+          "winPct": 0,
+          "lossPct": 100,
+          "medianLossWave": 2.5,
+          "lossWaves": [
+            3,
+            3,
+            2,
+            2,
+            3,
+            2
+          ]
+        },
+        "on": {
+          "sample": 6,
+          "finished": 6,
+          "unfinished": 0,
+          "wins": 4,
+          "losses": 2,
+          "winPct": 66.7,
+          "lossPct": 33.3,
+          "medianLossWave": 9,
+          "lossWaves": [
+            9,
+            9
+          ]
+        }
+      }
+    }
+  },
+  "chartC": {
+    "attack": {
+      "survival": {
+        "sample": 6,
+        "finished": 6,
+        "unfinished": 0,
+        "wins": 0,
+        "losses": 6,
+        "winPct": 0,
+        "lossPct": 100,
+        "medianLossWave": 7.5,
+        "lossWaves": [
+          8,
+          8,
+          7,
+          7,
+          7,
+          8
+        ]
+      },
+      "fortify": {
+        "sample": 6,
+        "finished": 6,
+        "unfinished": 0,
+        "wins": 0,
+        "losses": 6,
+        "winPct": 0,
+        "lossPct": 100,
+        "medianLossWave": 10,
+        "lossWaves": [
+          10,
+          10,
+          10,
+          10,
+          9,
+          9
+        ]
+      },
+      "treasury": {
+        "sample": 6,
+        "finished": 6,
+        "unfinished": 0,
+        "wins": 0,
+        "losses": 6,
+        "winPct": 0,
+        "lossPct": 100,
+        "medianLossWave": 9.5,
+        "lossWaves": [
+          10,
+          9,
+          10,
+          8,
+          8,
+          10
+        ]
+      }
+    },
+    "defense": {
+      "survival": {
+        "sample": 6,
+        "finished": 6,
+        "unfinished": 0,
+        "wins": 0,
+        "losses": 6,
+        "winPct": 0,
+        "lossPct": 100,
+        "medianLossWave": 7.5,
+        "lossWaves": [
+          8,
+          7,
+          7,
+          8,
+          8,
+          3
+        ]
+      },
+      "fortify": {
+        "sample": 6,
+        "finished": 6,
+        "unfinished": 0,
+        "wins": 0,
+        "losses": 6,
+        "winPct": 0,
+        "lossPct": 100,
+        "medianLossWave": 9.5,
+        "lossWaves": [
+          10,
+          10,
+          9,
+          9,
+          10,
+          9
+        ]
+      },
+      "treasury": {
+        "sample": 6,
+        "finished": 6,
+        "unfinished": 0,
+        "wins": 0,
+        "losses": 6,
+        "winPct": 0,
+        "lossPct": 100,
+        "medianLossWave": 8,
+        "lossWaves": [
+          9,
+          8,
+          6,
+          7,
+          8,
+          10
+        ]
+      }
+    },
+    "economy": {
+      "survival": {
+        "sample": 6,
+        "finished": 6,
+        "unfinished": 0,
+        "wins": 1,
+        "losses": 5,
+        "winPct": 16.7,
+        "lossPct": 83.3,
+        "medianLossWave": 8,
+        "lossWaves": [
+          8,
+          8,
+          8,
+          9,
+          8
+        ]
+      },
+      "fortify": {
+        "sample": 6,
+        "finished": 6,
+        "unfinished": 0,
+        "wins": 5,
+        "losses": 1,
+        "winPct": 83.3,
+        "lossPct": 16.7,
+        "medianLossWave": 10,
+        "lossWaves": [
+          10
+        ]
+      },
+      "treasury": {
+        "sample": 6,
+        "finished": 6,
+        "unfinished": 0,
+        "wins": 5,
+        "losses": 1,
+        "winPct": 83.3,
+        "lossPct": 16.7,
+        "medianLossWave": 10,
+        "lossWaves": [
+          10
+        ]
+      }
+    },
+    "balanced": {
+      "survival": {
+        "sample": 6,
+        "finished": 6,
+        "unfinished": 0,
+        "wins": 1,
+        "losses": 5,
+        "winPct": 16.7,
+        "lossPct": 83.3,
+        "medianLossWave": 8,
+        "lossWaves": [
+          8,
+          8,
+          8,
+          8,
+          9
+        ]
+      },
+      "fortify": {
+        "sample": 6,
+        "finished": 6,
+        "unfinished": 0,
+        "wins": 6,
+        "losses": 0,
+        "winPct": 100,
+        "lossPct": 0,
+        "medianLossWave": null,
+        "lossWaves": []
+      },
+      "treasury": {
+        "sample": 6,
+        "finished": 6,
+        "unfinished": 0,
+        "wins": 6,
+        "losses": 0,
+        "winPct": 100,
+        "lossPct": 0,
+        "medianLossWave": null,
+        "lossWaves": []
+      }
+    },
+    "knownWin": {
+      "survival": {
+        "sample": 6,
+        "finished": 6,
+        "unfinished": 0,
+        "wins": 0,
+        "losses": 6,
+        "winPct": 0,
+        "lossPct": 100,
+        "medianLossWave": 7.5,
+        "lossWaves": [
+          8,
+          8,
+          7,
+          7,
+          7,
+          8
+        ]
+      },
+      "fortify": {
+        "sample": 6,
+        "finished": 6,
+        "unfinished": 0,
+        "wins": 0,
+        "losses": 6,
+        "winPct": 0,
+        "lossPct": 100,
+        "medianLossWave": 10,
+        "lossWaves": [
+          10,
+          10,
+          10,
+          10,
+          9,
+          9
+        ]
+      },
+      "treasury": {
+        "sample": 6,
+        "finished": 6,
+        "unfinished": 0,
+        "wins": 0,
+        "losses": 6,
+        "winPct": 0,
+        "lossPct": 100,
+        "medianLossWave": 9.5,
+        "lossWaves": [
+          10,
+          9,
+          10,
+          8,
+          8,
+          10
+        ]
+      }
+    }
+  },
+  "hardVictories": 24,
+  "hardLossLeaders": [
+    {
+      "wave": 8,
+      "count": 23
+    },
+    {
+      "wave": 10,
+      "count": 20
+    },
+    {
+      "wave": 9,
+      "count": 12
+    },
+    {
+      "wave": 7,
+      "count": 9
+    },
+    {
+      "wave": 3,
+      "count": 1
+    },
+    {
+      "wave": 6,
+      "count": 1
+    }
+  ],
+  "wavePanels": [
+    {
+      "title": "Pasangan normal, repair mati",
+      "lossCount": 24
+    },
+    {
+      "title": "Pasangan normal, repair di bawah 80% HP",
+      "lossCount": 0
+    },
+    {
+      "title": "Pasangan hard, repair mati",
+      "lossCount": 24
+    },
+    {
+      "title": "Pasangan hard, repair di bawah 80% HP",
+      "lossCount": 17
+    },
+    {
+      "title": "Evaluasi hard, semua kebijakan reward",
+      "lossCount": 66
+    }
+  ],
+  "tablePaired": [
+    {
+      "difficulty": "normal",
+      "strategy": "attack",
+      "repair": "tanpa repair",
+      "reward": "standard",
+      "stat": {
+        "sample": 6,
+        "finished": 6,
+        "unfinished": 0,
+        "wins": 0,
+        "losses": 6,
+        "winPct": 0,
+        "lossPct": 100,
+        "medianLossWave": 4,
+        "lossWaves": [
+          4,
+          4,
+          4,
+          4,
+          4,
+          3
+        ]
+      }
+    },
+    {
+      "difficulty": "normal",
+      "strategy": "attack",
+      "repair": "di bawah 80% HP",
+      "reward": "standard",
+      "stat": {
+        "sample": 6,
+        "finished": 6,
+        "unfinished": 0,
+        "wins": 6,
+        "losses": 0,
+        "winPct": 100,
+        "lossPct": 0,
+        "medianLossWave": null,
+        "lossWaves": []
+      }
+    },
+    {
+      "difficulty": "normal",
+      "strategy": "defense",
+      "repair": "tanpa repair",
+      "reward": "standard",
+      "stat": {
+        "sample": 6,
+        "finished": 6,
+        "unfinished": 0,
+        "wins": 0,
+        "losses": 6,
+        "winPct": 0,
+        "lossPct": 100,
+        "medianLossWave": 4,
+        "lossWaves": [
+          5,
+          4,
+          4,
+          4,
+          4,
+          3
+        ]
+      }
+    },
+    {
+      "difficulty": "normal",
+      "strategy": "defense",
+      "repair": "di bawah 80% HP",
+      "reward": "standard",
+      "stat": {
+        "sample": 6,
+        "finished": 6,
+        "unfinished": 0,
+        "wins": 6,
+        "losses": 0,
+        "winPct": 100,
+        "lossPct": 0,
+        "medianLossWave": null,
+        "lossWaves": []
+      }
+    },
+    {
+      "difficulty": "normal",
+      "strategy": "economy",
+      "repair": "tanpa repair",
+      "reward": "standard",
+      "stat": {
+        "sample": 6,
+        "finished": 6,
+        "unfinished": 0,
+        "wins": 0,
+        "losses": 6,
+        "winPct": 0,
+        "lossPct": 100,
+        "medianLossWave": 4,
+        "lossWaves": [
+          5,
+          4,
+          4,
+          4,
+          4,
+          4
+        ]
+      }
+    },
+    {
+      "difficulty": "normal",
+      "strategy": "economy",
+      "repair": "di bawah 80% HP",
+      "reward": "standard",
+      "stat": {
+        "sample": 6,
+        "finished": 6,
+        "unfinished": 0,
+        "wins": 6,
+        "losses": 0,
+        "winPct": 100,
+        "lossPct": 0,
+        "medianLossWave": null,
+        "lossWaves": []
+      }
+    },
+    {
+      "difficulty": "normal",
+      "strategy": "balanced",
+      "repair": "tanpa repair",
+      "reward": "standard",
+      "stat": {
+        "sample": 6,
+        "finished": 6,
+        "unfinished": 0,
+        "wins": 0,
+        "losses": 6,
+        "winPct": 0,
+        "lossPct": 100,
+        "medianLossWave": 4,
+        "lossWaves": [
+          5,
+          4,
+          4,
+          4,
+          4,
+          4
+        ]
+      }
+    },
+    {
+      "difficulty": "normal",
+      "strategy": "balanced",
+      "repair": "di bawah 80% HP",
+      "reward": "standard",
+      "stat": {
+        "sample": 6,
+        "finished": 6,
+        "unfinished": 0,
+        "wins": 6,
+        "losses": 0,
+        "winPct": 100,
+        "lossPct": 0,
+        "medianLossWave": null,
+        "lossWaves": []
+      }
+    },
+    {
+      "difficulty": "normal",
+      "strategy": "skip",
+      "repair": "tanpa repair",
+      "reward": "standard",
+      "stat": {
+        "sample": 6,
+        "finished": 6,
+        "unfinished": 0,
+        "wins": 0,
+        "losses": 6,
+        "winPct": 0,
+        "lossPct": 100,
+        "medianLossWave": 1,
+        "lossWaves": [
+          1,
+          1,
+          1,
+          1,
+          1,
+          1
+        ]
+      }
+    },
+    {
+      "difficulty": "hard",
+      "strategy": "attack",
+      "repair": "tanpa repair",
+      "reward": "standard",
+      "stat": {
+        "sample": 6,
+        "finished": 6,
+        "unfinished": 0,
+        "wins": 0,
+        "losses": 6,
+        "winPct": 0,
+        "lossPct": 100,
+        "medianLossWave": 2,
+        "lossWaves": [
+          3,
+          2,
+          2,
+          2,
+          3,
+          2
+        ]
+      }
+    },
+    {
+      "difficulty": "hard",
+      "strategy": "attack",
+      "repair": "di bawah 80% HP",
+      "reward": "standard",
+      "stat": {
+        "sample": 6,
+        "finished": 6,
+        "unfinished": 0,
+        "wins": 1,
+        "losses": 5,
+        "winPct": 16.7,
+        "lossPct": 83.3,
+        "medianLossWave": 9,
+        "lossWaves": [
+          9,
+          9,
+          9,
+          9,
+          9
+        ]
+      }
+    },
+    {
+      "difficulty": "hard",
+      "strategy": "defense",
+      "repair": "tanpa repair",
+      "reward": "standard",
+      "stat": {
+        "sample": 6,
+        "finished": 6,
+        "unfinished": 0,
+        "wins": 0,
+        "losses": 6,
+        "winPct": 0,
+        "lossPct": 100,
+        "medianLossWave": 3,
+        "lossWaves": [
+          3,
+          3,
+          3,
+          2,
+          3,
+          2
+        ]
+      }
+    },
+    {
+      "difficulty": "hard",
+      "strategy": "defense",
+      "repair": "di bawah 80% HP",
+      "reward": "standard",
+      "stat": {
+        "sample": 6,
+        "finished": 6,
+        "unfinished": 0,
+        "wins": 1,
+        "losses": 5,
+        "winPct": 16.7,
+        "lossPct": 83.3,
+        "medianLossWave": 7,
+        "lossWaves": [
+          9,
+          7,
+          7,
+          9,
+          7
+        ]
+      }
+    },
+    {
+      "difficulty": "hard",
+      "strategy": "economy",
+      "repair": "tanpa repair",
+      "reward": "standard",
+      "stat": {
+        "sample": 6,
+        "finished": 6,
+        "unfinished": 0,
+        "wins": 0,
+        "losses": 6,
+        "winPct": 0,
+        "lossPct": 100,
+        "medianLossWave": 3,
+        "lossWaves": [
+          3,
+          3,
+          3,
+          3,
+          3,
+          3
+        ]
+      }
+    },
+    {
+      "difficulty": "hard",
+      "strategy": "economy",
+      "repair": "di bawah 80% HP",
+      "reward": "standard",
+      "stat": {
+        "sample": 6,
+        "finished": 6,
+        "unfinished": 0,
+        "wins": 1,
+        "losses": 5,
+        "winPct": 16.7,
+        "lossPct": 83.3,
+        "medianLossWave": 10,
+        "lossWaves": [
+          10,
+          10,
+          10,
+          10,
+          10
+        ]
+      }
+    },
+    {
+      "difficulty": "hard",
+      "strategy": "balanced",
+      "repair": "tanpa repair",
+      "reward": "standard",
+      "stat": {
+        "sample": 6,
+        "finished": 6,
+        "unfinished": 0,
+        "wins": 0,
+        "losses": 6,
+        "winPct": 0,
+        "lossPct": 100,
+        "medianLossWave": 2.5,
+        "lossWaves": [
+          3,
+          3,
+          2,
+          2,
+          3,
+          2
+        ]
+      }
+    },
+    {
+      "difficulty": "hard",
+      "strategy": "balanced",
+      "repair": "di bawah 80% HP",
+      "reward": "standard",
+      "stat": {
+        "sample": 6,
+        "finished": 6,
+        "unfinished": 0,
+        "wins": 4,
+        "losses": 2,
+        "winPct": 66.7,
+        "lossPct": 33.3,
+        "medianLossWave": 9,
+        "lossWaves": [
+          9,
+          9
+        ]
+      }
+    },
+    {
+      "difficulty": "hard",
+      "strategy": "skip",
+      "repair": "tanpa repair",
+      "reward": "standard",
+      "stat": {
+        "sample": 6,
+        "finished": 6,
+        "unfinished": 0,
+        "wins": 0,
+        "losses": 6,
+        "winPct": 0,
+        "lossPct": 100,
+        "medianLossWave": 1,
+        "lossWaves": [
+          1,
+          1,
+          1,
+          1,
+          1,
+          1
+        ]
+      }
+    }
+  ],
+  "tableHard": [
+    {
+      "difficulty": "hard",
+      "strategy": "attack",
+      "repair": "di bawah 80% HP",
+      "reward": "survival",
+      "stat": {
+        "sample": 6,
+        "finished": 6,
+        "unfinished": 0,
+        "wins": 0,
+        "losses": 6,
+        "winPct": 0,
+        "lossPct": 100,
+        "medianLossWave": 7.5,
+        "lossWaves": [
+          8,
+          8,
+          7,
+          7,
+          7,
+          8
+        ]
+      }
+    },
+    {
+      "difficulty": "hard",
+      "strategy": "attack",
+      "repair": "di bawah 80% HP",
+      "reward": "fortify",
+      "stat": {
+        "sample": 6,
+        "finished": 6,
+        "unfinished": 0,
+        "wins": 0,
+        "losses": 6,
+        "winPct": 0,
+        "lossPct": 100,
+        "medianLossWave": 10,
+        "lossWaves": [
+          10,
+          10,
+          10,
+          10,
+          9,
+          9
+        ]
+      }
+    },
+    {
+      "difficulty": "hard",
+      "strategy": "attack",
+      "repair": "di bawah 80% HP",
+      "reward": "treasury",
+      "stat": {
+        "sample": 6,
+        "finished": 6,
+        "unfinished": 0,
+        "wins": 0,
+        "losses": 6,
+        "winPct": 0,
+        "lossPct": 100,
+        "medianLossWave": 9.5,
+        "lossWaves": [
+          10,
+          9,
+          10,
+          8,
+          8,
+          10
+        ]
+      }
+    },
+    {
+      "difficulty": "hard",
+      "strategy": "defense",
+      "repair": "di bawah 80% HP",
+      "reward": "survival",
+      "stat": {
+        "sample": 6,
+        "finished": 6,
+        "unfinished": 0,
+        "wins": 0,
+        "losses": 6,
+        "winPct": 0,
+        "lossPct": 100,
+        "medianLossWave": 7.5,
+        "lossWaves": [
+          8,
+          7,
+          7,
+          8,
+          8,
+          3
+        ]
+      }
+    },
+    {
+      "difficulty": "hard",
+      "strategy": "defense",
+      "repair": "di bawah 80% HP",
+      "reward": "fortify",
+      "stat": {
+        "sample": 6,
+        "finished": 6,
+        "unfinished": 0,
+        "wins": 0,
+        "losses": 6,
+        "winPct": 0,
+        "lossPct": 100,
+        "medianLossWave": 9.5,
+        "lossWaves": [
+          10,
+          10,
+          9,
+          9,
+          10,
+          9
+        ]
+      }
+    },
+    {
+      "difficulty": "hard",
+      "strategy": "defense",
+      "repair": "di bawah 80% HP",
+      "reward": "treasury",
+      "stat": {
+        "sample": 6,
+        "finished": 6,
+        "unfinished": 0,
+        "wins": 0,
+        "losses": 6,
+        "winPct": 0,
+        "lossPct": 100,
+        "medianLossWave": 8,
+        "lossWaves": [
+          9,
+          8,
+          6,
+          7,
+          8,
+          10
+        ]
+      }
+    },
+    {
+      "difficulty": "hard",
+      "strategy": "economy",
+      "repair": "di bawah 80% HP",
+      "reward": "survival",
+      "stat": {
+        "sample": 6,
+        "finished": 6,
+        "unfinished": 0,
+        "wins": 1,
+        "losses": 5,
+        "winPct": 16.7,
+        "lossPct": 83.3,
+        "medianLossWave": 8,
+        "lossWaves": [
+          8,
+          8,
+          8,
+          9,
+          8
+        ]
+      }
+    },
+    {
+      "difficulty": "hard",
+      "strategy": "economy",
+      "repair": "di bawah 80% HP",
+      "reward": "fortify",
+      "stat": {
+        "sample": 6,
+        "finished": 6,
+        "unfinished": 0,
+        "wins": 5,
+        "losses": 1,
+        "winPct": 83.3,
+        "lossPct": 16.7,
+        "medianLossWave": 10,
+        "lossWaves": [
+          10
+        ]
+      }
+    },
+    {
+      "difficulty": "hard",
+      "strategy": "economy",
+      "repair": "di bawah 80% HP",
+      "reward": "treasury",
+      "stat": {
+        "sample": 6,
+        "finished": 6,
+        "unfinished": 0,
+        "wins": 5,
+        "losses": 1,
+        "winPct": 83.3,
+        "lossPct": 16.7,
+        "medianLossWave": 10,
+        "lossWaves": [
+          10
+        ]
+      }
+    },
+    {
+      "difficulty": "hard",
+      "strategy": "balanced",
+      "repair": "di bawah 80% HP",
+      "reward": "survival",
+      "stat": {
+        "sample": 6,
+        "finished": 6,
+        "unfinished": 0,
+        "wins": 1,
+        "losses": 5,
+        "winPct": 16.7,
+        "lossPct": 83.3,
+        "medianLossWave": 8,
+        "lossWaves": [
+          8,
+          8,
+          8,
+          8,
+          9
+        ]
+      }
+    },
+    {
+      "difficulty": "hard",
+      "strategy": "balanced",
+      "repair": "di bawah 80% HP",
+      "reward": "fortify",
+      "stat": {
+        "sample": 6,
+        "finished": 6,
+        "unfinished": 0,
+        "wins": 6,
+        "losses": 0,
+        "winPct": 100,
+        "lossPct": 0,
+        "medianLossWave": null,
+        "lossWaves": []
+      }
+    },
+    {
+      "difficulty": "hard",
+      "strategy": "balanced",
+      "repair": "di bawah 80% HP",
+      "reward": "treasury",
+      "stat": {
+        "sample": 6,
+        "finished": 6,
+        "unfinished": 0,
+        "wins": 6,
+        "losses": 0,
+        "winPct": 100,
+        "lossPct": 0,
+        "medianLossWave": null,
+        "lossWaves": []
+      }
+    },
+    {
+      "difficulty": "hard",
+      "strategy": "knownWin",
+      "repair": "aturan knownWin",
+      "reward": "survival",
+      "stat": {
+        "sample": 6,
+        "finished": 6,
+        "unfinished": 0,
+        "wins": 0,
+        "losses": 6,
+        "winPct": 0,
+        "lossPct": 100,
+        "medianLossWave": 7.5,
+        "lossWaves": [
+          8,
+          8,
+          7,
+          7,
+          7,
+          8
+        ]
+      }
+    },
+    {
+      "difficulty": "hard",
+      "strategy": "knownWin",
+      "repair": "aturan knownWin",
+      "reward": "fortify",
+      "stat": {
+        "sample": 6,
+        "finished": 6,
+        "unfinished": 0,
+        "wins": 0,
+        "losses": 6,
+        "winPct": 0,
+        "lossPct": 100,
+        "medianLossWave": 10,
+        "lossWaves": [
+          10,
+          10,
+          10,
+          10,
+          9,
+          9
+        ]
+      }
+    },
+    {
+      "difficulty": "hard",
+      "strategy": "knownWin",
+      "repair": "aturan knownWin",
+      "reward": "treasury",
+      "stat": {
+        "sample": 6,
+        "finished": 6,
+        "unfinished": 0,
+        "wins": 0,
+        "losses": 6,
+        "winPct": 0,
+        "lossPct": 100,
+        "medianLossWave": 9.5,
+        "lossWaves": [
+          10,
+          9,
+          10,
+          8,
+          8,
+          10
+        ]
+      }
+    }
+  ],
+  "targetWinRate": null
+}

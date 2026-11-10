@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 680 500" role="img">
+  <title>Persentase menang hard menurut strategi dan kebijakan reward</title>
+  <rect width="680" height="500" fill="#f7f3ec"/>
+  <text x="24" y="32" font-size="20" fill="#241f1a">Hard: strategi dan kebijakan reward</text>
+  <text x="235" y="78" text-anchor="middle" font-size="14" fill="#241f1a">survival</text><text x="385" y="78" text-anchor="middle" font-size="14" fill="#241f1a">fortify</text><text x="535" y="78" text-anchor="middle" font-size="14" fill="#241f1a">treasury</text><text x="148" y="128" text-anchor="end" font-size="14" fill="#241f1a">attack</text><rect x="160" y="90" width="142" height="56" fill="#f3e4dc" stroke="#241f1a"/>
+        <text x="231" y="118" text-anchor="middle" font-size="16" fill="#241f1a">0%</text>
+        <text x="231" y="136" text-anchor="middle" font-size="12" fill="#3d3832">0/6</text><rect x="310" y="90" width="142" height="56" fill="#f3e4dc" stroke="#241f1a"/>
+        <text x="381" y="118" text-anchor="middle" font-size="16" fill="#241f1a">0%</text>
+        <text x="381" y="136" text-anchor="middle" font-size="12" fill="#3d3832">0/6</text><rect x="460" y="90" width="142" height="56" fill="#f3e4dc" stroke="#241f1a"/>
+        <text x="531" y="118" text-anchor="middle" font-size="16" fill="#241f1a">0%</text>
+        <text x="531" y="136" text-anchor="middle" font-size="12" fill="#3d3832">0/6</text><text x="148" y="192" text-anchor="end" font-size="14" fill="#241f1a">defense</text><rect x="160" y="154" width="142" height="56" fill="#f3e4dc" stroke="#241f1a"/>
+        <text x="231" y="182" text-anchor="middle" font-size="16" fill="#241f1a">0%</text>
+        <text x="231" y="200" text-anchor="middle" font-size="12" fill="#3d3832">0/6</text><rect x="310" y="154" width="142" height="56" fill="#f3e4dc" stroke="#241f1a"/>
+        <text x="381" y="182" text-anchor="middle" font-size="16" fill="#241f1a">0%</text>
+        <text x="381" y="200" text-anchor="middle" font-size="12" fill="#3d3832">0/6</text><rect x="460" y="154" width="142" height="56" fill="#f3e4dc" stroke="#241f1a"/>
+        <text x="531" y="182" text-anchor="middle" font-size="16" fill="#241f1a">0%</text>
+        <text x="531" y="200" text-anchor="middle" font-size="12" fill="#3d3832">0/6</text><text x="148" y="256" text-anchor="end" font-size="14" fill="#241f1a">economy</text><rect x="160" y="218" width="142" height="56" fill="#e7c7b4" stroke="#241f1a"/>
+        <text x="231" y="246" text-anchor="middle" font-size="16" fill="#241f1a">16,7%</text>
+        <text x="231" y="264" text-anchor="middle" font-size="12" fill="#3d3832">1/6</text><rect x="310" y="218" width="142" height="56" fill="#7eae96" stroke="#241f1a"/>
+        <text x="381" y="246" text-anchor="middle" font-size="16" fill="#241f1a">83,3%</text>
+        <text x="381" y="264" text-anchor="middle" font-size="12" fill="#3d3832">5/6</text><rect x="460" y="218" width="142" height="56" fill="#7eae96" stroke="#241f1a"/>
+        <text x="531" y="246" text-anchor="middle" font-size="16" fill="#241f1a">83,3%</text>
+        <text x="531" y="264" text-anchor="middle" font-size="12" fill="#3d3832">5/6</text><text x="148" y="320" text-anchor="end" font-size="14" fill="#241f1a">balanced</text><rect x="160" y="282" width="142" height="56" fill="#e7c7b4" stroke="#241f1a"/>
+        <text x="231" y="310" text-anchor="middle" font-size="16" fill="#241f1a">16,7%</text>
+        <text x="231" y="328" text-anchor="middle" font-size="12" fill="#3d3832">1/6</text><rect x="310" y="282" width="142" height="56" fill="#7eae96" stroke="#241f1a"/>
+        <text x="381" y="310" text-anchor="middle" font-size="16" fill="#241f1a">100%</text>
+        <text x="381" y="328" text-anchor="middle" font-size="12" fill="#3d3832">6/6</text><rect x="460" y="282" width="142" height="56" fill="#7eae96" stroke="#241f1a"/>
+        <text x="531" y="310" text-anchor="middle" font-size="16" fill="#241f1a">100%</text>
+        <text x="531" y="328" text-anchor="middle" font-size="12" fill="#3d3832">6/6</text><text x="148" y="384" text-anchor="end" font-size="14" fill="#241f1a">knownWin</text><rect x="160" y="346" width="142" height="56" fill="#f3e4dc" stroke="#241f1a"/>
+        <text x="231" y="374" text-anchor="middle" font-size="16" fill="#241f1a">0%</text>
+        <text x="231" y="392" text-anchor="middle" font-size="12" fill="#3d3832">0/6</text><rect x="310" y="346" width="142" height="56" fill="#f3e4dc" stroke="#241f1a"/>
+        <text x="381" y="374" text-anchor="middle" font-size="16" fill="#241f1a">0%</text>
+        <text x="381" y="392" text-anchor="middle" font-size="12" fill="#3d3832">0/6</text><rect x="460" y="346" width="142" height="56" fill="#f3e4dc" stroke="#241f1a"/>
+        <text x="531" y="374" text-anchor="middle" font-size="16" fill="#241f1a">0%</text>
+        <text x="531" y="392" text-anchor="middle" font-size="12" fill="#3d3832">0/6</text>
+  <text x="24" y="430" font-size="13" fill="#5c564e">Hanya dataset hard-eval. Tiap sel n=6.</text><text x="24" y="448" font-size="13" fill="#5c564e">knownWin memperbaiki kota di dalam aturan strateginya sendiri,</text><text x="24" y="466" font-size="13" fill="#5c564e">bukan flag repair yang sama dengan empat strategi lain.</text><text x="24" y="484" font-size="13" fill="#5c564e">Simulasi strategi otomatis, bukan win rate pemain.</text>
+</svg>

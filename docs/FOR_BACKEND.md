@@ -1,6 +1,7 @@
 # Backend — wire API to Game Engine v4
 
 Baseline: 100-day / 10-wave engine in `src/game`.  
+Referensi lengkap: [game-engine/README.md](./game-engine/README.md) · [game-engine/API_AND_INTEGRATION.md](./game-engine/API_AND_INTEGRATION.md).  
 See [CAMPAIGN_100_DAY_CONTRACT.md](./CAMPAIGN_100_DAY_CONTRACT.md), [DEV1_CONTRACT.md](./DEV1_CONTRACT.md), [Patch.md](../Patch.md).
 
 ## Role

@@ -1,6 +1,6 @@
 # Engine → Frontend contract (event price, labels, chains)
 
-Companion: [CAMPAIGN_100_DAY_CONTRACT.md](./CAMPAIGN_100_DAY_CONTRACT.md). UI code is not changed by the engine patch. Wire the product event modal to these fields.
+Companion: [CAMPAIGN_100_DAY_CONTRACT.md](./CAMPAIGN_100_DAY_CONTRACT.md) · [game-engine/API_AND_INTEGRATION.md](./game-engine/API_AND_INTEGRATION.md). UI code is not changed by the engine patch. Wire the product event modal to these fields.
 
 ## Fields to read
 

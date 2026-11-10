@@ -1,15 +1,18 @@
 # Daftar Modul Game Engine
 
-Versi diskusi · Keputusan terkunci 6 Nov 2026 · Belum implementasi kode
+Versi diskusi · Keputusan terkunci 6 Nov 2026 · *(rencana awal; kode sudah ada)*
+
+> **Digantikan sebagai acuan aktif** oleh [`../docs/game-engine/ARCHITECTURE.md`](../docs/game-engine/ARCHITECTURE.md) dan [`../docs/DEV1_CONTRACT.md`](../docs/DEV1_CONTRACT.md).  
+> Angka **20 hari / 50 hari** dan “belum implementasi” di bawah adalah **historis**. Implementasi: **100 hari / 10 wave / v4**.
 
 ## Keputusan terkunci
 
 - Ekonomi: tiga jalur upgrade (tembok DEF, pasukan ATK, kota MaxHP+income) + repair; **tanpa** unit individual. Lihat [split-three-upgrades.md](split-three-upgrades.md). Keputusan lama "satu upgrade ATK+DEF" sudah diganti.
 - Lingkup engine: murni TypeScript + kontrak typed ke `game_runs.state` / aksi; **bukan** Mongo/auth/UI produk.
-- Acuan aturan: [AGENTS.md](../AGENTS.md), [PRD.md](../PRD.md) v2, [MVP.md](../MVP.md) v2, state di [Database_proposal.md](../docs/database/Database_proposal.md). Tugas FE/BE: [README.md](../README.md).
+- Acuan aturan historis: [AGENTS.md](../AGENTS.md), [PRD.md](../PRD.md) v2, [MVP.md](../MVP.md) v2; acuan hidup: [docs/game-engine](../docs/game-engine/README.md). State DB: [Database_proposal.md](../docs/database/Database_proposal.md). Tugas FE/BE: [README.md](../README.md).
 - Inspirasi [1in8b](https://1in8b.life/en/): kalender + event pilihan yang mengubah trajectory kota.
-- Panjang: prototipe **20 hari / 2 wave**; setelah prototipe oke → produksi **50 hari / 5 wave** (PRD §12). Jadwal dari config/ruleset, bukan day-picker.
-- Spek + tiket implementasi: [.scratch/game-engine-prototype/](../.scratch/game-engine-prototype/) (seam = API publik engine).
+- Panjang *(rencana awal)*: prototipe **20 hari / 2 wave**; produksi **50 hari** (PRD §12). **Kode saat ini:** 100 hari / 10 wave.
+- Spek + tiket implementasi: [.scratch/game-engine-prototype/](../.scratch/game-engine-prototype/) (historis).
 
 ```mermaid
 flowchart LR

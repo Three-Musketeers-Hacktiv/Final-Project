@@ -1,7 +1,9 @@
 # Riwayat patching — Game Engine (`src/game`)
 
 Dokumen ini merangkum **urutan perubahan engine** dari fondasi sampai patch validasi terkini, agar FE/BE dan playtest punya acuan yang sama.  
-Kontrak hidup: [DEV1_CONTRACT.md](./DEV1_CONTRACT.md). Ringkas breaking v1→v3: [../Patch.md](../Patch.md).
+Referensi perilaku terkini: [game-engine/README.md](./game-engine/README.md).  
+Kontrak hidup: [DEV1_CONTRACT.md](./DEV1_CONTRACT.md). Ringkas breaking: [../Patch.md](../Patch.md).  
+Angka di seksi historis (mis. era 20-hari atau repair §12) **jangan diganti** agar cocok config sekarang; lihat catatan di §12 dan §15.
 
 | | |
 |---|---|
@@ -240,8 +242,10 @@ Fokus engine: `src/game/game.test.ts` (termasuk describe event validation, `reso
 | Choices | 2–4 per paket; ≥1 gratis; multi-effect tepercaya |
 | Consequences | Skip/refuse → `pendingConsequences`; tembak 1–3 hari sebelum battle |
 | Rewards | Unik per wave 1–9; `rewardsChosenByWave`; wave 10 → victory |
-| Ekonomi | Max track 18; biaya 45+30×L; income 28; repair 35/45 |
+| Ekonomi | Max track 18; biaya 45+30×L; income 28; repair **35/45** *(nilai pada saat §12 ditulis)* |
 | Save | `version: 4` — tolak v3 ke bawah, tanpa migrasi |
+
+> **Catatan historis §12:** repair **35/45** dan klaim “app belum di-wire” adalah snapshot patch 2026-11-09. Repair aktif terkunci di §15 dan `config.ts` sebagai **25/60**. Integrasi app punya dokumen lanjutan di `app/docs/`. Jangan menulis ulang angka historis di tabel ini.
 
 ### 12.2 File kunci
 
@@ -312,7 +316,8 @@ Save tetap `version: 4`. Normal adalah tabel dasar; hard hanya mengalikan tabel 
 | Hard HP / ATK | 1.08 / 1.06 |
 | Hard upgrade / income / repair / event gold | 1.08 / 0.95 / 1.05 / 1.08 |
 
-Ruleset publik yang disarankan untuk BE: `campaign-v4-100-day-v2`. Jangan timpa fingerprint `campaign-v4-100-day-v1`.
+Ruleset publik yang disarankan saat §15 ditulis: `campaign-v4-100-day-v2`. Jangan timpa fingerprint `campaign-v4-100-day-v1`.  
+**Update docs:** app kemudian mempublikasikan fingerprint **`campaign-v4-100-day-v3`** (lihat `app/docs/ENGINE_V4_BACKEND_INTEGRATION.md`). Ini metadata produk, bukan `GameState.version`.
 
 Simulasi aksi publik (4 strategi × 6 seed), bukan inject state:
 

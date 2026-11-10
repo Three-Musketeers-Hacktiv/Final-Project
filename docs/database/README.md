@@ -19,7 +19,8 @@ Pembersihan file tidak mengubah struktur koleksi pada diagram dan tidak menghapu
 Pembahasan penghapusan game_ruleset dan penyederhanaan packageId belum diterapkan pada diagram. Ringkasan keputusan terkunci ada di bagian atas [Database_proposal.md](Database_proposal.md).
 
 Inti schema:
-- `GameState version: 3` (wall / troops / city)
+- Engine aktif memakai `GameState version: 4` (wall / troops / city + `difficulty`, `eventPlan`, `pendingConsequences`, `rewardsChosenByWave`) — lihat [`../game-engine/README.md`](../game-engine/README.md) dan [`../DEV1_CONTRACT.md`](../DEV1_CONTRACT.md).
+- Teks/diagram di folder ini mungkin masih menyebut `version: 3` atau field lama (`rewardChosenId`); perlakukan sebagai **usang sampai diganti**, bukan aturan engine.
 - Kampanye panjang (~100 hari): banyak `runs_event` dan banyak `game_report`
 - `game_report.gameRunId` → `game_runs`; di diagram hanya disandingkan visual dengan `runs_event`
 - Auth: `bcrypt` + JWT (`jsonwebtoken`); `actionId` dibuat client untuk dedupe

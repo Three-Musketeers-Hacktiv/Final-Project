@@ -1,6 +1,8 @@
 # Developer 1 — Game Engine Contract
 
-Pure game engine lives in `src/game`. Chronology: [GAME_ENGINE_PATCH_HISTORY.md](./GAME_ENGINE_PATCH_HISTORY.md).  
+Pure game engine lives in `src/game`.  
+**Referensi perilaku lengkap:** [game-engine/README.md](./game-engine/README.md).  
+Chronology: [GAME_ENGINE_PATCH_HISTORY.md](./GAME_ENGINE_PATCH_HISTORY.md).  
 FE/BE connection guide for the 100-day campaign: [CAMPAIGN_100_DAY_CONTRACT.md](./CAMPAIGN_100_DAY_CONTRACT.md).
 
 Defaults (supersede older PRD / AGENTS bits where they conflict):
@@ -13,7 +15,7 @@ Defaults (supersede older PRD / AGENTS bits where they conflict):
 - Event days are **per-run** (2 prep days / decade via `pickEventPlan`), not fixed 3/7/13/17.
 - Difficulty: `easy` | `normal` | `hard` scales monsters + economy.
 - Playtest economy: `dailyIncome` **28**, upgrade `45 + level × 30`, max level **18**, repair **25/60**, city MaxHP +35 / income +5 per level.
-- Normal difficulty is the base wave table in `gameConfig.waves` (HP/ATK from 150/22 through 600/64). Hard only multiplies that table. Suggested ruleset id after this balance: `campaign-v4-100-day-v2` (save `version` stays 4).
+- Normal difficulty is the base wave table in `gameConfig.waves` (HP/ATK from 150/22 through 600/64). Hard only multiplies that table. Save `version` stays **4**. Ruleset id produk (metadata BE, bukan field engine) yang dipublikasikan app cenderung `campaign-v4-100-day-v3` — lihat `app/docs/ENGINE_V4_BACKEND_INTEGRATION.md`; beberapa catatan lama masih menyebut `…-v2`.
 - Phases: `preparation` | `event` | `battleReady` | `battleReport` | `reward` | `gameOver` | `victory`.
 
 ## State schema (`version: 4`)

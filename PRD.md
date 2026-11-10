@@ -2,7 +2,13 @@
 
 Versi 2.1 · Target prototipe 13 November 2026
 
-Versi ini **menggantikan** aturan rekrutmen unit dan upgrade tunggal ATK+DEF di PRD lama. Spek mesin mengikuti [AGENTS.md](./AGENTS.md) dan kontrak [docs/DEV1_CONTRACT.md](./docs/DEV1_CONTRACT.md). State tersimpan mengikuti [docs/database/](./docs/database/). Ringkasan modul: [plans/game-engine-modules.md](./plans/game-engine-modules.md). Freeze fitur spekulatif: [plans/feature-freeze-playtest.md](./plans/feature-freeze-playtest.md).
+> **Status sinkronisasi**  
+> PRD ini masih menggambarkan banyak aturan prototipe **20 hari / 2 wave / state v3**.  
+> **Implemented di `src/game`:** campaign **100 hari / 10 wave / v4** (+ difficulty, consequence, reward wave 1–9).  
+> Kebutuhan produk di bawah **tidak dihapus**; bedakan *implemented* vs *planned/historis*.  
+> Aturan engine aktif: [`docs/game-engine/README.md`](./docs/game-engine/README.md) · [`docs/DEV1_CONTRACT.md`](./docs/DEV1_CONTRACT.md) · [`docs/CAMPAIGN_100_DAY_CONTRACT.md`](./docs/CAMPAIGN_100_DAY_CONTRACT.md).
+
+Versi ini **menggantikan** aturan rekrutmen unit dan upgrade tunggal ATK+DEF di PRD lama. Spek mesin historis mengikuti [AGENTS.md](./AGENTS.md); kontrak hidup: [docs/DEV1_CONTRACT.md](./docs/DEV1_CONTRACT.md). State tersimpan mengikuti [docs/database/](./docs/database/). Ringkasan modul: [plans/game-engine-modules.md](./plans/game-engine-modules.md). Freeze fitur spekulatif: [plans/feature-freeze-playtest.md](./plans/feature-freeze-playtest.md).
 
 ## 1. Ringkasan
 

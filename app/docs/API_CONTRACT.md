@@ -433,7 +433,7 @@ Tidak ada write dan revision tidak berubah. Error code stabil engine diteruskan,
 | 409 | `ACTIVE_SAVE_EXISTS` | New game perlu konfirmasi replace |
 | 409 | `ACTION_PAYLOAD_CONFLICT` | `actionId` dipakai ulang dengan type/payload berbeda |
 | 409 | `STALE_REVISION` | Expected revision tidak cocok |
-| 409 | `UNSUPPORTED_STATE_VERSION` | Save bukan versi 3 |
+| 409 | `UNSUPPORTED_STATE_VERSION` | Save bukan versi 4 (engine `GAME_STATE_VERSION`) |
 | 409 | `RUN_INTEGRITY_ERROR` | `state.runId`, ruleset, atau bentuk patched state tidak konsisten |
 | 409 | `SAVE_POINTER_MISMATCH` | Pointer active save tidak cocok dengan run/revision tersimpan |
 | 409/422 | engine code | Action game ditolak engine |

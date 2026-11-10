@@ -1,5 +1,7 @@
 # Playtest handoff — diff & PRD perbaikan
 
+> **Historis.** Snapshot playtest era v3 / 20 hari relatif ke `d84f600`. Jangan dipakai sebagai aturan engine aktif. Acuan hidup: [`../game-engine/README.md`](../game-engine/README.md).
+
 Dokumen ini membandingkan **working tree saat ini** dengan **`origin/development` @ `d84f600`** (sebelum perubahan playtest lokal yang belum di-commit), lalu memecah pekerjaan lanjutan per developer.
 
 | Dokumen | Audience |

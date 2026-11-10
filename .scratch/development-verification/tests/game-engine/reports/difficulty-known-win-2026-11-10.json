@@ -1,0 +1,22 @@
+[
+  {
+    "runId": "easy-campaign",
+    "difficulty": "normal",
+    "strategy": "knownWin",
+    "phase": "victory",
+    "day": 100,
+    "wavesCleared": 10,
+    "cityHp": 247,
+    "gold": 209
+  },
+  {
+    "runId": "easy-campaign",
+    "difficulty": "hard",
+    "strategy": "knownWin",
+    "phase": "gameOver",
+    "day": 90,
+    "wavesCleared": 8,
+    "cityHp": 0,
+    "gold": 21
+  }
+]

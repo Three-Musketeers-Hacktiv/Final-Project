@@ -2,6 +2,7 @@
 
 **Baseline:** engine playtest `version: 3` (20 days / 2 waves)  
 **Target:** current `src/game` (`version: 4`, 100 days / 10 waves)  
+**Referensi lengkap:** [docs/game-engine/README.md](./docs/game-engine/README.md)  
 **Wiring:** [docs/CAMPAIGN_100_DAY_CONTRACT.md](./docs/CAMPAIGN_100_DAY_CONTRACT.md) · [docs/FOR_FRONTEND.md](./docs/FOR_FRONTEND.md) · [docs/FOR_BACKEND.md](./docs/FOR_BACKEND.md) · [docs/DEV1_CONTRACT.md](./docs/DEV1_CONTRACT.md)
 
 Earlier v1→v3 notes remain historically useful below the fold in git history; this document is the **v3→v4** checklist FE/BE must adopt.

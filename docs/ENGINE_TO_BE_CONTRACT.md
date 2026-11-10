@@ -1,6 +1,6 @@
 # Engine → Backend contract (consequence trust + narrative labels)
 
-Companion: [CAMPAIGN_100_DAY_CONTRACT.md](./CAMPAIGN_100_DAY_CONTRACT.md). This document is the wiring spec. Do **not** accept every package that merely exists in `eventPackageById`.
+Companion: [CAMPAIGN_100_DAY_CONTRACT.md](./CAMPAIGN_100_DAY_CONTRACT.md) · [game-engine/API_AND_INTEGRATION.md](./game-engine/API_AND_INTEGRATION.md). This document is the wiring spec. Do **not** accept every package that merely exists in `eventPackageById`.
 
 Engine helpers (import from `src/game`):
 

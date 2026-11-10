@@ -1,6 +1,6 @@
 # Penjelasan database Fantasy City Defense
 
-Kami merancang database game ini menggunakan MongoDB. Prototipe engine saat ini 20 hari (battle hari 10 dan 20). **Schema sudah disiapkan untuk kampanye panjang (~100 hari)** sehingga jumlah event dan wave tidak dikunci di struktur koleksi.
+Kami merancang database game ini menggunakan MongoDB. **Engine aktif** adalah campaign **100 hari / 10 wave / `GameState.version: 4`** ([`../game-engine/README.md`](../game-engine/README.md)). Teks di bawah yang masih menyebut prototipe 20 hari atau `version: 3` adalah **usang relatif terhadap engine** dan perlu diselaraskan di diagram/field; jangan dipakai sebagai aturan gameplay.
 
 Data yang perlu kami simpan mulai dari identitas pemain sampai kondisi kota setelah diserang. Ada delapan koleksi: User, game_ruleset, game_runs, game_actions, runs_event, game_properties, game_report, dan event_data.
 
@@ -11,7 +11,7 @@ Referensi: [diagram draw.io](schema_new.completed.drawio) dan [dokumentasi folde
 | Topik | Keputusan |
 |---|---|
 | Auth | Password di-hash dengan `bcrypt`; autentikasi memakai JWT (`jsonwebtoken`) |
-| State | `GameState version: 3` — tiga jalur upgrade: `wallLevel`, `troopLevel`, `cityLevel` |
+| State | Engine: `GameState version: 4` (`difficulty`, `eventPlan`, `pendingConsequences`, `rewardsChosenByWave`, wall/troop/city). Dokumen lama di folder ini mungkin masih menulis v3 — update field saat menyentuh schema. |
 | Snapshot stat | Delapan `game_properties` per revisi (gold, cityHp, cityMaxHp, wall/troop/city level, attack, defense) |
 | `game_report` | REF ke `game_runs` lewat `gameRunId` (bukan ke `runs_event`). Di diagram diletakkan di samping `runs_event` hanya untuk keterbacaan |
 | Event vs report | Outcome event → `runs_event` + `game_runs.state` (+ log aksi). `game_report` hanya hasil battle/wave |

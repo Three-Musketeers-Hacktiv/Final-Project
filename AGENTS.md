@@ -1,5 +1,12 @@
 # Developer 1 — Sistem Game Fantasy City Defense
 
+> **Konflik persyaratan vs implementasi (baca dulu)**  
+> Dokumen ini tetap berisi **persyaratan tertulis** brief prototipe awal (campaign **20 hari**, **2 wave**, max upgrade **5**, event hari tetap, dll.).  
+> **Perilaku implementasi saat ini** di `src/game` adalah campaign **100 hari**, **10 wave**, max level **18**, `GAME_STATE_VERSION = 4`, difficulty, `eventPlan` per run, dan consequence.  
+> Jangan menghapus atau diam-diam mengganti persyaratan di bawah agar “cocok” dengan kode tanpa keputusan tim.  
+> Untuk perilaku kode terkini, gunakan: [`docs/game-engine/README.md`](./docs/game-engine/README.md), [`docs/DEV1_CONTRACT.md`](./docs/DEV1_CONTRACT.md), [`docs/CAMPAIGN_100_DAY_CONTRACT.md`](./docs/CAMPAIGN_100_DAY_CONTRACT.md).  
+> Inventaris konflik: [`docs/game-engine/DOCUMENTATION_SYNC.md`](./docs/game-engine/DOCUMENTATION_SYNC.md).
+
 ## Tujuan
 
 Implementasikan sistem permainan TypeScript untuk prototipe web single-player bertema lord yang mempertahankan kota fantasy dari monster. Target prototipe 20 hari, dengan pertempuran pada hari 10 dan 20. Deadline proyek: 13 November 2026.

@@ -1,6 +1,8 @@
 # Campaign 100-Day Contract (Engine v4 → FE/BE)
 
-Pure engine: [`src/game`](../src/game). Product FE/BE code is **not** updated yet — use this doc to wire them.
+Pure engine: [`src/game`](../src/game). Referensi lengkap: [game-engine/README.md](./game-engine/README.md).
+
+> **Status integrasi produk:** dokumen ini adalah kontrak wire. App memiliki catatan integrasi terpisah (`app/docs/ENGINE_V4_BACKEND_INTEGRATION.md`, ruleset `campaign-v4-100-day-v3`). Jangan mengklaim seluruh FE/BE sudah mendukung setiap field/aksi engine tanpa verifikasi runtime. Gap tetap dicatat di [game-engine/API_AND_INTEGRATION.md](./game-engine/API_AND_INTEGRATION.md).
 
 Companion docs: [DEV1_CONTRACT.md](./DEV1_CONTRACT.md) · [FOR_FRONTEND.md](./FOR_FRONTEND.md) · [FOR_BACKEND.md](./FOR_BACKEND.md) · [ENGINE_TO_FE_CONTRACT.md](./ENGINE_TO_FE_CONTRACT.md) · [ENGINE_TO_BE_CONTRACT.md](./ENGINE_TO_BE_CONTRACT.md) · [Patch.md](../Patch.md) · [GAME_ENGINE_PATCH_HISTORY.md](./GAME_ENGINE_PATCH_HISTORY.md)
 

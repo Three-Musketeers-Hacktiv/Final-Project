@@ -3,6 +3,7 @@
 Status: **Backend synchronized; frontend build handoff remains**
 Owner: Backend  
 Engine source: `../../src/game` and `../../docs/FOR_BACKEND.md` (read-only)  
+Engine reference docs: [`../../docs/game-engine/README.md`](../../docs/game-engine/README.md)  
 Last updated: 2026-11-09
 
 ## Purpose
