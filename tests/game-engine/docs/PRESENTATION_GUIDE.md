@@ -36,21 +36,33 @@ Simulasi 45 permainan: pada easy, empat strategi yang belanja menang di hari 100
 
 Tidak ada tes yang gagal karena bug engine pada eksekusi akhir. Satu assertion awal mengira battle yang kalah mengembalikan `BATTLE_ALREADY_RESOLVED`. Kode mengembalikan `GAME_ENDED` karena phase sudah `gameOver`. Tes diperbaiki agar mengunci kode itu dan memastikan HP tetap 0. Itu penyesuaian tes, bukan perubahan engine.
 
+## Penguatan yang sama harinya
+
+`INT-02` tetap hanya memastikan campaign berhenti. `INT-04` mengunci jalur yang laporannya sudah menang: `easy-campaign`, normal, `knownWin`, `victory` di hari 100, 10 wave, HP positif, reward hanya wave 1 sampai 9.
+
+`REW-05` sekarang menuntut gold = gold sebelumnya + 35 + income hari 11, bukan "sekurang-kurangnya tambah 35".
+
+Simulasi repair memakai 6 `runId` yang sama untuk varian tanpa repair dan dengan repair di bawah 80% HP. Pada sampel itu, repair memperpanjang setiap pasangan (48 dari 48). Di normal, keempat strategi dengan repair menang 6/6. Tanpa repair, semuanya kalah. Di hard, repair juga memperpanjang campaign. Balanced dengan repair menang 4 dari 6 seed. Attack menang 1 dari 6.
+
+Evaluasi hard terpisah (90 permainan: 6 seed, 5 strategi, 3 kebijakan reward) menemukan 24 kemenangan, semuanya pada strategi economy atau balanced. Attack, defense, dan `knownWin` kalah di keenam seed untuk ketiga kebijakan reward. Gelombang yang paling sering menjadi titik kalah adalah wave 8 (hari 80), wave 10 (hari 100), dan wave 9 (hari 90). Itu keterbatasan strategi dan tekanan balancing, bukan pelanggaran aturan yang tertangkap tes.
+
+Angka lengkap ada di laporan penguatan dan di `paired-simulation-latest.json` serta `hard-eval-latest.json`.
+
 ## Batas kesimpulan
 
-Lulus di 109 tes tidak berarti permainan bebas bug atau siap produksi. Coverage tidak diukur. UI, server, dan database tidak dijalankan. Tiga `runId` simulasi tidak mewakili pemain. `AGENTS.md` masih menulis 20 hari, sementara kode yang diuji 100 hari. Selisih itu belum diputuskan sebagai pembaruan dokumen atau sebagai bug.
+Lulusnya suite tidak berarti permainan bebas bug atau siap produksi. Coverage tidak diukur. UI, server, dan database tidak dijalankan. Enam `runId` simulasi berpasangan bukan win rate pemain. `AGENTS.md` masih menulis 20 hari, sementara kode yang diuji 100 hari.
 
 ## Demo yang bisa diulang
 
 1. `npm run test:engine`
 2. `npx vitest run tests/game-engine/unit/battle.test.ts -t BAT-01`
-3. Buka `reports/simulation-2026-11-10.json`, cari `sim-qa-1` dan `strategy` `skip`, lalu bandingkan dengan `attack` pada difficulty easy.
+3. Buka `reports/paired-simulation-latest.json`. Bandingkan `sim-pair-1`, normal, attack, `repair` `off` dan `below80` pada battle hari 40.
 
 ## Pertanyaan penguji
 
 Apakah campaign-nya 20 hari? Kode dan kontrak v4 memakai 100 hari dan 10 wave. `AGENTS.md` masih 20 hari. Tes mengikuti kode. Keputusan dokumen masih terbuka.
 
-Mengapa normal kalah di simulasi, tetapi ada tes yang menang? Lima strategi simulasi tidak repair. `knownWin` repair dan menang pada normal untuk `easy-campaign`. Kalahnya strategi tanpa repair dicatat sebagai strategi yang kurang efektif, bukan sebagai rumus yang salah.
+Mengapa normal kalah di simulasi lama, tetapi ada tes yang menang? Simulasi tanpa repair kalah di normal pada sampel ini. Strategi yang sama dengan repair di bawah 80% HP menang 6 dari 6 seed. `INT-04` mengunci `knownWin` pada `easy-campaign` normal sampai `victory`. Kalah tanpa repair adalah strategi yang kurang efektif, bukan rumus yang salah.
 
 Apakah AI bisa mengubah damage event? `decorateActiveEvent` hanya mengganti judul, deskripsi, dan label. Label yang menyebut gold dibuang. `goldCost` dan `effects` tetap dari paket. Tes `EVT-03` dan `EVT-06` mengunci itu.
 

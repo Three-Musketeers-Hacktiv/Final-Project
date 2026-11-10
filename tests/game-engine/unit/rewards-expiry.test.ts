@@ -15,6 +15,7 @@ import { scoredEventChoice } from "../helpers/policies";
 import { mustOk } from "../helpers/mustOk";
 import { roundTrip } from "../helpers/roundTrip";
 import { findRunId, RUN } from "../fixtures/runIds";
+import { expectedPrepIncome } from "../helpers/expectedEconomy";
 
 const caravanRun = findRunId((plan) => plan.some((entry) => entry.packageId === "d2-caravan-a" && entry.day < 20));
 
@@ -121,15 +122,28 @@ describe("reward dan masa berlaku", () => {
     expect(repeated.ok).toBe(false);
   });
 
-  it("REW-05 pilihan kedua pada wave yang sama ditolak setelah round-trip", () => {
-    const reward = play(createInitialState({ runId: RUN.reward, difficulty: "easy" }), {
+  it("REW-05 gold reward sama dengan 35 ditambah income hari berikutnya, sekali", () => {
+    const reward = play(createInitialState({ runId: RUN.reward, difficulty: "normal" }), {
       spend: "knownWin",
-      stop: (state) => state.phase === "reward",
+      stop: (state) => state.phase === "reward" && state.wavesCleared === 1,
     }).state;
     const loaded = roundTrip(reward);
+    const grant = rewardsForWave(1)!.options.find((option) => option.id === "w1-gold")!;
+    expect(grant.amount).toBe(35);
+    const income = expectedPrepIncome(loaded.cityLevel, loaded.effects.prepIncomeBonus);
     const chosen = mustOk(chooseReward(loaded, "w1-gold"));
-    expect(chosen.gold).toBeGreaterThanOrEqual(loaded.gold + 35);
+    expect(chosen.gold).toBe(loaded.gold + 35 + income);
+    expect(chosen.day).toBe(11);
+    expect(chosen.incomeGrantedDays.filter((day) => day === 11)).toHaveLength(1);
     expect(chosen.rewardsChosenByWave["1"]).toBe("w1-gold");
-    expectError(chooseReward(chosen, "w1-income"), "INVALID_PHASE");
+
+    const again = callWithoutMutating(chosen, (state) => chooseReward(state, "w1-income"));
+    expectError(again, "INVALID_PHASE");
+
+    const reloaded = roundTrip(chosen);
+    const replay = callWithoutMutating(reloaded, (state) => chooseReward(state, "w1-gold"));
+    expect(replay.ok).toBe(false);
+    expect(reloaded.gold).toBe(chosen.gold);
+    expect(reloaded.incomeGrantedDays.filter((day) => day === 11)).toHaveLength(1);
   });
 });

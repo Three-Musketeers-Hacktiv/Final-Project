@@ -3,44 +3,50 @@ import {
   chooseReward,
   continueFromReport,
   endPreparationDay,
-  rewardsForWave,
+  getEffectiveAttack,
+  getEffectiveDefense,
+  getWavePreview,
   startBattle,
   type GameState,
 } from "../../../src/game/index";
 import { mustOk } from "./mustOk";
-import { avoidDamageChoice, scoredEventChoice, spendOnce, type SpendOrder } from "./policies";
+import { avoidDamageChoice, scoredEventChoice, spendOnce, type RepairPolicy, type SpendOrder } from "./policies";
+import { chooseRewardId, type RewardPolicyName } from "./rewardPolicies";
+
+export type PreBattleSnapshot = {
+  day: number;
+  wave: number;
+  cityHp: number;
+  cityMaxHp: number;
+  gold: number;
+  attack: number;
+  defense: number;
+  monsterHp: number;
+  monsterAttack: number;
+  wallLevel: number;
+  troopLevel: number;
+  cityLevel: number;
+};
 
 export type PlayLog = {
   state: GameState;
   steps: number;
   events: Array<{ day: number; eventId: string; choiceId: string }>;
   rewards: Array<{ wave: number; rewardId: string }>;
+  repairs: number;
+  repairGold: number;
+  preBattle: PreBattleSnapshot[];
 };
 
 export type PlayOptions = {
   spend?: SpendOrder;
+  repair?: RepairPolicy;
   eventChoice?: (state: GameState) => string;
   rewardChoice?: (state: GameState) => string;
+  rewardPolicy?: RewardPolicyName;
   stop?: (state: GameState) => boolean;
   maxSteps?: number;
 };
-
-function defaultReward(state: GameState): string {
-  const options = rewardsForWave(state.wavesCleared);
-  if (!options) throw new Error(`Tidak ada reward untuk wave ${state.wavesCleared}`);
-  const hpRatio = state.cityHp / state.cityMaxHp;
-  const rank = (kind: string) => {
-    if (kind === "maxHpBonus") return 0;
-    if (kind === "nextWaveDefense" || kind === "combo") return 1;
-    if (kind === "healCity") return hpRatio < 0.9 ? 2 : 6;
-    if (kind === "upgradeDiscount") return 3;
-    if (kind === "prepIncomeBonus") return 4;
-    return 5;
-  };
-  return options.options
-    .slice()
-    .sort((left, right) => rank(left.kind) - rank(right.kind) || left.id.localeCompare(right.id))[0]!.id;
-}
 
 /**
  * Memainkan state hanya lewat aksi publik.
@@ -50,11 +56,16 @@ export function play(start: GameState, options: PlayOptions = {}): PlayLog {
   let state = start;
   const events: PlayLog["events"] = [];
   const rewards: PlayLog["rewards"] = [];
+  const preBattle: PreBattleSnapshot[] = [];
   const spend = options.spend ?? "knownWin";
+  const repair = options.repair ?? "off";
   const pickEvent = options.eventChoice ?? scoredEventChoice;
-  const pickReward = options.rewardChoice ?? defaultReward;
+  const pickReward =
+    options.rewardChoice ?? ((current: GameState) => chooseRewardId(current, options.rewardPolicy ?? "standard"));
   const maxSteps = options.maxSteps ?? 800;
   let steps = 0;
+  let repairs = 0;
+  let repairGold = 0;
 
   for (; steps < maxSteps; steps += 1) {
     if (options.stop?.(state)) break;
@@ -70,13 +81,34 @@ export function play(start: GameState, options: PlayOptions = {}): PlayLog {
     }
 
     if (state.phase === "preparation") {
-      const spent = spendOnce(state, spend);
-      if (spent) state = spent;
+      const spent = spendOnce(state, spend, repair);
+      if (spent) {
+        state = spent.state;
+        if (spent.repaired) {
+          repairs += 1;
+          repairGold += spent.repairCost;
+        }
+      }
       if (state.phase === "preparation") state = mustOk(endPreparationDay(state));
       continue;
     }
 
     if (state.phase === "battleReady") {
+      const preview = getWavePreview(state);
+      preBattle.push({
+        day: state.day,
+        wave: preview?.wave ?? state.wavesCleared + 1,
+        cityHp: state.cityHp,
+        cityMaxHp: state.cityMaxHp,
+        gold: state.gold,
+        attack: getEffectiveAttack(state),
+        defense: preview?.cityDefense ?? getEffectiveDefense(state),
+        monsterHp: preview?.hp ?? 0,
+        monsterAttack: preview?.attack ?? 0,
+        wallLevel: state.wallLevel,
+        troopLevel: state.troopLevel,
+        cityLevel: state.cityLevel,
+      });
       state = mustOk(startBattle(state));
       continue;
     }
@@ -97,7 +129,7 @@ export function play(start: GameState, options: PlayOptions = {}): PlayLog {
     break;
   }
 
-  return { state, steps, events, rewards };
+  return { state, steps, events, rewards, repairs, repairGold, preBattle };
 }
 
 export { avoidDamageChoice, scoredEventChoice };

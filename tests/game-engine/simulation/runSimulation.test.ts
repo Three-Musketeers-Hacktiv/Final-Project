@@ -73,6 +73,6 @@ describe("simulasi strategi", () => {
 
     const reportDir = join(dirname(fileURLToPath(import.meta.url)), "..", "reports");
     mkdirSync(reportDir, { recursive: true });
-    writeFileSync(join(reportDir, "simulation-2026-11-10.json"), `${JSON.stringify(rows, null, 2)}\n`);
+    writeFileSync(join(reportDir, "simulation-baseline-latest.json"), `${JSON.stringify(rows, null, 2)}\n`);
   });
 });

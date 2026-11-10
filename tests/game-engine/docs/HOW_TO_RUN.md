@@ -14,8 +14,11 @@ Dari root repository:
 
 | Maksud | Perintah | Hasil pada eksekusi ini |
 | --- | --- | --- |
-| Suite engine saja | `npm run test:engine` | 12 file, 49 pass, 0 fail, durasi 1,20 detik, mulai 09:11 |
-| Test lama dan suite baru | `npm test` | 15 file, 109 pass, 0 fail, durasi 1,43 detik, mulai 09:10 |
+| Suite engine saja | `npm run test:engine` | Seluruh `tests/game-engine` |
+| Regresi normal | `npx vitest run tests/game-engine/integration/campaign-normal-victory.test.ts` | `INT-04` |
+| Reward dan diskon | `npx vitest run tests/game-engine/unit/rewards-expiry.test.ts tests/game-engine/unit/discount-expiry.test.ts tests/game-engine/unit/reward-kinds.test.ts` | REW, DSC, RWD |
+| Simulasi | `npx vitest run tests/game-engine/simulation` | baseline, pasangan repair, evaluasi hard |
+| Test lama dan suite baru | `npm test` | 20 file, 121 pass, 0 fail, durasi 2,16 detik, mulai 09:48 |
 | Typecheck | `npm run typecheck` | `tsc --noEmit` selesai tanpa error |
 | Satu file dan satu nama | `npx vitest run tests/game-engine/unit/economy.test.ts -t ECO-07` | 1 pass, 6 skipped di file yang sama |
 | Seluruh test root, nama lain | `npm run test:all-root` | Sama dengan `npm test` |
@@ -30,12 +33,13 @@ Vitest mencetak nama file, nama `it`, dan `AssertionError` dengan expected serta
 
 `skipped` pada perintah `-t` berarti tes di file yang sama tidak ikut filter. Itu bukan tes yang diblokir.
 
-Simulasi yang lulus menulis:
+Simulasi menulis file stabil, bukan laporan bertanggal:
 
-- `reports/simulation-2026-11-10.json`
-- `reports/difficulty-known-win-2026-11-10.json`
+- `reports/simulation-baseline-latest.json`
+- `reports/paired-simulation-latest.json`
+- `reports/hard-eval-latest.json`
 
-File JSON itu keluaran tes, bukan expected result.
+File `reports/2026-11-10-engine-test-report.md` dan `simulation-2026-11-10.json` adalah arsip. Tes rutin tidak menimpa arsip itu.
 
 ## Otomatis dan manual
 

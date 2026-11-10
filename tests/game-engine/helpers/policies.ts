@@ -105,26 +105,59 @@ export function knownWinAction(state: GameState): GameState | null {
 
 export type SpendOrder = "troops" | "wall" | "city" | "balanced" | "skip" | "knownWin";
 
+/** Repair memakai jatah harian dan gold, jadi upgrade hari itu tidak terjadi. */
+export type RepairPolicy = "off" | "below80";
+
+export type SpendResult = {
+  state: GameState;
+  repaired: boolean;
+  repairCost: number;
+};
+
 const ORDER: Record<Exclude<SpendOrder, "balanced" | "skip" | "knownWin">, UpgradeTrack[]> = {
   troops: ["troops", "wall", "city"],
   wall: ["wall", "troops", "city"],
   city: ["city", "troops", "wall"],
 };
 
-/** Satu percobaan belanja. Null berarti hari ini dilewati. */
-export function spendOnce(state: GameState, mode: SpendOrder): GameState | null {
+function tracksFor(state: GameState, mode: Exclude<SpendOrder, "skip" | "knownWin">): UpgradeTrack[] {
+  if (mode === "balanced") {
+    return ([...ORDER.troops] as UpgradeTrack[]).sort(
+      (left, right) => levelOf(state, left) - levelOf(state, right) || left.localeCompare(right),
+    );
+  }
+  return ORDER[mode];
+}
+
+/**
+ * Satu percobaan belanja. Null berarti hari ini dilewati.
+ * `below80`: jika HP di bawah 80% MaxHP dan gold cukup, repair didahulukan dari upgrade.
+ */
+export function spendOnce(
+  state: GameState,
+  mode: SpendOrder,
+  repair: RepairPolicy = "off",
+): SpendResult | null {
   if (state.actionUsedToday || state.phase !== "preparation") return null;
   if (mode === "skip") return null;
-  if (mode === "knownWin") return knownWinAction(state);
-  const tracks =
-    mode === "balanced"
-      ? ([...ORDER.troops] as UpgradeTrack[]).sort(
-          (left, right) => levelOf(state, left) - levelOf(state, right) || left.localeCompare(right),
-        )
-      : ORDER[mode];
-  for (const track of tracks) {
+  if (mode === "knownWin") {
+    const next = knownWinAction(state);
+    if (!next) return null;
+    const repaired = next.cityHp > state.cityHp && next.wallLevel === state.wallLevel && next.troopLevel === state.troopLevel && next.cityLevel === state.cityLevel;
+    return { state: next, repaired, repairCost: repaired ? state.gold - next.gold : 0 };
+  }
+  if (
+    repair === "below80" &&
+    state.cityHp < state.cityMaxHp &&
+    state.cityHp / state.cityMaxHp < 0.8 &&
+    state.gold >= getRepairCost(state)
+  ) {
+    const next = mustOk(repairCity(state));
+    return { state: next, repaired: true, repairCost: state.gold - next.gold };
+  }
+  for (const track of tracksFor(state, mode)) {
     const result = upgrade(track)(state);
-    if (result.ok) return result.state;
+    if (result.ok) return { state: result.state, repaired: false, repairCost: 0 };
   }
   return null;
 }

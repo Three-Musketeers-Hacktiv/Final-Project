@@ -56,7 +56,19 @@ REW-02. Bonus +6 pada difficulty normal menambah income harian tepat 6, karena p
 
 REW-04. Dua sumber 25% tetap rate 0,25. Jika dijumlahkan menjadi 50%, biaya level berapa pun adalah `ceil(raw × 0,5)`. Yang benar `ceil(raw × 0,75)`, dengan `raw = 45 + level × 30`. Pada level 0 itu 34, bukan 23.
 
-REW-05. `w1-gold` menambah 35, lalu hari berikutnya masih menambah income. Gold akhir sekurang-kurangnya gold sebelumnya ditambah 35.
+REW-05. Pada normal, `w1-gold` menambah 35. Hari berikutnya adalah hari persiapan, jadi gold akhir = gold sebelum pilihan + 35 + (28 + level kota × 5 + bonus income yang sudah ada). Hari 11 muncul sekali di `incomeGrantedDays`. Pilihan kedua ditolak. Round-trip setelah pilihan tidak menambah gold lagi.
+
+DSC-01. Level 0 dengan diskon 25%: `ceil(45 × 0,75) = 34` untuk wall, troops, dan city. Repair tetap 25.
+
+DSC-02. Rate yang sudah 30% tidak turun saat reward 25% diterapkan. Rate 25% naik menjadi 30% saat reward 30% diterapkan. Biaya troops memakai `ceil((45 + level × 30) × 0,70)`.
+
+DSC-03. Diskon `w1-discount` (sampai wave 2) masih 25% di `battleReady` hari 20. `startBattle` mengosongkannya. Hari 21 memakai biaya mentah `45 + level × 30`.
+
+RWD-01. Heal 35 pada HP yang kurang 10 dari MaxHP mengisi sampai MaxHP. HP yang sudah penuh tidak bertambah.
+
+RWD-02. Bonus MaxHP 20 dari HP 40 menghasilkan MaxHP lama + 20 dan HP 60.
+
+RWD-05. Combo wave 9 menambah HP sebanyak 40, dibatasi MaxHP, dan defense wave 10 sebanyak 6. Keduanya sekali.
 
 INT-01. Menang di hari 100, `wavesCleared` 10, reward tercatat untuk wave 1 sampai 9. Hari prep ada 90, dan tidak satu pun hari battle ada di `incomeGrantedDays`.
 

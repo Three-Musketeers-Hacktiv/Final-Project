@@ -40,7 +40,7 @@ Status di kolom terakhir berasal dari `npm test` pada 10 November 2026, 09:10 WI
 | REW-02 | P1 | Reward | `prepIncomeBonus` | normal, pilih `w1-income` | bandingkan income, lalu battle hari 20 | Selisih income 6. Setelah battle, bonus 0 | unit/rewards-expiry.test.ts | pass |
 | REW-03 | P1 | Reward | defense wave target | easy, pilih `w2-def` | lihat defense, selesaikan hari 30 | Bonus wave 3 ada sebelum battle dan hilang di laporan | unit/rewards-expiry.test.ts | pass |
 | REW-04 | P1 | Reward | diskon tidak dijumlahkan | normal, `w1-discount` dan caravan 25% | `getUpgradeCost` | Rate tetap 0,25. Biaya `ceil(raw × 0,75)`, bukan `ceil(raw × 0,5)` | unit/rewards-expiry.test.ts | pass |
-| REW-05 | P1 | Reward | sekali per wave | round-trip di phase reward | `chooseReward` `w1-gold` | Gold naik minimal 35. Pilihan kedua ditolak | unit/rewards-expiry.test.ts | pass |
+| REW-05 | P1 | Reward | sekali per wave | round-trip di phase reward, normal | `chooseReward` `w1-gold` | Gold = gold awal + 35 + income hari 11. Pilihan kedua ditolak. Round-trip tidak menggandakan | unit/rewards-expiry.test.ts | pass |
 | STA-01 | P1 | Transisi | fase salah tidak mengubah asal | hari 1 | battle, reward, lalu upgrade | Tiga aksi awal gagal. Upgrade menaikkan revision salinan, asal tetap | unit/transitions-state.test.ts | pass |
 | STA-02 | P1 | Transisi | event dulu | phase event | upgrade, repair, lanjut hari | `EVENT_REQUIRED`, state asal utuh | unit/transitions-state.test.ts | pass |
 | STA-03 | P1 | Transisi | laporan ke reward | easy, wave 1 menang | `continueFromReport`, round-trip, `w1-gold` | Phase reward, revision +1, pilihan tersimpan | unit/transitions-state.test.ts | pass |
@@ -48,8 +48,20 @@ Status di kolom terakhir berasal dari `npm test` pada 10 November 2026, 09:10 WI
 | STA-05 | P1 | State | round-trip event | event aktif diserialisasi | pilihan salah lalu pilihan gratis | Gagal tidak menaikkan revision. Berhasil +1 | unit/transitions-state.test.ts | pass |
 | STA-06 | P2 | State | snapshot lama | hari 1 yang sama dipanggil dua kali | `endPreparationDay` | Engine menerima keduanya. Penolakan revision lama bukan tugas engine | unit/transitions-state.test.ts | pass |
 | INT-01 | P1 | Campaign | 100 hari lewat API | `easy-campaign`, easy, knownWin | `play` sampai akhir | `victory` hari 100, wave 10, reward hanya wave 1 sampai 9, 90 income prep | integration/campaign-victory.test.ts | pass |
-| INT-02 | P1 | Campaign | normal dan hard | runId yang sama, knownWin | `play` sampai akhir | Keduanya berhenti di `victory` atau `gameOver`. Hard tidak diwajibkan menang | integration/campaign-difficulty.test.ts | pass |
+| INT-02 | P1 | Campaign | normal dan hard berhenti | runId easy-campaign, knownWin | `play` sampai akhir | Keduanya berhenti di `victory` atau `gameOver`. Tidak menulis laporan historis | integration/campaign-difficulty.test.ts | pass |
+| INT-04 | P1 | Campaign | regresi normal menang | easy-campaign, normal, knownWin | `play` lewat aksi publik | `victory`, hari `lastDay`, 10 wave, HP > 0, reward hanya wave 1 sampai 9, level ≤ 18 | integration/campaign-normal-victory.test.ts | pass |
 | INT-03 | P1 | Campaign | jalur kalah | normal, tidak upgrade | `play` | `gameOver` di hari battle, wave cleared 0, tidak ada reward | integration/campaign-defeat.test.ts | pass |
 | REG-01 | P1 | Kontrak | API publik | modul engine | cek ekspor | versi 4, `enterCalendarDay` tidak diekspor, `scheduledEventDays()` kosong | regression/known-contracts.test.ts | pass |
 | REG-02 | P1 | Kontrak | successor | id paket consequence | `isTrustedConsequencePackage` | Rantai maju diterima, rantai balik ditolak | regression/known-contracts.test.ts | pass |
-| SIM-01 | P2 | Balancing | lima strategi, bukan tes aturan | 3 runId × 3 difficulty | `play` dengan aturan di strategies.ts | 45 baris, semua `victory` atau `gameOver`, ulangan `sim-qa-1` sama | simulation/runSimulation.test.ts | pass |
+| SIM-01 | P2 | Balancing | lima strategi tanpa repair | 3 runId × 3 difficulty | `play` | Semua selesai. Artefak `simulation-baseline-latest.json`, bukan file bertanggal | simulation/runSimulation.test.ts | pass |
+| SIM-02 | P2 | Balancing | repair berpasangan | 6 runId, normal dan hard | prioritas upgrade sama, repair off vs below80 | 108 permainan selesai. Pasangan seed sama. Artefak `paired-simulation-latest.json` | simulation/pairedRepair.test.ts | pass |
+| SIM-03 | P2 | Balancing | evaluasi hard | 6 runId, 5 strategi, 3 kebijakan reward | `play` difficulty hard | Semua berhenti di fase akhir. Tidak mewajibkan menang. Artefak `hard-eval-latest.json` | simulation/hard-eval.test.ts | pass |
+| DSC-01 | P1 | Diskon | tiga jalur, bukan repair | boundary rate 25% | `getUpgradeCost`, `getRepairCost` | Biaya 34 pada level 0. Repair tetap 25 | unit/discount-expiry.test.ts | pass |
+| DSC-02 | P1 | Diskon | rate terbesar, dua urutan | reward wave 1 dan wave 4 | `chooseReward` | 30% lalu 25% tetap 30%. 25% lalu 30% menjadi 30% | unit/discount-expiry.test.ts | pass |
+| DSC-03 | P1 | Diskon | expiry setelah wave target | normal, `w1-discount` | battle hari 20, lalu hari 21 | Rate 0 setelah battle. Biaya hari 21 kembali ke 45 + level × 30 | unit/discount-expiry.test.ts | pass |
+| DSC-04 | P1 | Diskon | diskon baru setelah expiry | normal sampai reward wave 4 | `w4-discount` | Rate 30% sampai wave 5, bukan sisa 25% yang sudah berakhir | unit/discount-expiry.test.ts | pass |
+| RWD-01 | P1 | Reward | `healCity` | reward wave 2 | `w2-heal` | HP penuh tetap di MaxHP. HP kurang 10 menjadi penuh karena heal 35 | unit/reward-kinds.test.ts | pass |
+| RWD-02 | P1 | Reward | `maxHpBonus` | HP 40 di reward wave 3 | `w3-maxhp` | MaxHP +20, HP menjadi 60, bukan full heal | unit/reward-kinds.test.ts | pass |
+| RWD-03 | P1 | Reward | `prepIncomeBonus` | normal, `w1-income` | cek rumus lalu battle hari 20 | Bonus 6. Rumus 28 + level kota × 5 + 6. Bonus 0 setelah battle | unit/reward-kinds.test.ts | pass |
+| RWD-04 | P1 | Reward | `nextWaveDefense` | normal, `w2-def` | defense wave 3, battle hari 30 | Defense +5 untuk wave 3, hilang di laporan battle | unit/reward-kinds.test.ts | pass |
+| RWD-05 | P1 | Reward | `combo` | easy, reward wave 9 | `w9-combo` setelah round-trip | Heal 40 di-clamp ke MaxHP, defense wave 10 +6 sekali. Pilihan ulang ditolak | unit/reward-kinds.test.ts | pass |
