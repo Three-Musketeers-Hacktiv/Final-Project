@@ -28,9 +28,9 @@ From `app/`:
 ```text
 npm run content:validate-fallback-events
 npm run db:seed-fallback-events
-npm run db:seed-fallback-events -- --write
+npm run db:seed-fallback-events:write
 ```
 
-The seed command is a dry-run unless `--write` is passed. It checks the current engine ruleset (`campaign-v4-100-day-v3` plus config fingerprint) and only inserts missing `promptVersion` keys for `fallback-catalog-v3`. It does not drop data, does not update rows that already exist, and does not run on `npm run dev`. Run it once per database after the ruleset document exists. Active `runs_event` snapshots stay as they were.
+`db:seed-fallback-events` is a dry-run. `db:seed-fallback-events:write` passes `--write`. It checks the current engine ruleset (`campaign-v4-100-day-v3` plus config fingerprint) and only inserts missing `promptVersion` keys for `fallback-catalog-v3`. It does not drop data, does not update rows that already exist, and does not run on `npm run dev`. Run it once per database after the ruleset document exists. Active `runs_event` snapshots stay as they were.
 
 The app must have created the ruleset document first. Do not commit database credentials, and do not expect this command to print a connection string.
