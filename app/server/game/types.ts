@@ -2,6 +2,7 @@ import type { ObjectId } from "mongodb";
 
 import type { TimelineEntry } from "@/contracts/api";
 import type { GameState } from "@/server/game-engine/adapter";
+import type { EventPackage } from "../../../src/game";
 import type {
   BattleDay,
   EventDay,
@@ -119,6 +120,17 @@ export type EventDataDocument = {
   createdAt: Date;
 };
 
+export type PackageSnapshotDocument = {
+  schemaVersion: 1;
+  package: EventPackage;
+  source: PersistedNarrativeSource;
+  provider: string | null;
+  model: string | null;
+  promptVersion: string;
+  contentFingerprint: string;
+  fallbackReason?: string;
+};
+
 export type RunEventDocument = {
   _id: ObjectId;
   gameRunId: ObjectId;
@@ -127,6 +139,7 @@ export type RunEventDocument = {
   packageId: string;
   day: EventDay;
   narrativeSnapshot: EventDataDocument["narrative"] & { source: PersistedNarrativeSource };
+  packageSnapshot?: PackageSnapshotDocument;
   chosenChoiceId: string | null;
   createdAt: Date;
   resolvedAt: Date | null;

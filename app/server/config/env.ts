@@ -24,7 +24,7 @@ export const serverEnvSchema = z.object({
   AI_MODEL: optionalSecret,
   AI_TIMEOUT_MS: z.coerce.number().int().positive().max(30000).default(10000),
   AI_MAX_RETRIES: z.coerce.number().int().min(0).max(3).default(1),
-  AI_MAX_OUTPUT_TOKENS: z.coerce.number().int().positive().max(4000).default(800),
+  AI_MAX_OUTPUT_TOKENS: z.coerce.number().int().positive().max(4000).default(2500),
   AI_PROMPT_VERSION: z.string().min(1).default("event-advisor-en-v1"),
   LOG_LEVEL: z.enum(["debug", "info", "warn", "error"]).default("info"),
 });

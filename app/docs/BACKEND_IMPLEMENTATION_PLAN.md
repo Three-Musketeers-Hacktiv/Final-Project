@@ -1,5 +1,7 @@
 # Backend Implementation Plan — Fantasy City Defense
 
+> **Partial historical note.** Sections that say AI may change only labels, or that create-run checks the old 4 event days, are superseded by [AI_EVENT_RUNTIME.md](./AI_EVENT_RUNTIME.md). Live campaign remains 100 days, 10 waves, `GameState.version` 4, ruleset `campaign-v4-100-day-v3`.
+
 Status: **Backend engine v4 synchronization implemented; frontend/victory gates pending**
 Target: campaign 100 hari / 10 wave
 Backend: Next.js Route Handlers + MongoDB  

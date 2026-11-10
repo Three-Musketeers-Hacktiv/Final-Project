@@ -40,7 +40,7 @@ Preview dan Production tidak boleh berbagi database. Test tidak boleh menunjuk d
 | `AI_MODEL` | Hanya adapter alternatif | ditentukan adapter | Server |
 | `AI_TIMEOUT_MS` | Tidak | `10000` | Server |
 | `AI_MAX_RETRIES` | Tidak | `1` | Server |
-| `AI_MAX_OUTPUT_TOKENS` | Tidak | `800` | Server |
+| `AI_MAX_OUTPUT_TOKENS` | Tidak | `2500` | Server |
 | `AI_PROMPT_VERSION` | Tidak | `event-advisor-en-v1` | Server |
 | `LOG_LEVEL` | Tidak | `info` | Server |
 | `NODE_ENV` | Tidak | dikelola runtime | Server |

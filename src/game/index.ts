@@ -35,7 +35,9 @@ export {
 } from "./stats";
 export { upgradeWall, upgradeTroops, upgradeCity, repairCity } from "./economy";
 export { endPreparationDay, startBattle, continueFromReport, surrender } from "./transitions";
-export { attachActiveEvent, chooseEventOption, ensureLocalEvent, toActiveEvent } from "./events";
+export { attachActiveEvent, chooseEventOption, ensureLocalEvent, installCommittedPackage, toActiveEvent } from "./events";
+export { validateEventPackage, validateEffect, PACKAGE_LIMITS } from "./packageValidation";
+export type { PackageValidationContext, PackageValidationResult } from "./packageValidation";
 export {
   choiceLabelRespectsGoldCost,
   decorateActiveEvent,

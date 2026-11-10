@@ -353,6 +353,16 @@ type RunEventDocument = {
     choices: Array<{ id: string; label: string }>; // 2-4
     source: "ai" | "fallback" | "mock";
   };
+  packageSnapshot?: {
+    schemaVersion: 1;
+    package: EventPackage; // base goldCost, executable effects, optional depth-1 fallback
+    source: "ai" | "fallback" | "mock";
+    provider: string | null;
+    model: string | null;
+    promptVersion: string;
+    contentFingerprint: string;
+    fallbackReason?: string;
+  };
   chosenChoiceId: string | null;
   createdAt: Date;
   resolvedAt: Date | null;
@@ -361,7 +371,9 @@ type RunEventDocument = {
 
 Aturan:
 
-- Narrative snapshot membekukan cerita yang diterima run.
+- Narrative snapshot membekukan teks yang diterima run.
+- `packageSnapshot`, bila ada, adalah paket kanonik yang sudah divalidasi. Refresh memakai snapshot itu dan tidak memanggil provider lagi.
+- Save lama tanpa `packageSnapshot` tetap narasi-only dan tidak diubah menjadi paket AI.
 - Snapshot `gameRunId + eventId` dipakai ulang sebelum memanggil provider agar refresh/recovery tidak menulis cerita kedua.
 - Reuse katalog membuat `runs_event` baru yang menunjuk `event_data` lama; document katalog tidak diduplikasi.
 - Resolusi pilihan hanya mengubah `runs_event` milik run tersebut.

@@ -1,6 +1,8 @@
 # Fallback event catalog
 
-This catalog is narrative copy only. The game engine still owns packages, choice IDs, costs, effects, consequences, and scheduling.
+Status note (2026-11-11): this collection is still **narrative copy only**. Full event packages now come from the AI package runtime ([AI_EVENT_RUNTIME.md](./AI_EVENT_RUNTIME.md)) or from the local engine catalog. Do not treat a seeded `event_data` row as costs, effects, or consequences.
+
+The game engine still owns executable packages. Seeded text is applied only when its choice ids match the local fallback package.
 
 ## What is stored
 

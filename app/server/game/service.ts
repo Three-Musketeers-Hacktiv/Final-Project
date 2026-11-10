@@ -2,11 +2,16 @@ import { MongoServerError, ObjectId } from "mongodb";
 
 import {
   decorateActiveEvent,
-  generateEventNarrative,
   restoreEventNarrative,
   type NarrativeResult,
 } from "@/server/ai/event-narrative";
-import { buildNarrativeContext } from "@/server/ai/narrative-context";
+import {
+  generateEventPackage,
+  PACKAGE_PROMPT_VERSION,
+  packageSnapshotFrom,
+  preferCommittedSnapshot,
+} from "@/server/ai/event-package";
+import { eventPackageById, installCommittedPackage, type EventPackage } from "../../../src/game";
 import type { UserDocument } from "@/server/auth/types";
 import {
   applyGameAction,
@@ -141,6 +146,7 @@ function runEventDocument(
   result: NarrativeResult,
   eventDataId: ObjectId,
   now: Date,
+  packageSnapshot?: RunEventDocument["packageSnapshot"],
 ): RunEventDocument {
   const source = toPersistedNarrativeSource(result.source);
   return {
@@ -151,97 +157,187 @@ function runEventDocument(
     packageId: event.packageId,
     day: toEventDay(event.day),
     narrativeSnapshot: { ...result.narrative, source },
+    ...(packageSnapshot ? { packageSnapshot } : {}),
     chosenChoiceId: null,
     createdAt: now,
     resolvedAt: null,
   };
 }
 
-async function resolveEventNarrative(
+function narrativeFromPackage(pkg: EventPackage, source: NarrativeResult["source"]): NarrativeResult {
+  return {
+    narrative: {
+      title: pkg.title,
+      description: pkg.description,
+      choices: pkg.choices.map((choice) => ({ id: choice.id, label: choice.label })),
+    },
+    source,
+    provider: null,
+    model: null,
+    promptVersion: PACKAGE_PROMPT_VERSION,
+  };
+}
+
+async function resolveCommittedEvent(
   run: GameRunDocument,
   state: GameRunDocument["state"],
   event: ActiveEvent,
   now: Date,
-): Promise<{ result: NarrativeResult; write: GeneratedEventWrite | null }> {
+): Promise<{ state: GameRunDocument["state"]; write: GeneratedEventWrite | null }> {
   const existing = await findRunEvent(run._id, event.eventId);
+  if (existing?.packageSnapshot) {
+    const snapshot = preferCommittedSnapshot(existing.packageSnapshot, existing.packageSnapshot);
+    const installed = installCommittedPackage(state, snapshot.package, snapshot.source, { restore: true });
+    if (!installed.ok) {
+      throw new ApiError(409, "PACKAGE_SNAPSHOT_INVALID", "Stored event package cannot be restored");
+    }
+    return { state: installed.state, write: null };
+  }
   if (existing) {
     const { source, ...narrative } = existing.narrativeSnapshot;
     return {
-      result: restoreEventNarrative(event, narrative, {
+      state: decorateActiveEvent(state, restoreEventNarrative(event, narrative, {
         source,
         provider: null,
         model: null,
         promptVersion: "stored-run-v1",
-      }),
+      })),
       write: null,
     };
   }
 
   const recent = await findRecentResolvedRunEvents(run._id, 3);
-  const context = buildNarrativeContext(
+  const generated = await generateEventPackage(
     state,
     event,
+    undefined,
     recent.flatMap((entry) => {
       if (!entry.chosenChoiceId) return [];
       const label = entry.narrativeSnapshot.choices.find((choice) => choice.id === entry.chosenChoiceId)?.label
         ?? entry.chosenChoiceId;
-      return [{
-        day: entry.day,
-        packageId: entry.packageId,
-        choiceId: entry.chosenChoiceId,
-        choiceLabel: label,
-      }];
+      return [{ day: entry.day, choiceId: entry.chosenChoiceId, choiceLabel: label }];
     }),
   );
-  let result = await generateEventNarrative(event, undefined, context);
-  let reusedEventData: EventDataDocument | null = null;
-  if (result.source === "fallback") {
-    const fallbackCandidates = await findSharedEventDataCandidates(
-      run.gameRulesetId,
-      event.packageId,
-      event.day,
-      "fallback",
-    );
-    const selected = selectSharedNarrative({
-      local: result,
-      event,
-      fallbackCandidates,
-    });
-    result = selected.result;
-    reusedEventData = selected.reused;
+  if (generated.source === "ai" && generated.pkg) {
+    const installed = installCommittedPackage(state, generated.pkg, "ai");
+    if (installed.ok && installed.state.activeEvent) {
+      const active = installed.state.activeEvent;
+      const stored = installed.state.eventPackageStore?.[active.packageId] ?? generated.pkg;
+      const narrative = narrativeFromPackage(stored, "ai");
+      narrative.provider = generated.provider;
+      narrative.model = generated.model;
+      narrative.promptVersion = generated.promptVersion;
+      const eventDataId = new ObjectId();
+      return {
+        state: installed.state,
+        write: {
+          eventData: {
+            _id: eventDataId,
+            gameRulesetId: run.gameRulesetId,
+            packageId: active.packageId,
+            day: toEventDay(active.day),
+            narrative: narrative.narrative,
+            source: "ai",
+            ...(generated.provider ? { provider: generated.provider } : {}),
+            ...(generated.model ? { model: generated.model } : {}),
+            promptVersion: generated.promptVersion,
+            schemaVersion: 1,
+            validationStatus: "valid",
+            createdAt: now,
+          },
+          runEvent: runEventDocument(
+            run,
+            active,
+            narrative,
+            eventDataId,
+            now,
+            packageSnapshotFrom(stored, {
+              source: "ai",
+              provider: generated.provider,
+              model: generated.model,
+              promptVersion: generated.promptVersion,
+            }),
+          ),
+        },
+      };
+    }
   }
 
-  if (reusedEventData) {
-    return {
-      result,
-      write: {
-        eventData: null,
-        runEvent: runEventDocument(run, event, result, reusedEventData._id, now),
-      },
-    };
-  }
-
-  const eventDataId = new ObjectId();
-  const narrativeSource = toPersistedNarrativeSource(result.source);
-  const eventData: EventDataDocument = {
-    _id: eventDataId,
-    gameRulesetId: run.gameRulesetId,
+  const local = narrativeFromPackage(
+    eventPackageById(event.packageId) ?? {
+      packageId: event.packageId,
+      eventId: event.eventId,
+      decade: Math.max(1, Math.ceil(event.day / 10)),
+      title: event.title,
+      description: event.description,
+      choices: event.choices.map((choice) => ({
+        id: choice.id,
+        label: choice.label,
+        goldCost: choice.goldCost,
+        effects: choice.effects,
+      })),
+    },
+    "fallback",
+  );
+  local.promptVersion = generated.promptVersion;
+  const fallbackCandidates = await findSharedEventDataCandidates(
+    run.gameRulesetId,
+    event.packageId,
+    event.day,
+    "fallback",
+  );
+  const selected = selectSharedNarrative({ local, event, fallbackCandidates });
+  const base = eventPackageById(event.packageId) ?? state.eventPackageStore?.[event.packageId];
+  const overlay: EventPackage = {
     packageId: event.packageId,
-    day: toEventDay(event.day),
-    narrative: result.narrative,
-    source: narrativeSource,
-    ...(result.provider ? { provider: result.provider } : {}),
-    ...(result.model ? { model: result.model } : {}),
-    promptVersion: result.promptVersion,
-    schemaVersion: 1,
-    validationStatus: "valid",
-    createdAt: now,
+    eventId: event.eventId,
+    decade: base?.decade ?? Math.max(1, Math.ceil(event.day / 10)),
+    title: selected.result.narrative.title,
+    description: selected.result.narrative.description,
+    choices: (base?.choices ?? []).map((choice) => ({
+      ...choice,
+      label: selected.result.narrative.choices.find((entry) => entry.id === choice.id)?.label ?? choice.label,
+    })),
   };
+  const installed = base
+    ? installCommittedPackage(state, overlay, "fallback")
+    : { ok: false as const };
+  const nextState = installed.ok ? installed.state : decorateActiveEvent(state, selected.result);
+  const active = nextState.activeEvent ?? event;
+  const stored = nextState.eventPackageStore?.[active.packageId] ?? overlay;
+  const eventDataId = new ObjectId();
+  const narrativeSource = toPersistedNarrativeSource(selected.result.source);
   return {
-    result,
+    state: nextState,
     write: {
-      eventData,
-      runEvent: runEventDocument(run, event, result, eventDataId, now),
+      eventData: selected.reused
+        ? null
+        : {
+            _id: eventDataId,
+            gameRulesetId: run.gameRulesetId,
+            packageId: event.packageId,
+            day: toEventDay(event.day),
+            narrative: selected.result.narrative,
+            source: narrativeSource,
+            promptVersion: selected.result.promptVersion,
+            schemaVersion: 1,
+            validationStatus: "valid",
+            createdAt: now,
+          },
+      runEvent: runEventDocument(
+        run,
+        active,
+        selected.result,
+        selected.reused?._id ?? eventDataId,
+        now,
+        packageSnapshotFrom(stored, {
+          source: "fallback",
+          provider: null,
+          model: null,
+          promptVersion: selected.result.promptVersion,
+          ...(generated.fallbackReason || generated.pkg ? { fallbackReason: generated.fallbackReason ?? "package-rejected" } : {}),
+        }),
+      ),
     },
   };
 }
@@ -292,28 +388,39 @@ export async function submitGameAction(
     });
   }
 
-  const actionRun = recoverRequiredEvent(currentRun);
+  const now = new Date();
+  const generatedEvents: GeneratedEventWrite[] = [];
+  let actionRun = recoverRequiredEvent(currentRun);
   const recoveredEvent = currentRun.state.activeEvent ? null : actionRun.state.activeEvent;
+  if (input.type === "chooseEventOption" && actionRun.state.activeEvent) {
+    const prepared = await resolveCommittedEvent(
+      currentRun,
+      actionRun.state,
+      actionRun.state.activeEvent,
+      now,
+    );
+    actionRun = { ...actionRun, state: prepared.state };
+    if (prepared.write) generatedEvents.push(prepared.write);
+  }
   const result = applyGameAction(actionRun.state, toEngineAction(input));
   if (!result.ok) throw new ApiError(422, result.error.code, result.error.message);
   if (result.state.revision !== currentRun.state.revision + 1) {
     throw new Error("Engine action did not advance exactly one revision");
   }
 
-  const now = new Date();
   let nextState = result.state;
-  const generatedEvents: GeneratedEventWrite[] = [];
-  if (recoveredEvent) {
-    const recoveredNarrative = await resolveEventNarrative(currentRun, actionRun.state, recoveredEvent, now);
-    if (recoveredNarrative.write) generatedEvents.push(recoveredNarrative.write);
+  if (recoveredEvent && !generatedEvents.length && result.state.activeEvent?.eventId === recoveredEvent.eventId) {
+    const recovered = await resolveCommittedEvent(currentRun, result.state, result.state.activeEvent, now);
+    nextState = recovered.state;
+    if (recovered.write) generatedEvents.push(recovered.write);
   }
   if (
-    result.state.activeEvent &&
-    actionRun.state.activeEvent?.eventId !== result.state.activeEvent.eventId
+    nextState.activeEvent &&
+    actionRun.state.activeEvent?.eventId !== nextState.activeEvent.eventId
   ) {
-    const resolvedNarrative = await resolveEventNarrative(currentRun, result.state, result.state.activeEvent, now);
-    nextState = decorateActiveEvent(result.state, resolvedNarrative.result);
-    if (resolvedNarrative.write) generatedEvents.push(resolvedNarrative.write);
+    const resolved = await resolveCommittedEvent(currentRun, nextState, nextState.activeEvent, now);
+    nextState = resolved.state;
+    if (resolved.write) generatedEvents.push(resolved.write);
   }
   const action: GameActionDocument = {
     _id: new ObjectId(),

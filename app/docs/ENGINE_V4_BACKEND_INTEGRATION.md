@@ -1,6 +1,8 @@
 # Engine V4 Backend Integration
 
-Status: **Backend synchronized; frontend build handoff remains**
+Status: **Historical integration note. Full-package generation supersedes the narrative-only bullets below.**
+See [AI_EVENT_RUNTIME.md](./AI_EVENT_RUNTIME.md). Campaign numbers in this file (100 days, 10 waves, max upgrade 18, ruleset `campaign-v4-100-day-v3`) still match the engine.
+
 Owner: Backend  
 Engine source: `../../src/game` and `../../docs/FOR_BACKEND.md` (read-only)  
 Last updated: 2026-11-09

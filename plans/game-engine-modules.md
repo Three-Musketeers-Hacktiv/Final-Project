@@ -1,5 +1,7 @@
 # Daftar Modul Game Engine
 
+> **Historis (6 Nov 2026, kampanye 20 hari).** Engine yang berjalan adalah 100 hari / 10 wave / `maxTrackLevel` 18. Paket event dinamis: [app/docs/AI_EVENT_RUNTIME.md](../app/docs/AI_EVENT_RUNTIME.md).
+
 Versi diskusi · Keputusan terkunci 6 Nov 2026 · Belum implementasi kode
 
 ## Keputusan terkunci

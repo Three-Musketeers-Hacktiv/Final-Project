@@ -1,5 +1,7 @@
 # PRD perbaikan — Backend / AI runtime
 
+> **Superseded.** Create-run pre-generation and narrative-only authority in this draft are not the current runtime. Use [AI_EVENT_RUNTIME.md](../../app/docs/AI_EVENT_RUNTIME.md).
+
 **Status:** Draft playtest follow-up  
 **Baseline dibanding:** `development` @ `d84f600`  
 **Owner:** Backend (Dev 3)  

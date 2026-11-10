@@ -1,5 +1,7 @@
 # Engine → Backend contract (consequence trust + narrative labels)
 
+> **Update 2026-11-11.** Catalog consequences still use `isTrustedConsequencePackage` and the successor map. Dynamic packages are trusted when they sit in `eventPackageStore` and their origin choice points at that `packageId` (or its `fallbackPackage`). Narrative-only overlay is the legacy path. See [AI_EVENT_RUNTIME.md](../app/docs/AI_EVENT_RUNTIME.md).
+
 Companion: [CAMPAIGN_100_DAY_CONTRACT.md](./CAMPAIGN_100_DAY_CONTRACT.md). This document is the wiring spec. Do **not** accept every package that merely exists in `eventPackageById`.
 
 Engine helpers (import from `src/game`):

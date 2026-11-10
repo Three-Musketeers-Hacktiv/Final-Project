@@ -21,6 +21,7 @@ import {
   upgradeCity,
   upgradeTroops,
   upgradeWall,
+  validateEventPackage,
   type ActionResult,
   type Difficulty,
   type GameState,
@@ -60,21 +61,58 @@ export function assertPatchedGameState(state: GameState, expectedRunId: string):
   const trustedIdentities = new Set(
     trustedPlan.map((entry) => `${entry.eventId}:${entry.packageId}`),
   );
-  const actualIdentities = new Set(
-    state.eventPlan.map((entry) => `${entry.eventId}:${entry.packageId}`),
-  );
+  const trustedEventIds = new Set(trustedPlan.map((entry) => entry.eventId));
+  const actualEventIds = state.eventPlan.map((entry) => entry.eventId);
   const eventDays = new Set(state.eventPlan.map((entry) => entry.day));
+  const packageForPlanEntry = (entry: (typeof state.eventPlan)[number]) => {
+    const stored = state.eventPackageStore?.[entry.packageId];
+    if (stored && stored.packageId === entry.packageId && stored.eventId === entry.eventId) return stored;
+    const catalog = eventPackageById(entry.packageId);
+    if (catalog && catalog.packageId === entry.packageId && catalog.eventId === entry.eventId) return catalog;
+    return undefined;
+  };
   const invalidPlanEntry = state.eventPlan.some((entry) => {
-    const pkg = eventPackageById(entry.packageId);
-    return !pkg || pkg.eventId !== entry.eventId || pkg.decade !== Math.ceil(entry.day / 10) ||
-      !isPreparationDay(entry.day);
+    if (!isPreparationDay(entry.day)) return true;
+    const pkg = packageForPlanEntry(entry);
+    if (!pkg) return true;
+    const stored = state.eventPackageStore?.[entry.packageId];
+    if (stored) {
+      const catalog = eventPackageById(stored.packageId);
+      const catalogClone = Boolean(catalog && JSON.stringify(catalog) === JSON.stringify(stored));
+      if (!catalogClone && !validateEventPackage(stored, {
+        day: entry.day,
+        wavesCleared: state.wavesCleared,
+        allowConsequence: true,
+        enforceWaveTiming: false,
+        enforceDecade: false,
+      }).ok) {
+        return true;
+      }
+      return stored.eventId !== entry.eventId;
+    }
+    return !trustedIdentities.has(`${entry.eventId}:${entry.packageId}`);
+  });
+  const storedPackagesInvalid = Object.entries(state.eventPackageStore ?? {}).some(([id, pkg]) => {
+    if (pkg.packageId !== id) return true;
+    const catalog = eventPackageById(pkg.packageId);
+    if (catalog && JSON.stringify(catalog) === JSON.stringify(pkg)) return false;
+    const slotDay = state.eventPlan.find((entry) => entry.packageId === id)?.day ?? state.day;
+    return !validateEventPackage(pkg, {
+      day: slotDay,
+      wavesCleared: 0,
+      allowConsequence: true,
+      enforceWaveTiming: false,
+      enforceDecade: false,
+    }).ok;
   });
   if (
     state.eventPlan.length !== trustedPlan.length ||
-    actualIdentities.size !== trustedIdentities.size ||
+    new Set(actualEventIds).size !== actualEventIds.length ||
     eventDays.size !== state.eventPlan.length ||
+    actualEventIds.some((eventId) => !trustedEventIds.has(eventId)) ||
+    [...trustedEventIds].some((eventId) => !actualEventIds.includes(eventId)) ||
     invalidPlanEntry ||
-    [...actualIdentities].some((identity) => !trustedIdentities.has(identity))
+    storedPackagesInvalid
   ) {
     throw new Error("Game state eventPlan is missing or incompatible with this engine revision");
   }
@@ -84,15 +122,21 @@ export function assertPatchedGameState(state: GameState, expectedRunId: string):
     const [packageId, originEventId, originChoiceId, triggerDayText, ...extra] = eventId.split("::");
     if (extra.length > 0 || !packageId || !originEventId || !originChoiceId || !triggerDayText) return false;
     const triggerDay = Number(triggerDayText);
-    const consequencePackage = eventPackageById(packageId);
-    const originPackage = state.eventPlan
-      .map((entry) => eventPackageById(entry.packageId))
-      .find((pkg) => pkg?.eventId === originEventId);
+    const stored = state.eventPackageStore?.[packageId];
+    const catalog = eventPackageById(packageId);
+    const consequencePackage = stored && stored.packageId === packageId ? stored : catalog;
+    const originEntry = state.eventPlan.find((entry) => entry.eventId === originEventId);
+    const originPackage = originEntry ? packageForPlanEntry(originEntry) : undefined;
     const originChoice = originPackage?.choices.find((choice) => choice.id === originChoiceId);
+    const linked = Boolean(
+      originChoice?.consequence &&
+      (originChoice.consequence.fallbackPackage
+        ? originChoice.consequence.packageId === packageId
+        : isTrustedConsequencePackage(originChoice.consequence.packageId, packageId)),
+    );
     return Boolean(
       consequencePackage &&
-      originChoice?.consequence &&
-      isTrustedConsequencePackage(originChoice.consequence.packageId, packageId) &&
+      linked &&
       Number.isInteger(triggerDay) &&
       isPreparationDay(triggerDay),
     );

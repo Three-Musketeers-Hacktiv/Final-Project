@@ -7,7 +7,8 @@ Rencana desain sebelum / selama implementasi.
 | [roadmap-diskusi-tim.md](roadmap-diskusi-tim.md) | Gabungan keputusan diskusi + rencana to-spec/to-tickets |
 | [feature-freeze-playtest.md](feature-freeze-playtest.md) | Freeze fitur baru sampai playtest pertama |
 | [auto-run-20-dan-50.md](auto-run-20-dan-50.md) | Auto FE di 20 hari; ruleset 50 belakangan |
-| [game-engine-modules.md](game-engine-modules.md) | Modul game engine, batas role, urutan bangun |
+| [game-engine-modules.md](game-engine-modules.md) | Modul game engine, batas role, urutan bangun. Angka 20 hari di dokumen itu historis; engine hidup 100 hari / 10 wave. |
+| [../app/docs/AI_EVENT_RUNTIME.md](../app/docs/AI_EVENT_RUNTIME.md) | Runtime paket event penuh (AI) dengan fallback katalog lokal |
 | [split-three-upgrades.md](split-three-upgrades.md) | Pisah upgrade tembok / pasukan / kota |
 
 Dokumen produk:

@@ -71,12 +71,12 @@ type EventNarrativeView = {
   title: string;
   description: string;
   source: "ai" | "fallback" | "mock" | "local";
-  choices: Array<{
-    id: string;
-    label: string;
-    goldCost: number;
-    effects: Effect[];
-  }>; // 2-4 trusted engine choices
+    choices: Array<{
+      id: string;
+      label: string;
+      goldCost: number; // effective cost after one difficulty scale of the package base cost
+      effects: Effect[];
+    }>; // 2-4 choices from the committed package, or the local catalog on fallback
 };
 
 type BattleReportView = {

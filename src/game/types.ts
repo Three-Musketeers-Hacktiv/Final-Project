@@ -45,6 +45,13 @@ export type ChoiceConsequence = {
   packageId: string;
   minDelayDays: number;
   maxDelayDays: number;
+  /** Optional wave lock for a dynamic follow-up. Catalog packages keep using the successor map. */
+  targetWave?: number;
+  /**
+   * Depth-1 package the engine can run when a follow-up is not regenerated.
+   * Its choices must not declare another consequence.
+   */
+  fallbackPackage?: EventPackage;
 };
 
 export type EventChoice = {
@@ -179,6 +186,11 @@ export type GameState = {
   incomeGrantedDays: number[];
   completedEventIds: string[];
   eventPlan: EventPlanEntry[];
+  /**
+   * Committed dynamic or snapshotted packages keyed by packageId.
+   * Absent on older v4 saves; those runs keep resolving the local catalog.
+   */
+  eventPackageStore?: Record<string, EventPackage>;
   pendingConsequences: PendingConsequence[];
   activeEvent: ActiveEvent | null;
   effects: ActiveEffects;

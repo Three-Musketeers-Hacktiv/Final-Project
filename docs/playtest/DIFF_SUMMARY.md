@@ -1,5 +1,7 @@
 # Diff summary — playtest iteration vs `development`
 
+> **Historical snapshot.** The "pre-generate 4 narratives" row below is not the current runtime. Current behavior is on-demand full packages: [AI_EVENT_RUNTIME.md](../../app/docs/AI_EVENT_RUNTIME.md).
+
 **Baseline:** `origin/development` @ `d84f600`  
 **Compared:** local working tree (modified + untracked)  
 **Rough size:** ~33 tracked files changed (+1224 / −356) + ~10 untracked files (~980 LOC baru)

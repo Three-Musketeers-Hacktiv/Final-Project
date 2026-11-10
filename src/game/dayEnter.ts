@@ -1,12 +1,12 @@
-import { eventPackageById } from "./config";
 import {
   incomeAmountForDay,
   isBattleDay,
   isPreparationDay,
   pendingConsequenceForDay,
 } from "./calendar";
-import { resolveEventPackage, shiftPlanEntryDay } from "./eventPlan";
+import { planEntryForDay, shiftPlanEntryDay } from "./eventPlan";
 import { toActiveEvent, toConsequenceActiveEvent } from "./activeEvent";
+import { resolvePackageById, resolveScheduledPackage } from "./packageStore";
 import type { GamePhase, GameState } from "./types";
 
 /**
@@ -57,7 +57,7 @@ export function enterCalendarDay(state: GameState, nextDay: number): GameState {
     nextDay,
   );
   if (pending && !state.completedEventIds.includes(pending.id)) {
-    const pkg = eventPackageById(pending.packageId);
+    const pkg = resolvePackageById(state, pending.packageId);
     if (pkg) {
       phase = "event";
       activeEvent = toConsequenceActiveEvent(
@@ -73,12 +73,12 @@ export function enterCalendarDay(state: GameState, nextDay: number): GameState {
         ...state.pendingConsequences.map((entry) => entry.triggerDay),
         nextDay,
       ]);
-      if (resolveEventPackage(nextDay, eventPlan)) {
+      if (planEntryForDay(eventPlan, nextDay)) {
         eventPlan = shiftPlanEntryDay(eventPlan, nextDay, occupied);
       }
     }
   } else {
-    const pkg = resolveEventPackage(nextDay, eventPlan);
+    const pkg = resolveScheduledPackage({ ...state, eventPlan }, nextDay);
     if (pkg && !state.completedEventIds.includes(pkg.eventId)) {
       phase = "event";
       activeEvent = toActiveEvent(pkg, "local", nextDay, state.difficulty);
@@ -103,7 +103,7 @@ export function hasUnresolvedEvent(state: GameState): boolean {
   }
   const pending = pendingConsequenceForDay(state, state.day);
   if (pending && !state.completedEventIds.includes(pending.id)) return true;
-  const scheduled = resolveEventPackage(state.day, state.eventPlan);
+  const scheduled = resolveScheduledPackage(state, state.day);
   if (scheduled && !state.completedEventIds.includes(scheduled.eventId)) return true;
   return false;
 }

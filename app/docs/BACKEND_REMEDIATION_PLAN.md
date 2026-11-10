@@ -1,5 +1,7 @@
 # Backend Remediation Plan — Engine Patch Alignment
 
+> **Historical (v3 / early v4 narrative-only).** Do not implement from this file. Current event authority is [AI_EVENT_RUNTIME.md](./AI_EVENT_RUNTIME.md): the backend may generate a full package, and the engine validates and applies it. The 100-day / 10-wave / upgrade-18 campaign in `src/game/config.ts` is the live configuration.
+
 Status: **Implemented and verified**
 Owner: Backend (Dev 3)
 Updated: 2026-11-08

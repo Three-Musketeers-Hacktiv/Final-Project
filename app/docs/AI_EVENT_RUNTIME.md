@@ -1,159 +1,155 @@
 # AI Event Runtime Specification
 
-Status: **Implemented and synchronized with latest engine patch**
+Status: **Full event packages are the default. Narrative-only decoration is legacy.**
 Owner: Backend
-Updated: 2026-11-09
+Updated: 2026-11-11
+
+This document replaces the previous rule that Gemini may change only title, description, and choice labels. Older copies of that rule in remediation, playtest, and engine-integration notes are historical.
 
 ## 1. Purpose and authority
 
-The AI runtime decorates a trusted engine event when an action first enters an event day. Create-run does not call an AI provider, and prepared narratives are out of scope.
+The default path asks the backend to generate one complete event package for an empty event slot:
 
-- The game engine owns `eventPlan`, event/choice IDs, costs, effects, rules, damage, and state transitions.
-- Backend sends trusted event copy to a provider, validates the response, and persists the decorated narrative with the action.
-- AI may change only the title, description, and choice labels.
-- Provider failure must not fail a valid gameplay action; backend first checks the shared valid AI catalog, then uses the trusted engine copy as fallback.
-- Frontend displays the backend response and never calls Gemini directly.
+- Scene title and narration.
+- 2–4 concrete choices.
+- Base `goldCost` (before difficulty scaling).
+- Effects from the engine union.
+- Optional depth-1 incoming consequence, including an executable fallback package.
 
-The active backend runtime uses the official Google Gen AI SDK. The former OpenAI dependency and hardcoded runtime path have been removed.
+The game engine stays pure. It validates the package and applies cost and effects only when the player picks a choice. It does not call a provider, read environment variables, or touch the database.
+
+Local catalog packages in `src/game/eventPackages.ts` remain the mechanical fallback. They are not deleted.
+
+Create-run still does not call the provider. Generation stays on demand when an action first opens a slot that has no committed snapshot.
 
 ## 2. Default provider and configuration
 
-Google Gemini is the default provider. The adapter is selected only by server environment configuration.
+Google Gemini remains the only implemented provider. Domain code depends on `EventPackageGenerator` in `app/server/ai/event-package.ts`, not on the Gemini SDK. `EventNarrativeGenerator` remains for legacy narrative snapshots and tests.
 
 | Variable | Required | Recommended/default | Purpose |
 |---|---:|---|---|
-| `AI_PROVIDER` | Yes | `gemini` | Selects a supported backend adapter. |
-| `GEMINI_API_KEY` | For Gemini runtime | none | Server-only Gemini credential. |
-| `GEMINI_MODEL` | For Gemini runtime | chosen during deployment | Gemini model with JSON/schema output support. |
-| `AI_TIMEOUT_MS` | No | `10000` | One provider-call timeout. |
-| `AI_MAX_RETRIES` | No | `1` | Retry count for transient failures. |
-| `AI_MAX_OUTPUT_TOKENS` | No | `800` | Maximum narrative output. |
-| `AI_PROMPT_VERSION` | No | `event-advisor-en-v1` | Audit/reproduction identifier. |
-| `AI_API_KEY` | Only for an implemented alternative adapter | none | Generic alternative-provider credential. |
-| `AI_MODEL` | Only for an implemented alternative adapter | none | Generic alternative-provider model. |
+| `AI_PROVIDER` | Yes | `gemini` | Selects the backend adapter. |
+| `GEMINI_API_KEY` | For live Gemini | none | Server-only credential. |
+| `GEMINI_MODEL` | For live Gemini | chosen at deployment | Model with JSON output. |
+| `AI_TIMEOUT_MS` | No | `10000` | One provider-call timeout. Gemini's client floor is 10 seconds. |
+| `AI_MAX_RETRIES` | No | `1` | Retries for HTTP 408, 429, and 5xx only. HTTP 400, invalid JSON, schema mismatch, truncation, and safety blocks are not retried. |
+| `AI_MAX_OUTPUT_TOKENS` | No | `2500` | Room for one full package. Hard cap 4000. |
+| `AI_PROMPT_VERSION` | No | `event-advisor-en-v1` | Advisor/scene audit id. Package generation stores it beside `event-package-en-v2`. |
 
-The environment schema rejects an unsupported `AI_PROVIDER`. Defining generic variables does not imply that an adapter exists. Secrets never use a `NEXT_PUBLIC_` prefix and are stored only in local untracked environment files or Vercel Environment Variables.
+Missing key or model means fallback-only. Secrets never use a `NEXT_PUBLIC_` prefix.
 
-Local/test may intentionally run fallback-only. Preview/Production preflight reports an incomplete AI configuration when live Gemini is required for the demo.
+The total wait is one call timeout times (`AI_MAX_RETRIES + 1`). That budget stays outside the MongoDB transaction and under the function timeout. A race may call the provider more than once. Only one revision can commit.
 
-## 3. Provider-neutral interface
+## 3. Package contract
 
-Domain services depend on an interface, not a Gemini SDK:
+`goldCost` in the package is the **base** cost. The engine applies `scaleEventGoldCost` once for display and once from that same base when the choice is paid. Callers must not send a pre-scaled cost.
 
-```ts
-interface EventNarrativeGenerator {
-  readonly provider: string;
-  readonly model: string | null;
-  generate(input: EventNarrativeInput): Promise<GeneratedEventNarrative>;
-}
-```
+Canonical ids are assigned by the backend:
 
-The implementation set consists of a Gemini generator, trusted fallback generator, and deterministic mock for tests. Another provider may be added only behind the same interface and validation rules.
+- Scheduled package id: `ai:${slotEventId}`.
+- The plan **event id and day** stay the slot chosen by `pickEventPlan`.
+- A dynamic consequence id is `ai:cons:${originEventId}:${choiceId}` and is stored with the origin choice.
+- Model output ids are draft choice ids only. They are not run ids or calendar days.
 
-## 4. Input and prompt
+A committed package records `schemaVersion: 1`, source, provider, model, prompt version, and a sha256 fingerprint. `runs_event.packageSnapshot` is the durable copy. `game_runs.state.eventPackageStore` is the engine-readable mirror. `event_data` stays narrative-only and is not a full package.
 
-The provider receives only:
+## 4. What the model may invent
 
-- `locale: "en-US"`;
-- day, `eventId`, and `packageId` from the active engine event;
-- trusted title and description;
-- each trusted choice ID;
-- effective `goldCost` from `activeEvent.choices` and trusted effect summaries when needed for coherent wording.
+The model may invent theme, prose, choice labels, base costs, and combinations of supported effects. It may not invent a new effect type. Supported effects are `grantGold`, `damageCity`, `healCity`, `maxHpBonus`, `nextWaveDefense`, and `upgradeDiscount`.
 
-Prompt intent:
+The provider JSON Schema and the draft Zod schema are maintained separately. Contract tests compare structure only: required and optional keys, effect discriminators, consequence, `fallbackPackage`, and the absence of `consequence` on fallback choices. They do not claim full parity.
 
-> Provide the narrative and choices in English as a loyal city advisor recommending options to his lord. Preserve every supplied choice ID, do not create or change gameplay rules, choices, costs, or effects, and do not mention currency terms such as gold, coin(s), treasury, or gp in a choice label.
+Intentional differences:
 
-Do not send username, password, cookie, JWT, IP address, MongoDB URI, full save state, secrets, or unsanitized player input.
+- Zod and `validateEventPackage` enforce delay `1..30`, `minDelayDays <= maxDelayDays`, one free choice, 2–4 choices, dominance, wave timing, and decade. The Gemini schema does not encode those bounds (`minimum`, `maximum`, `minItems`, `maxItems`, and `additionalProperties` stay off that schema).
+- The provider effect schema is one object: `type` is an enum of the six supported effects, and `amount`, `wave`, `rate`, and `untilWave` are optional numbers. It is not an `anyOf` of six objects. Zod's discriminated union still rejects an effect that has the wrong fields. The prompt tells the model to omit unused numbers.
+- `packageId`, `eventId`, and `decade` are assigned by `canonicalizeEventPackage`, not by the model.
+- Unknown fields are rejected by Zod `.strict()`. The provider schema does not set `additionalProperties: false`.
 
-## 5. Validated output
+Technical validation (engine `validateEventPackage`) remains authoritative at install and when a choice is applied. Generation calls that same function before labeling a package `ai`. A strictly dominated paid choice (same effects and consequence, higher cost) is rejected for new AI packages.
 
-Zod is the runtime source of truth for provider output. The target shape is:
+Those checks do not prove that the prose is a good dilemma. Narrative quality stays a separate review.
 
-```ts
-const GeneratedEventNarrativeSchema = z.object({
-  title: z.string().min(1),
-  description: z.string().min(1),
-  choices: z.array(
-    z.object({
-      id: z.string().min(1),
-      label: z.string().min(1),
-    }).strict(),
-  ).min(2).max(4),
-}).strict();
-```
+A paid choice may cost more gold than the city currently has, as long as one choice is free. `INSUFFICIENT_GOLD` is enforced later, at choice time.
 
-Post-schema validation requires:
+## 5. On-demand flow
 
-- exactly the trusted 2–4 choice-ID set, with no duplicate, missing, or invented ID;
-- English text within configured length limits;
-- no numeric gameplay authority from provider output;
-- merge by choice ID, never by array position.
+1. An engine action opens a scheduled day or a due consequence.
+2. Backend loads `runs_event` for that run and event id.
+3. A `packageSnapshot` is restored and the provider is not called.
+4. A legacy row with only `narrativeSnapshot` is decorated in place. It is not replaced by a new AI package.
+5. Otherwise backend calls `EventPackageGenerator` **before** the Mongo transaction.
+6. The engine validates the canonical package. Success installs it with `installCommittedPackage` and does not apply effects or bump revision by itself.
+7. Failure, timeout, refusal, invalid JSON, unknown effects, or a rejected package selects the local engine package. Seeded `event_data` text is used only when its choice ids match that local package. Otherwise the engine text is used. Source is `fallback`, with `fallbackReason`.
+8. The action transaction writes state, `eventPackageStore`, `runs_event.packageSnapshot`, and the narrative subset together.
+9. A later provider response cannot replace that snapshot.
+10. Choosing loads the committed package and the engine applies that choice once.
 
-Backend restores trusted costs/effects after validation. Labels pass through the engine trusted-label policy; any supported currency term (`gold`, `coin`/`coins`, `treasury`, or `gp`) makes the label fall back to the engine label even without a numeric amount. Descriptions are not scanned because they have no gameplay authority.
+`chooseEventOption` resolves a package that is already committed so the paid cost and effects are the snapshot's, not a catalog row that was showing before generation.
 
-## 6. On-demand flow
+## 6. Consequences
 
-1. The client submits an ordinary game action.
-2. The engine returns a next state whose `activeEvent` is newly present.
-3. Backend derives input from that trusted scheduled/consequence event, including origin IDs when present.
-4. Backend reuses an existing `runs_event` snapshot for the same run/event when present.
-5. Otherwise backend calls Gemini before opening the MongoDB transaction and validates with Zod plus trusted choice IDs.
-6. If generation is unavailable or fails, backend tries seeded `source: "fallback"` rows for the same ruleset/package/day, preferring `fallback-catalog-v3`, then `fallback-catalog-v2`, then older seeded rows. Shared `source: "ai"` rows are not reused, because they may describe another city's condition. Invalid rows are skipped.
-7. If no seeded row fits, the trusted engine scene text is used. A new AI success is stored for that run's `runs_event` snapshot and is not regenerated on refresh.
-8. The action transaction persists state, logs, properties, any new `event_data`, and `runs_event` atomically. Shared catalog reuse creates only the run allocation.
-9. If resolving one event activates another on the same day, backend repeats this flow for the successor event in the same action response.
+Catalog consequences still use `packageId` plus `CONSEQUENCE_TARGET_WAVE` / `CONSEQUENCE_SUCCESSOR`.
 
-On load, `ensureLocalEvent` recovers an unfinished required event whose active copy is missing. The backend neutralizes the helper's standalone revision increment when folding recovery into a player action, so one public action still advances exactly one revision.
-
-An idempotent retry detected before generation does not call the provider. Concurrent requests may briefly issue more than one provider call, but revision checks and unique indexes permit only one committed transition.
+Dynamic consequences carry `fallbackPackage`. The engine schedules that package without the successor map. If `targetWave` is already past, the origin package is rejected at accept time. If no prep day remains, scheduling fails and the choice is not applied. Fallback packages cannot schedule another consequence. When the follow-up day arrives, backend may generate a new package for that slot; if generation fails, the stored fallback package still runs.
 
 ## 7. Fallback and sources
 
-Fallback is mandatory for missing configuration, timeout, network/rate error, refusal, invalid JSON/schema, unsafe text, unknown choice IDs, or any adapter exception.
+Fallback is mandatory. `fallbackReason` is one of:
 
-Persistent source values are:
+| Reason | When |
+|---|---|
+| `provider-unconfigured` | Missing provider, key, or model |
+| `output-truncated` | `finishReason` is `MAX_TOKENS`, even if a fragment parses |
+| `empty-response` | No text and no safety block |
+| `invalid-json` | Text is not JSON |
+| `schema-mismatch` | JSON does not match the draft Zod schema |
+| `safety-block` | `promptFeedback.blockReason` or a safety/policy finish reason |
+| `provider-invalid-argument` | Provider HTTP 400 or a status-less `INVALID_ARGUMENT` message. Not retried. |
+| `provider-error` | Network, timeout, HTTP 429, 5xx, or another adapter exception |
+| `package-rejected` | Draft parsed, but `validateEventPackage` rejected it |
 
-```ts
-type EventNarrativeSource = "ai" | "fallback" | "mock";
+Logs include the event id, provider, model, prompt version, HTTP status when the SDK provides one, fallback reason, error name, and a short provider message. They do not include the API key, the prompt, or the player state. Token budget stays at the configured `AI_MAX_OUTPUT_TOKENS`. A 400 is an invalid request, not truncation, so it is not fixed by raising the token budget. Invalid JSON, schema mismatch, truncation, safety blocks, and HTTP 400 are not retried.
+
+Persistent source values remain `"ai" | "fallback" | "mock"`. A local catalog package is never labeled `ai` because an earlier narrative used Gemini. Engine `activeEvent.source === "local"` is only the pre-commit value.
+
+## 8. Saves
+
+`GameState.version` stays `4`. `eventPackageStore` is optional. Older saves without it keep resolving the local catalog. Active legacy events are not migrated into new AI packages. A snapshot that no longer validates returns `PACKAGE_SNAPSHOT_INVALID` instead of silently swapping the choices the player already saw.
+
+## 9. Tests
+
+Default automated tests use a mock generator or the local fallback. They do not call live Gemini.
+
+From `app/`:
+
+```bash
+npx vitest run server/ai/event-package.test.ts
 ```
 
-Engine `activeEvent.source === "local"` is a transient pre-decoration value and is never stored as the backend narrative source.
+That file checks the JSON Schema sent to Gemini, local Zod rejection, and fallback categories, including a mocked HTTP 400. It does not prove the live model accepts the schema.
 
-Minimum metadata includes source, provider/model when applicable, prompt version, and creation time. Operational logs may include correlation ID, run/event ID, latency, source, error category, and usage metadata. Logs must not contain provider keys, cookies, tokens, connection strings, or full prompts.
+Schema isolation is a separate opt-in file. It does not write a database. Skip is the default. One ladder run on `gemini-3.5-flash-lite` accepted JSON mode, a tiny schema, label-only choices, one effect `anyOf`, a flat effect object, and a consequence whose follow-up choices had no effects. The full package schema returned HTTP 400. Follow-up calls then kept a flat effect object: with `minItems` / `maxItems` the request was still HTTP 400, and without those bounds it was accepted. `anyOf` without array bounds was not retested. Mock tests and that live confirm are separate evidence.
 
-## 8. Timeout and retry
+```bash
+LIVE_GEMINI_SCHEMA_PROBE=1 GEMINI_API_KEY=... GEMINI_MODEL=... npx vitest run server/ai/event-package.schema-probe.live.test.ts
+```
 
-- Initial timeout: 10 seconds.
-- At most one application retry for an explicitly transient failure.
-- Invalid output/refusal goes directly to trusted fallback unless the adapter classifies it as safely retryable.
-- The total provider budget stays below the Vercel function timeout.
-- MongoDB transactions are never held open while waiting for AI.
+Cover at least: a package outside the catalog; its base cost and effects applied once; invalid packages leaving state unchanged; provider failures using fallback; refresh reusing the snapshot; difficulty scaling once; one commit under a race; a late response not replacing fallback; a dynamic consequence running with the provider disabled; legacy saves still loading; economy, calendar, battle, reward, and expiry regression.
 
-Final values are verified in Vercel Preview and remain configurable through the generic `AI_*` variables.
+Live smoke is opt-in and makes one Gemini call. It does not write a database. A fallback result is a failure. Skip is the default.
 
-## 9. Test requirements
+```bash
+LIVE_GEMINI_SMOKE=1 GEMINI_API_KEY=... GEMINI_MODEL=... npx vitest run server/ai/event-package.live.test.ts
+```
 
-- Valid Gemini output changes narrative fields only.
-- Reordered valid choices merge by ID.
-- Missing, duplicate, invented, or dynamic-ID mismatch falls back.
-- Missing key, timeout, network error, refusal, and invalid schema fall back.
-- Provider failure reuses a valid shared AI catalog entry before local fallback.
-- Stored narrative IDs are revalidated and labels mentioning supported currency terms fall back to trusted engine labels.
-- Same-day successor events and missing-active-event recovery do not duplicate effects or revision increments.
-- Fallback and AI responses expose the same API shape.
-- On-demand generation occurs once for the successfully committed event transition.
-- Default unit/integration/campaign tests use a mock or fallback and never call live Gemini.
-- A live Gemini smoke test is explicit, budget-limited, and requires dedicated environment opt-in.
+Older snapshots and notes may still say `event-package-en-v1`. New package generation records `event-package-en-v2`.
 
 ## 10. Acceptance criteria
 
-- Gemini is the default configured provider.
-- Advisor text is English and addresses the player as “my lord”.
-- Gameplay remains fully engine-owned.
-- A provider outage does not block a valid event transition.
-- Only validated provider output is persisted.
-- Provider credentials remain server-only.
-- Source/provider/model/prompt version are auditable without logging secrets.
-
-Implementation and verification are tracked as BE-R06 in [BACKEND_REMEDIATION_PLAN.md](./BACKEND_REMEDIATION_PLAN.md).
+- The default slot uses a full package when Gemini is configured and no snapshot exists.
+- The engine rejects unsupported effects and executable payloads.
+- A provider outage still finishes the 100-day calendar through local packages.
+- One slot commits one package.
+- Effects run only after a valid choice.
+- Credentials stay server-only.

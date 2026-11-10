@@ -9,17 +9,22 @@ import {
 } from "./calendar";
 import { scaleEventGoldCost } from "./difficulty";
 import { applyEffects } from "./effects";
-import { hashString, planEntryForDay, resolveEventPackage, shiftPlanEntryDay } from "./eventPlan";
+import { hashString, planEntryForDay, shiftPlanEntryDay } from "./eventPlan";
 import {
   scaleChoicesForDifficulty,
+  materializeChoiceLabel,
   toActiveEvent,
   toConsequenceActiveEvent,
   validateChoiceList,
 } from "./activeEvent";
+import { trustedChoiceLabel } from "./narrative";
+import { cloneEventPackage, resolvePackageById, resolveScheduledPackage } from "./packageStore";
+import { validateEventPackage } from "./packageValidation";
 import { fail, isEnded, ok } from "./result";
 import type {
   ActiveEvent,
   ActionResult,
+  ChoiceConsequence,
   EventPackage,
   GameState,
   PendingConsequence,
@@ -66,7 +71,7 @@ function trustedScheduledPackage(
   if (entry.packageId !== event.packageId || entry.eventId !== event.eventId) {
     return { ok: false, reason: "identity" };
   }
-  const pkg = eventPackageById(entry.packageId);
+  const pkg = resolveScheduledPackage(state, event.day);
   if (!pkg || pkg.packageId !== entry.packageId || pkg.eventId !== entry.eventId) {
     return { ok: false, reason: "identity" };
   }
@@ -88,8 +93,10 @@ function trustedConsequencePackage(
       entry.id === event.eventId,
   );
   if (!pending) return { ok: false, reason: "identity" };
-  const pkg = eventPackageById(pending.packageId);
-  if (!pkg || !validateChoiceList(pkg)) return { ok: false, reason: "identity" };
+  const pkg = resolvePackageById(state, pending.packageId);
+  if (!pkg || pkg.packageId !== pending.packageId || !validateChoiceList(pkg)) {
+    return { ok: false, reason: "identity" };
+  }
   return { ok: true, pkg, pending };
 }
 
@@ -167,7 +174,7 @@ export function ensureLocalEvent(state: GameState): ActionResult {
   const pending = pendingConsequenceForDay(state, state.day);
   if (pending && !state.completedEventIds.includes(pending.id)) {
     if (state.activeEvent?.eventId === pending.id) return ok(state);
-    const pkg = eventPackageById(pending.packageId);
+    const pkg = resolvePackageById(state, pending.packageId);
     if (!pkg) return ok(state);
     return attachActiveEvent(
       state,
@@ -175,7 +182,7 @@ export function ensureLocalEvent(state: GameState): ActionResult {
     );
   }
 
-  const pkg = resolveEventPackage(state.day, state.eventPlan);
+  const pkg = resolveScheduledPackage(state, state.day);
   if (!pkg || state.completedEventIds.includes(pkg.eventId)) return ok(state);
   if (state.activeEvent?.eventId === pkg.eventId) return ok(state);
   return attachActiveEvent(state, toActiveEvent(pkg, "local", state.day, state.difficulty));
@@ -265,18 +272,71 @@ function resolveConsequencePackage(
   return null;
 }
 
+function shiftPlanIfOccupied(
+  eventPlan: GameState["eventPlan"],
+  pendingConsequences: PendingConsequence[],
+  triggerDay: number,
+): GameState["eventPlan"] {
+  if (!planEntryForDay(eventPlan, triggerDay)) return eventPlan;
+  const occupied = new Set<number>([
+    ...eventPlan.map((entry) => entry.day),
+    ...pendingConsequences.map((entry) => entry.triggerDay),
+    triggerDay,
+  ]);
+  return shiftPlanEntryDay(eventPlan, triggerDay, occupied);
+}
+
+function dynamicConsequenceDays(
+  state: GameState,
+  consequence: ChoiceConsequence,
+): number[] | null {
+  const candidates = candidateConsequenceDays(
+    state,
+    state.day,
+    consequence.minDelayDays,
+    consequence.maxDelayDays,
+  );
+  if (candidates.length === 0) return null;
+  if (consequence.targetWave == null) return candidates;
+  const deadline = battleDayForWave(consequence.targetWave);
+  if (deadline == null || state.day >= deadline) return null;
+  const beforeTarget = candidates.filter((day) => day < deadline);
+  return beforeTarget.length > 0 ? beforeTarget : null;
+}
+
 function scheduleConsequence(
   state: GameState,
   originEventId: string,
   originChoiceId: string,
-  packageId: string,
-  minDelayDays: number,
-  maxDelayDays: number,
-): { pending: PendingConsequence; eventPlan: GameState["eventPlan"] } | null {
-  const resolved = resolveConsequencePackage(state, packageId, minDelayDays, maxDelayDays);
-  if (!resolved) return null;
-  const { candidates } = resolved;
-  const resolvedPackageId = resolved.packageId;
+  consequence: ChoiceConsequence,
+): {
+  pending: PendingConsequence;
+  eventPlan: GameState["eventPlan"];
+  eventPackageStore: GameState["eventPackageStore"];
+} | null {
+  const inline = consequence.fallbackPackage;
+  let resolvedPackageId = consequence.packageId;
+  let candidates: number[] | null;
+  let eventPackageStore = state.eventPackageStore;
+  if (inline) {
+    if (inline.packageId !== consequence.packageId) return null;
+    candidates = dynamicConsequenceDays(state, consequence);
+    if (!candidates) return null;
+    eventPackageStore = {
+      ...eventPackageStore,
+      [inline.packageId]: cloneEventPackage(inline),
+    };
+  } else {
+    const resolved = resolveConsequencePackage(
+      state,
+      consequence.packageId,
+      consequence.minDelayDays,
+      consequence.maxDelayDays,
+    );
+    if (!resolved) return null;
+    resolvedPackageId = resolved.packageId;
+    candidates = resolved.candidates;
+  }
   const index =
     hashString(`${state.runId}:${originChoiceId}:${resolvedPackageId}:trigger`) % candidates.length;
   const triggerDay = candidates[index]!;
@@ -287,18 +347,11 @@ function scheduleConsequence(
     packageId: resolvedPackageId,
     triggerDay,
   };
-
-  let eventPlan = state.eventPlan;
-  if (resolveEventPackage(triggerDay, eventPlan)) {
-    const occupied = new Set<number>([
-      ...eventPlan.map((entry) => entry.day),
-      ...state.pendingConsequences.map((entry) => entry.triggerDay),
-      triggerDay,
-    ]);
-    eventPlan = shiftPlanEntryDay(eventPlan, triggerDay, occupied);
-  }
-
-  return { pending, eventPlan };
+  return {
+    pending,
+    eventPlan: shiftPlanIfOccupied(state.eventPlan, state.pendingConsequences, triggerDay),
+    eventPackageStore,
+  };
 }
 
 /**
@@ -312,10 +365,10 @@ function activateNextMandatoryEvent(state: GameState): {
 } {
   const pending = pendingConsequenceForDay(state, state.day);
   if (pending) {
-    const pkg = eventPackageById(pending.packageId);
+    const pkg = resolvePackageById(state, pending.packageId);
     if (pkg) {
       let eventPlan = state.eventPlan;
-      if (resolveEventPackage(state.day, eventPlan)) {
+      if (planEntryForDay(eventPlan, state.day)) {
         const occupied = new Set<number>([
           ...eventPlan.map((entry) => entry.day),
           ...state.pendingConsequences.map((entry) => entry.triggerDay),
@@ -337,7 +390,7 @@ function activateNextMandatoryEvent(state: GameState): {
     }
   }
 
-  const scheduled = resolveEventPackage(state.day, state.eventPlan);
+  const scheduled = resolveScheduledPackage(state, state.day);
   if (scheduled && !state.completedEventIds.includes(scheduled.eventId)) {
     return {
       phase: "event",
@@ -349,11 +402,110 @@ function activateNextMandatoryEvent(state: GameState): {
   return { phase: "preparation", activeEvent: null, eventPlan: state.eventPlan };
 }
 
+function storePackage(
+  store: GameState["eventPackageStore"],
+  pkg: EventPackage,
+): NonNullable<GameState["eventPackageStore"]> {
+  const next: NonNullable<GameState["eventPackageStore"]> = { ...store, [pkg.packageId]: cloneEventPackage(pkg) };
+  for (const choice of pkg.choices) {
+    const fallback = choice.consequence?.fallbackPackage;
+    if (fallback) next[fallback.packageId] = cloneEventPackage(fallback);
+  }
+  return next;
+}
+
+/**
+ * Bind a validated package to the active slot without applying effects or advancing revision.
+ * AI packages may replace the plan packageId. Catalog fallback keeps the local mechanics.
+ */
+export function installCommittedPackage(
+  state: GameState,
+  rawPackage: EventPackage,
+  source: ActiveEvent["source"],
+  options?: { restore?: boolean },
+): ActionResult {
+  const event = state.activeEvent;
+  if (!event || state.phase !== "event" || event.day !== state.day) {
+    return fail("INVALID_PHASE", "A committed package requires the active event");
+  }
+
+  if (source !== "ai") {
+    const entry = planEntryForDay(state.eventPlan, state.day);
+    const catalogId = event.isConsequence ? event.packageId : entry?.packageId;
+    const catalog = catalogId ? eventPackageById(catalogId) : undefined;
+    const base = catalog ?? resolvePackageById(state, event.packageId);
+    if (!base || !validateChoiceList(base)) {
+      return fail("INVALID_CHOICE", "Event package is not trusted");
+    }
+    const choices = scaleChoicesForDifficulty(base.choices, state.difficulty).map((choice) => {
+      const overlay = rawPackage.choices.find((candidate) => candidate.id === choice.id);
+      const baseChoice = base.choices.find((candidate) => candidate.id === choice.id);
+      const label = materializeChoiceLabel(
+        trustedChoiceLabel(baseChoice?.label ?? choice.label, overlay?.label, baseChoice?.goldCost ?? choice.goldCost),
+        choice.goldCost,
+      );
+      return { ...choice, label };
+    });
+    const activeEvent: ActiveEvent = event.isConsequence
+      ? { ...event, title: rawPackage.title || base.title, description: rawPackage.description || base.description, source, choices }
+      : { ...toActiveEvent(base, source, state.day, state.difficulty), title: rawPackage.title || base.title, description: rawPackage.description || base.description, choices };
+    return ok({
+      ...state,
+      eventPackageStore: storePackage(state.eventPackageStore, base),
+      activeEvent,
+    });
+  }
+
+  const validated = validateEventPackage(rawPackage, {
+    day: state.day,
+    wavesCleared: state.wavesCleared,
+    allowConsequence: !event.isConsequence,
+    checkDominance: options?.restore ? false : true,
+    enforceWaveTiming: options?.restore ? false : true,
+    enforceDecade: options?.restore ? false : true,
+  });
+  if (!validated.ok) return fail("INVALID_CHOICE", validated.message);
+
+  if (!event.isConsequence) {
+    const entry = planEntryForDay(state.eventPlan, state.day);
+    if (!entry || entry.eventId !== event.eventId) {
+      return fail("INVALID_CHOICE", "Event package is not trusted");
+    }
+    const bound = cloneEventPackage({ ...validated.pkg, eventId: entry.eventId });
+    const eventPlan = state.eventPlan.map((row) =>
+      row.eventId === entry.eventId ? { ...row, packageId: bound.packageId } : row,
+    );
+    return ok({
+      ...state,
+      eventPlan,
+      eventPackageStore: storePackage(state.eventPackageStore, bound),
+      activeEvent: toActiveEvent(bound, source, state.day, state.difficulty),
+    });
+  }
+
+  const pending = state.pendingConsequences.find((row) => row.id === event.eventId);
+  if (!pending || pending.triggerDay !== state.day) {
+    return fail("INVALID_CHOICE", "Event package is not trusted");
+  }
+  const rebound: PendingConsequence = {
+    ...pending,
+    packageId: validated.pkg.packageId,
+    id: `${validated.pkg.packageId}::${pending.originEventId}::${pending.originChoiceId}::${pending.triggerDay}`,
+  };
+  const stored = cloneEventPackage({ ...validated.pkg, eventId: rebound.id, packageId: rebound.packageId });
+  return ok({
+    ...state,
+    pendingConsequences: state.pendingConsequences.map((row) => (row.id === pending.id ? rebound : row)),
+    eventPackageStore: storePackage(state.eventPackageStore, stored),
+    activeEvent: toConsequenceActiveEvent(stored, rebound, state.day, source, state.difficulty),
+  });
+}
+
 export function chooseEventOption(state: GameState, choiceId: string): ActionResult {
   if (isEnded(state)) return fail("GAME_ENDED", "Game has ended");
   const event = state.activeEvent;
   if (!event) {
-    const scheduled = resolveEventPackage(state.day, state.eventPlan);
+    const scheduled = resolveScheduledPackage(state, state.day);
     if (scheduled && state.completedEventIds.includes(scheduled.eventId)) {
       return fail("EVENT_ALREADY_RESOLVED", "Event already completed");
     }
@@ -401,19 +553,14 @@ export function chooseEventOption(state: GameState, choiceId: string): ActionRes
 
   let eventPlan = state.eventPlan;
   let pendingConsequences = state.pendingConsequences;
+  let eventPackageStore = state.eventPackageStore;
   if (choice.consequence && trusted.kind === "scheduled") {
-    const scheduled = scheduleConsequence(
-      state,
-      event.eventId,
-      choice.id,
-      choice.consequence.packageId,
-      choice.consequence.minDelayDays,
-      choice.consequence.maxDelayDays,
-    );
+    const scheduled = scheduleConsequence(state, event.eventId, choice.id, choice.consequence);
     if (!scheduled) {
       return fail("INVALID_TRANSITION", "No free day available to schedule consequence");
     }
     eventPlan = scheduled.eventPlan;
+    eventPackageStore = scheduled.eventPackageStore;
     pendingConsequences = [...pendingConsequences, scheduled.pending];
   }
 
@@ -434,6 +581,7 @@ export function chooseEventOption(state: GameState, choiceId: string): ActionRes
       completedEventIds,
       pendingConsequences,
       eventPlan,
+      eventPackageStore,
       phase: "gameOver",
       actionUsedToday: state.actionUsedToday,
       revision: state.revision + 1,
@@ -450,6 +598,7 @@ export function chooseEventOption(state: GameState, choiceId: string): ActionRes
     completedEventIds,
     pendingConsequences,
     eventPlan,
+    eventPackageStore,
     phase: "preparation",
     actionUsedToday: state.actionUsedToday,
   };
