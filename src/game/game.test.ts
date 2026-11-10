@@ -39,6 +39,7 @@ import {
   type GameState,
   type PendingConsequence,
 } from "./index";
+import { CONSEQUENCE_PACKAGES } from "./eventPackages";
 
 function mustOk(result: { ok: true; state: GameState } | { ok: false; error: unknown }): GameState {
   expect(result.ok).toBe(true);
@@ -875,5 +876,165 @@ describe("consequence collision and queue", () => {
     expect(shifted[0]!.eventId).toBe("d1-scouts-a");
     expect(shifted[0]!.day).toBeGreaterThan(9);
     expect(isPreparationDay(shifted[0]!.day)).toBe(true);
+  });
+});
+
+describe("consequence choice dilemmas", () => {
+  function openConsequence(
+    packageId: string,
+    day: number,
+    patch: Partial<GameState> = {},
+  ): GameState {
+    const pending: PendingConsequence = {
+      id: `${packageId}::origin::choice::${day}`,
+      originEventId: "origin",
+      originChoiceId: "origin-choice",
+      packageId,
+      triggerDay: day,
+    };
+    const base = createInitialState({ runId: `dilemma-${packageId}-${day}`, difficulty: "normal" });
+    return mustOk(
+      ensureLocalEvent({
+        ...base,
+        ...patch,
+        day,
+        phase: "preparation",
+        activeEvent: null,
+        eventPlan: [],
+        pendingConsequences: [pending],
+        completedEventIds: [],
+      }),
+    );
+  }
+
+  it("makes the late raid levy and the cheaper barricade different outcomes", () => {
+    const paid = openConsequence("c-raid-late", 65, { gold: 100, cityHp: 150 });
+    const cheap = openConsequence("c-raid-late", 65, { gold: 100, cityHp: 150 });
+    const afterPay = mustOk(chooseEventOption(paid, "c-raid-late-pay"));
+    const afterCheap = mustOk(chooseEventOption(cheap, "c-raid-late-def"));
+
+    expect(afterPay.gold).toBe(65);
+    expect(afterPay.cityHp).toBe(150);
+    expect(afterPay.effects.defenseByWave[8]).toBe(3);
+    expect(afterCheap.gold).toBe(80);
+    expect(afterCheap.cityHp).toBe(136);
+    expect(afterCheap.effects.defenseByWave[8]).toBe(2);
+    expect(afterPay.gold).not.toBe(afterCheap.gold);
+    expect(afterPay.cityHp).not.toBe(afterCheap.cityHp);
+    expect(afterPay.effects.defenseByWave[8]).not.toBe(afterCheap.effects.defenseByWave[8]);
+  });
+
+  it("applies every consequence choice on normal difficulty and leaves a failed payment unchanged", () => {
+    for (const pkg of CONSEQUENCE_PACKAGES) {
+      expect(pkg.choices.some((choice) => /lose discount/i.test(choice.label))).toBe(false);
+      const emptyPriced = pkg.choices.filter((choice) => choice.effects.length === 0);
+      expect(new Set(emptyPriced.map((choice) => choice.goldCost)).size).toBe(emptyPriced.length);
+
+      for (const choice of pkg.choices) {
+        const opened = openConsequence(pkg.packageId, 5, { gold: 200, cityHp: 150, cityMaxHp: 150 });
+        const damage = damageFrom(choice.effects);
+        const granted = choice.effects.reduce(
+          (total, effect) => total + (effect.type === "grantGold" ? effect.amount : 0),
+          0,
+        );
+        if (choice.goldCost > 0) {
+          const broke = { ...opened, gold: choice.goldCost - 1 };
+          const snapshot = JSON.stringify(broke);
+          const denied = chooseEventOption(broke, choice.id);
+          expect(denied.ok).toBe(false);
+          expect(JSON.stringify(broke)).toBe(snapshot);
+        }
+        const next = mustOk(chooseEventOption(opened, choice.id));
+        expect(next.gold).toBe(200 - choice.goldCost + granted);
+        expect(next.cityHp).toBe(150 - damage);
+      }
+    }
+  });
+
+  it("still allows a free consequence choice when the treasury is empty", () => {
+    const opened = openConsequence("c-raid-late", 65, { gold: 0, cityHp: 80 });
+    const next = mustOk(chooseEventOption(opened, "c-raid-late-accept"));
+    expect(next.gold).toBe(0);
+    expect(next.cityHp).toBe(50);
+    expect(next.phase).toBe("preparation");
+  });
+
+  it("ends the game when a consequence deals damage equal to the current HP", () => {
+    const opened = openConsequence("c-raid-late", 65, { gold: 0, cityHp: 30 });
+    const next = mustOk(chooseEventOption(opened, "c-raid-late-accept"));
+    expect(next.phase).toBe("gameOver");
+    expect(next.cityHp).toBe(0);
+  });
+
+  it("drops wave 8 defense after that wave and moves a late bonus forward once the wave has passed", () => {
+    let state = openConsequence("c-raid-late", 65, { gold: 100, cityHp: 400, cityMaxHp: 400 });
+    state = mustOk(chooseEventOption(state, "c-raid-late-pay"));
+    expect(state.effects.defenseByWave[8]).toBe(3);
+    state = mustOk(
+      startBattle({
+        ...state,
+        day: 80,
+        phase: "battleReady",
+        cityHp: 2000,
+        cityMaxHp: 2000,
+        troopLevel: 18,
+      }),
+    );
+    expect(state.battleResult?.won).toBe(true);
+    expect(state.effects.defenseByWave[8]).toBeUndefined();
+
+    const late = openConsequence("c-raid-late", 81, { gold: 100, cityHp: 150, wavesCleared: 8 });
+    const shifted = mustOk(chooseEventOption(late, "c-raid-late-def"));
+    expect(shifted.effects.defenseByWave[8]).toBeUndefined();
+    expect(shifted.effects.defenseByWave[9]).toBe(2);
+  });
+
+  it("does not raise a larger discount that already lasts through the shortage wave", () => {
+    const opened = openConsequence("c-shortage-wave2", 14, {
+      gold: 0,
+      cityHp: 100,
+      wavesCleared: 1,
+      effects: {
+        defenseByWave: {},
+        upgradeDiscountRate: 0.25,
+        upgradeDiscountUntilWave: 5,
+        prepIncomeBonus: 0,
+      },
+    });
+    const next = mustOk(chooseEventOption(opened, "c-shortage-wave2-discount"));
+    expect(next.cityHp).toBe(90);
+    expect(next.effects.upgradeDiscountRate).toBe(0.25);
+    expect(next.effects.upgradeDiscountUntilWave).toBe(5);
+  });
+
+  it("shows wave 8 defense and the 14 HP wound winning in different city states", () => {
+    const demon = gameConfig.waves.find((wave) => wave.wave === 8)!;
+    const fight = (cityHp: number, cityAttack: number, cityDefense: number) =>
+      resolveBattle({
+        wave: 8,
+        day: demon.day,
+        cityHp,
+        cityAttack,
+        cityDefense,
+        monsterHp: demon.hp,
+        monsterAttack: demon.attack,
+      });
+
+    const longClean = fight(1200, 25, 2)!;
+    const longBrace = fight(1200, 25, 5)!;
+    expect(longClean.won && longBrace.won).toBe(true);
+    expect(longBrace.cityHpAfter - longClean.cityHpAfter).toBeGreaterThan(14);
+
+    const shortClean = fight(200, 490, 2)!;
+    const shortWounded = fight(186, 490, 5)!;
+    expect(shortClean.won && shortWounded.won).toBe(true);
+    expect(shortWounded.cityHpAfter).toBeLessThan(shortClean.cityHpAfter);
+
+    const cleanLives = fight(60, 490, 2)!;
+    const woundedDies = fight(46, 490, 4)!;
+    expect(cleanLives.won).toBe(true);
+    expect(cleanLives.cityHpAfter).toBeGreaterThan(0);
+    expect(woundedDies.won).toBe(false);
+    expect(woundedDies.cityHpAfter).toBe(0);
   });
 });

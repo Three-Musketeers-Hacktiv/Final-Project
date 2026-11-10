@@ -543,19 +543,22 @@ export const CONSEQUENCE_PACKAGES: EventPackage[] = [
     choices: [
       {
         id: "c-raid-wave1-pay",
-        label: "Pay militia: {goldCost} gold to blunt the raid",
+        label: "Hire militia to bar the streets: pay {goldCost} gold, defense +2 for wave 1",
         goldCost: 20,
-        effects: [],
+        effects: [{ type: "nextWaveDefense", amount: 2, wave: 1 }],
       },
       {
         id: "c-raid-wave1-def",
-        label: "Rush barricades: pay {goldCost} gold, defense +3 for wave 1",
+        label: "Raise the barricades yourselves: pay {goldCost} gold, lose 8 HP, defense +2 for wave 1",
         goldCost: 12,
-        effects: [{ type: "nextWaveDefense", amount: 3, wave: 1 }],
+        effects: [
+          { type: "damageCity", amount: 8 },
+          { type: "nextWaveDefense", amount: 2, wave: 1 },
+        ],
       },
       {
         id: "c-raid-wave1-accept",
-        label: "Endure the raid: city loses 18 HP",
+        label: "Let the raid through: city loses 18 HP",
         goldCost: 0,
         effects: [{ type: "damageCity", amount: 18 }],
       },
@@ -570,15 +573,15 @@ export const CONSEQUENCE_PACKAGES: EventPackage[] = [
     choices: [
       {
         id: "c-unrest-wave1-pay",
-        label: "Buy peace: pay {goldCost} gold",
+        label: "Pay the crowd to barricade the market: {goldCost} gold, defense +2 for wave 1",
         goldCost: 15,
-        effects: [],
+        effects: [{ type: "nextWaveDefense", amount: 2, wave: 1 }],
       },
       {
         id: "c-unrest-wave1-accept",
-        label: "Let them riot: city loses 12 HP",
+        label: "Let the riot run: city loses 20 HP",
         goldCost: 0,
-        effects: [{ type: "damageCity", amount: 12 }],
+        effects: [{ type: "damageCity", amount: 20 }],
       },
     ],
   },
@@ -591,21 +594,27 @@ export const CONSEQUENCE_PACKAGES: EventPackage[] = [
     choices: [
       {
         id: "c-shortage-wave2-pay",
-        label: "Import stone: pay {goldCost} gold",
+        label: "Import stone: pay {goldCost} gold, no further loss",
         goldCost: 18,
         effects: [],
       },
       {
         id: "c-shortage-wave2-discount",
-        label: "Accept inflated prices later: no gold now, lose discount chance",
+        label: "Work the crews harder for cheaper stone: lose 10 HP, 20% upgrade discount until wave 2",
         goldCost: 0,
-        effects: [],
+        effects: [
+          { type: "damageCity", amount: 10 },
+          { type: "upgradeDiscount", rate: 0.2, untilWave: 2 },
+        ],
       },
       {
         id: "c-shortage-wave2-hurt",
-        label: "Push unfinished walls: city loses 14 HP",
+        label: "Strip scaffolds into barricades: lose 16 HP, defense +2 for wave 2",
         goldCost: 0,
-        effects: [{ type: "damageCity", amount: 14 }],
+        effects: [
+          { type: "damageCity", amount: 16 },
+          { type: "nextWaveDefense", amount: 2, wave: 2 },
+        ],
       },
     ],
   },
@@ -618,22 +627,27 @@ export const CONSEQUENCE_PACKAGES: EventPackage[] = [
     choices: [
       {
         id: "c-raid-wave2-pay",
-        label: "Sortie with coin: pay {goldCost} gold",
+        label: "Pay for a sortie and trenches: {goldCost} gold, defense +2 for wave 2",
         goldCost: 22,
-        effects: [],
+        effects: [{ type: "nextWaveDefense", amount: 2, wave: 2 }],
       },
       {
         id: "c-raid-wave2-def",
-        label: "Dig trenches: defense +4 for wave 2",
+        label: "Dig the trenches without pay: lose 12 HP, defense +2 for wave 2",
         goldCost: 0,
-        effects: [{ type: "nextWaveDefense", amount: 4, wave: 2 }],
-        // free but weaker than paying; still free
+        effects: [
+          { type: "damageCity", amount: 12 },
+          { type: "nextWaveDefense", amount: 2, wave: 2 },
+        ],
       },
       {
         id: "c-raid-wave2-accept",
-        label: "Take the hit: city loses 20 HP",
+        label: "Loot the breach: lose 22 HP and gain 12 gold",
         goldCost: 0,
-        effects: [{ type: "damageCity", amount: 20 }],
+        effects: [
+          { type: "damageCity", amount: 22 },
+          { type: "grantGold", amount: 12 },
+        ],
       },
     ],
   },
@@ -646,23 +660,26 @@ export const CONSEQUENCE_PACKAGES: EventPackage[] = [
     choices: [
       {
         id: "c-raid-mid-pay",
-        label: "Hire mercenaries: pay {goldCost} gold",
+        label: "Hire mercenaries to hold the line: pay {goldCost} gold, defense +3 for wave 5",
         goldCost: 28,
-        effects: [],
+        effects: [{ type: "nextWaveDefense", amount: 3, wave: 5 }],
       },
       {
         id: "c-raid-mid-accept",
-        label: "Brace for impact: city loses 24 HP",
+        label: "Hold the line yourselves: lose 18 HP, defense +3 for wave 5",
         goldCost: 0,
-        effects: [{ type: "damageCity", amount: 24 }],
+        effects: [
+          { type: "damageCity", amount: 18 },
+          { type: "nextWaveDefense", amount: 3, wave: 5 },
+        ],
       },
       {
         id: "c-raid-mid-heal-cost",
-        label: "Burn stores to hold: heal 10, then lose 16 HP",
+        label: "Trade blood for cheaper works: lose 14 HP, 20% upgrade discount until wave 5",
         goldCost: 0,
         effects: [
-          { type: "healCity", amount: 10 },
-          { type: "damageCity", amount: 16 },
+          { type: "damageCity", amount: 14 },
+          { type: "upgradeDiscount", rate: 0.2, untilWave: 5 },
         ],
       },
     ],
@@ -676,15 +693,15 @@ export const CONSEQUENCE_PACKAGES: EventPackage[] = [
     choices: [
       {
         id: "c-unrest-mid-pay",
-        label: "Distribute grain: pay {goldCost} gold",
+        label: "Feed the crowd and man the square: pay {goldCost} gold, defense +2 for wave 5",
         goldCost: 24,
-        effects: [],
+        effects: [{ type: "nextWaveDefense", amount: 2, wave: 5 }],
       },
       {
         id: "c-unrest-mid-accept",
-        label: "Ignore petitions: city loses 18 HP",
+        label: "Ignore the petitions: city loses 26 HP",
         goldCost: 0,
-        effects: [{ type: "damageCity", amount: 18 }],
+        effects: [{ type: "damageCity", amount: 26 }],
       },
     ],
   },
@@ -697,21 +714,24 @@ export const CONSEQUENCE_PACKAGES: EventPackage[] = [
     choices: [
       {
         id: "c-raid-late-pay",
-        label: "Emergency levy: pay {goldCost} gold",
+        label: "Buy a full levy: pay {goldCost} gold, defense +3 for wave 8, no HP loss",
         goldCost: 35,
-        effects: [],
+        effects: [{ type: "nextWaveDefense", amount: 3, wave: 8 }],
       },
       {
         id: "c-raid-late-accept",
-        label: "Hold the line poorly: city loses 30 HP",
+        label: "Leave the district exposed: city loses 30 HP",
         goldCost: 0,
         effects: [{ type: "damageCity", amount: 30 }],
       },
       {
         id: "c-raid-late-def",
-        label: "Last-minute wards: pay {goldCost} gold (no HP loss)",
+        label: "Barricade the streets short-handed: pay {goldCost} gold, lose 14 HP, defense +2 for wave 8",
         goldCost: 20,
-        effects: [],
+        effects: [
+          { type: "damageCity", amount: 14 },
+          { type: "nextWaveDefense", amount: 2, wave: 8 },
+        ],
       },
     ],
   },
@@ -724,15 +744,15 @@ export const CONSEQUENCE_PACKAGES: EventPackage[] = [
     choices: [
       {
         id: "c-unrest-late-pay",
-        label: "Appease the crowd: pay {goldCost} gold",
+        label: "Appease the crowd and arm the square: pay {goldCost} gold, defense +2 for wave 8",
         goldCost: 30,
-        effects: [],
+        effects: [{ type: "nextWaveDefense", amount: 2, wave: 8 }],
       },
       {
         id: "c-unrest-late-accept",
-        label: "Crack down hard: city loses 22 HP",
+        label: "Crack down hard: city loses 28 HP",
         goldCost: 0,
-        effects: [{ type: "damageCity", amount: 22 }],
+        effects: [{ type: "damageCity", amount: 28 }],
       },
     ],
   },
@@ -745,23 +765,26 @@ export const CONSEQUENCE_PACKAGES: EventPackage[] = [
     choices: [
       {
         id: "c-raid-finale-pay",
-        label: "Burn the treasury: pay {goldCost} gold",
+        label: "Pay to break the ambush: {goldCost} gold, defense +4 for wave 10",
         goldCost: 40,
-        effects: [],
+        effects: [{ type: "nextWaveDefense", amount: 4, wave: 10 }],
       },
       {
         id: "c-raid-finale-accept",
-        label: "Suffer the ambush: city loses 35 HP",
+        label: "Loot the ambush and fall back: lose 35 HP and gain 20 gold",
         goldCost: 0,
-        effects: [{ type: "damageCity", amount: 35 }],
+        effects: [
+          { type: "damageCity", amount: 35 },
+          { type: "grantGold", amount: 20 },
+        ],
       },
       {
         id: "c-raid-finale-combo",
-        label: "Desperate stand: heal 15 then lose 25 HP",
+        label: "Stand in the road: lose 22 HP, defense +2 for wave 10",
         goldCost: 0,
         effects: [
-          { type: "healCity", amount: 15 },
-          { type: "damageCity", amount: 25 },
+          { type: "damageCity", amount: 22 },
+          { type: "nextWaveDefense", amount: 2, wave: 10 },
         ],
       },
     ],
@@ -775,15 +798,15 @@ export const CONSEQUENCE_PACKAGES: EventPackage[] = [
     choices: [
       {
         id: "c-unrest-finale-pay",
-        label: "Grand feast: pay {goldCost} gold",
+        label: "Feast the city and man the last gate: pay {goldCost} gold, defense +3 for wave 10",
         goldCost: 36,
-        effects: [],
+        effects: [{ type: "nextWaveDefense", amount: 3, wave: 10 }],
       },
       {
         id: "c-unrest-finale-accept",
-        label: "Let them flee: city loses 28 HP",
+        label: "Let them flee the walls: city loses 34 HP",
         goldCost: 0,
-        effects: [{ type: "damageCity", amount: 28 }],
+        effects: [{ type: "damageCity", amount: 34 }],
       },
     ],
   },
