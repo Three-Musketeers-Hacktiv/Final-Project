@@ -16,10 +16,11 @@ import SettingsDialog, { SETTINGS_DIALOG } from "./SettingsDialog";
 import ThisWave from "./ThisWave";
 import Timeline from "./Timeline";
 import TopBar from "./TopBar";
+import Tutorial from "./Tutorial";
 import UpcomingWaves from "./UpcomingWaves";
 import { useBattlePlayback } from "./useBattlePlayback";
 import { useDayTimer, type Speed } from "./useDayTimer";
-import { useStoredFlag } from "./useStoredFlag";
+import { useStoredFlag, useStoredFlagState } from "./useStoredFlag";
 import { upcomingWaves, waveInfo } from "./waveInfo";
 
 /** The /play dashboard, drawn from the GameView in GameProvider. */
@@ -40,6 +41,24 @@ export default function GameScreen({ lord }: { lord: string }) {
     pausedBeforeSettings.current = paused;
     setPaused(true);
     document.getElementById(SETTINGS_DIALOG)?.showPopover();
+  }
+
+  // The tutorial opens by itself on a fresh run until this browser has seen it (finished or skipped);
+  // after that only from Settings. Unknown (null) during hydration, so it never flashes on reload.
+  const [tutorialSeen, setTutorialSeen] = useStoredFlagState("bastionfall:tutorial-seen");
+  const [tutorialRequested, setTutorialRequested] = useState(false);
+  const freshRun = state.day === 1 && state.phase === "preparation" && !state.actionUsedToday;
+  const tutorialOpen = tutorialRequested || (tutorialSeen === false && freshRun);
+
+  function startTutorial() {
+    // Closing Settings restores the earlier pause state; stay paused after the tour instead.
+    pausedBeforeSettings.current = true;
+    setTutorialRequested(true);
+  }
+
+  function closeTutorial() {
+    setTutorialSeen(true);
+    setTutorialRequested(false);
   }
   // Start Battle moves the phase from battleReady to the result. Catch that change while rendering
   // and replay the saved rounds; a page loaded on the report (a refresh) goes straight to it.
@@ -77,7 +96,7 @@ export default function GameScreen({ lord }: { lord: string }) {
       : null;
 
   // Only preparation days tick; events, battles and rewards wait for the player.
-  const clockRunning = !paused && state.phase === "preparation" && !pending;
+  const clockRunning = !paused && state.phase === "preparation" && !pending && !tutorialOpen;
   const dayProgress = useDayTimer({
     running: clockRunning,
     speed,
@@ -120,7 +139,7 @@ export default function GameScreen({ lord }: { lord: string }) {
             />
           </div>
           {/* Resources is hidden for now: its gold is shown in the Actions title bar. */}
-          <div className="order-4 lg:order-none">
+          <div data-tutorial="status" className="order-4 lg:order-none">
             <CityStatus
               hp={cityHp}
               maxHp={state.cityMaxHp}
@@ -136,7 +155,7 @@ export default function GameScreen({ lord }: { lord: string }) {
 
         {/* Main play area comes first until the 3-column layout */}
         <div className="contents lg:order-first lg:row-span-2 lg:flex lg:flex-col lg:gap-5 xl:order-none xl:row-span-1">
-          <div className="order-1 lg:order-none">
+          <div data-tutorial="scene" className="order-1 lg:order-none">
             <BattleScene
               cityLevel={state.cityLevel}
               wallLevel={state.wallLevel}
@@ -167,18 +186,18 @@ export default function GameScreen({ lord }: { lord: string }) {
             />
           </div>
           {/* The server keeps the whole run's history, oldest first; show the newest on top. */}
-          <div className="order-5 flex flex-col lg:order-none lg:flex-1">
+          <div data-tutorial="timeline" className="order-5 flex flex-col lg:order-none lg:flex-1">
             <Timeline entries={[...game.timeline].reverse()} />
           </div>
         </div>
 
         <div className="contents lg:flex lg:flex-col lg:gap-5">
           {wave && (
-            <div className="order-7 lg:order-none">
+            <div data-tutorial="this-wave" className="order-7 lg:order-none">
               <ThisWave name={wave.name} hp={wave.hp} attack={wave.attack} description={wave.description} art={wave.art} />
             </div>
           )}
-          <div className="order-8 lg:order-none">
+          <div data-tutorial="upcoming" className="order-8 lg:order-none">
             {/* The wave in This Wave isn't repeated here. */}
             <UpcomingWaves waves={upcomingWaves(state.wavesCleared).filter((w) => w.wave !== wave?.wave)} />
           </div>
@@ -186,7 +205,11 @@ export default function GameScreen({ lord }: { lord: string }) {
       </main>
       {/* The report or defeat screen waits for the replay; on a loss it opens while the town still burns. */}
       <PhaseDialogs hidden={replaying !== null && !frame?.showResult} />
-      <SettingsDialog onClose={(resume) => setPaused(resume ? false : pausedBeforeSettings.current)} />
+      <SettingsDialog
+        onClose={(resume) => setPaused(resume ? false : pausedBeforeSettings.current)}
+        onStartTutorial={startTutorial}
+      />
+      {tutorialOpen && <Tutorial hasWave={Boolean(wave)} onClose={closeTutorial} />}
       <GameToast />
     </>
   );

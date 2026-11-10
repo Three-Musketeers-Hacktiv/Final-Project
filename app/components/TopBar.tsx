@@ -42,7 +42,7 @@ export default function TopBar({
         <Image src={titleLogo} alt="Bastionfall" preload sizes="12rem" className="h-auto w-48" />
       </h1>
 
-      <div className="w-full max-w-xl sm:w-auto sm:min-w-80 sm:flex-1">
+      <div data-tutorial="day" className="w-full max-w-xl sm:w-auto sm:min-w-80 sm:flex-1">
         <div className="flex flex-wrap items-baseline justify-between gap-x-6">
           <p className="text-2xl text-parchment">
             DAY <span className="text-3xl font-bold">{String(day).padStart(2, "0")}</span>
@@ -77,22 +77,28 @@ export default function TopBar({
 
       {/* Full width below lg so the toggle group can sit at the right edge, even when it wraps. */}
       <div className="flex w-full flex-wrap items-center gap-2 lg:ml-auto lg:w-auto">
-        <div className="overflow-hidden rounded-sm border-2 border-frame">
-          <ControlButton active={paused} label={paused ? "Resume the game" : "Pause the game"} onClick={onTogglePause}>
-            {paused ? "▶ Play" : "❚❚ Pause"}
-          </ControlButton>
-        </div>
-        <div className="flex divide-x-2 divide-frame overflow-hidden rounded-sm border-2 border-frame">
-          {SPEEDS.map((option) => (
+        <div data-tutorial="clock" className="flex flex-wrap gap-2">
+          <div className="overflow-hidden rounded-sm border-2 border-frame">
             <ControlButton
-              key={option}
-              active={option === speed}
-              label={`Speed ${option}×`}
-              onClick={() => onSpeedChange(option)}
+              active={paused}
+              label={paused ? "Resume the game" : "Pause the game"}
+              onClick={onTogglePause}
             >
-              {option}×
+              {paused ? "▶ Play" : "❚❚ Pause"}
             </ControlButton>
-          ))}
+          </div>
+          <div className="flex divide-x-2 divide-frame overflow-hidden rounded-sm border-2 border-frame">
+            {SPEEDS.map((option) => (
+              <ControlButton
+                key={option}
+                active={option === speed}
+                label={`Speed ${option}×`}
+                onClick={() => onSpeedChange(option)}
+              >
+                {option}×
+              </ControlButton>
+            ))}
+          </div>
         </div>
         <div className="ml-auto flex gap-2">
           <div className="overflow-hidden rounded-sm border-2 border-frame">
@@ -104,7 +110,7 @@ export default function TopBar({
           <div className="overflow-hidden rounded-sm border-2 border-frame">
             <ControlButton>SFX</ControlButton>
           </div>
-          <div className="overflow-hidden rounded-sm border-2 border-frame">
+          <div data-tutorial="settings" className="overflow-hidden rounded-sm border-2 border-frame">
             <ControlButton label="Settings" onClick={onOpenSettings}>
               ⚙
             </ControlButton>
