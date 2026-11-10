@@ -9,6 +9,7 @@
     "test:engine": "vitest run tests/game-engine",
     "test:all-root": "vitest run",
     "test:watch": "vitest",
+    "report:balance": "node tests/game-engine/visualization/generate-balance-report.mjs",
     "play": "vite"
   },
   "devDependencies": {
