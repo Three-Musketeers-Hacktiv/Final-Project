@@ -53,6 +53,8 @@ function CloudSet({ sprites, className }: { sprites: StaticImageData[]; classNam
               src={src}
               alt=""
               unoptimized
+              // Above the fold in the battle scene: no lazy loading.
+              loading="eager"
               draggable={false}
               className={`cloud-bob block h-auto max-w-none select-none ${cloud.fade ? "cloud-fade" : ""}`}
               style={{

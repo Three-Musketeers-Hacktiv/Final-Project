@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import GameButton from "./GameButton";
 import { useGame } from "./GameProvider";
@@ -14,8 +15,9 @@ type SettingsDialogProps = {
   onClose: (resume: boolean) => void;
 };
 
-/** In-game menu behind the ⚙ button: run overview, Resume, Surrender and Log Out. */
+/** In-game menu behind the ⚙ button: run overview, Resume, Main Menu, Surrender and Log Out. */
 export default function SettingsDialog({ onClose }: SettingsDialogProps) {
+  const router = useRouter();
   const { game, pending, act } = useGame();
   const { state } = game;
   const ended = state.phase === "gameOver" || state.phase === "victory";
@@ -46,6 +48,15 @@ export default function SettingsDialog({ onClose }: SettingsDialogProps) {
     document.getElementById(SETTINGS_DIALOG)?.hidePopover();
   }
 
+  // The run is saved after every action, so leaving keeps it; Continue on the menu picks it up again.
+  // Close the dialog first: Next.js keeps /play alive in the background, and an open dialog would stay
+  // on screen over the menu (and still be open on returning).
+  function mainMenu() {
+    document.getElementById(SETTINGS_DIALOG)?.hidePopover();
+    router.push("/");
+    router.refresh();
+  }
+
   // The run ends as game over and the end screen takes over; a failure shows in the game toast.
   async function surrender() {
     if (await act("surrender", {})) document.getElementById(SETTINGS_DIALOG)?.hidePopover();
@@ -54,11 +65,13 @@ export default function SettingsDialog({ onClose }: SettingsDialogProps) {
   return (
     <Modal id={SETTINGS_DIALOG} title="Settings" subtitle="Game paused" size="sm">
       <div className="flex flex-col gap-3">
-        <RunSummary label="This run" day={state.day} cityHp={state.cityHp} cityMaxHp={state.cityMaxHp} gold={state.gold} />
+        <RunSummary label="This run" day={state.day} cityHp={state.cityHp} cityMaxHp={state.cityMaxHp} gold={state.gold} difficulty={state.difficulty} />
 
         <GameButton variant="primary" onClick={resume}>
           Resume
         </GameButton>
+
+        <GameButton onClick={mainMenu}>Main Menu</GameButton>
 
         {!confirmingSurrender && (
           <GameButton variant="danger" disabled={ended} onClick={() => setConfirmingSurrender(true)}>

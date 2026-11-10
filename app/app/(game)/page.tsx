@@ -8,6 +8,7 @@ import Panel from "@/components/Panel";
 import RunSummary from "@/components/RunSummary";
 import ScreenShell from "@/components/ScreenShell";
 import { ApiError } from "@/lib/api";
+import { gameConfig } from "../../../src/game/config";
 import { errorMessage, isUnloadableSave } from "@/lib/errorMessages";
 import { serverApiRequest } from "@/lib/serverApi";
 
@@ -62,7 +63,9 @@ async function Menu() {
     return (
       <Panel title="Welcome, Lord">
         <div className="flex flex-col gap-3">
-          <p className="text-muted">Defend your city for 20 days against waves of monsters.</p>
+          <p className="text-muted">
+            Defend your city for {gameConfig.lastDay} days against {gameConfig.waves.length} waves of monsters.
+          </p>
           <GameButton href="/login" variant="primary">
             Play
           </GameButton>
@@ -79,7 +82,7 @@ async function Menu() {
       <div className="flex flex-col gap-3">
         {state && (
           <>
-            <RunSummary label="Saved run" day={state.day} cityHp={state.cityHp} cityMaxHp={state.cityMaxHp} gold={state.gold} />
+            <RunSummary label="Saved run" day={state.day} cityHp={state.cityHp} cityMaxHp={state.cityMaxHp} gold={state.gold} difficulty={state.difficulty} />
             <GameButton href="/play" variant="primary">
               Continue
             </GameButton>
@@ -93,7 +96,7 @@ async function Menu() {
           </p>
         )}
 
-        <NewGameButton saveDay={state?.day ?? null} />
+        <NewGameButton saveDay={state?.day ?? null} hasSave={me.user.hasActiveSave} />
         <LogoutButton />
       </div>
     </Panel>

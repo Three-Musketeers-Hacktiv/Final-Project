@@ -1,3 +1,4 @@
+import { levelInTier, spriteTier, TIER_NUMERALS } from "./citySprites";
 import Panel from "./Panel";
 import Icon, { type IconName } from "./Icon";
 
@@ -7,24 +8,27 @@ type CityStatusProps = {
   wallLevel: number;
   troopLevel: number;
   cityLevel: number;
-  maxLevel: number;
   attack: number;
   defense: number;
   income: number;
 };
 
-function LevelBar({ level, max, color }: { level: number; max: number; color: string }) {
+// Upgrades per tier: the bar shows progress through the current tier and empties on the next one
+// (when the part's sprite changes; see citySprites).
+const LEVELS_PER_TIER = 3;
+
+function LevelBar({ filled, color }: { filled: number; color: string }) {
   return (
     <div className="flex gap-1">
-      {Array.from({ length: max }, (_, i) => (
-        <div key={i} className={`h-2 flex-1 rounded-sm ${i < level ? color : "bg-track"}`} />
+      {Array.from({ length: LEVELS_PER_TIER }, (_, i) => (
+        <div key={i} className={`h-2 flex-1 rounded-sm ${i < filled ? color : "bg-track"}`} />
       ))}
     </div>
   );
 }
 
 export default function CityStatus(props: CityStatusProps) {
-  const { hp, maxHp, maxLevel } = props;
+  const { hp, maxHp } = props;
   const tracks: { label: string; icon: IconName; level: number; color: string }[] = [
     { label: "Wall Level", icon: "wallLevel", level: props.wallLevel, color: "bg-amber-400" },
     { label: "Troop Level", icon: "troopLevel", level: props.troopLevel, color: "bg-sky-500" },
@@ -61,10 +65,10 @@ export default function CityStatus(props: CityStatusProps) {
               <div className="mb-1 flex justify-between">
                 <span>{track.label}</span>
                 <span>
-                  {track.level} / {maxLevel}
+                  Tier {TIER_NUMERALS[spriteTier(track.level)]} - Lv {levelInTier(track.level)}
                 </span>
               </div>
-              <LevelBar level={track.level} max={maxLevel} color={track.color} />
+              <LevelBar filled={levelInTier(track.level)} color={track.color} />
             </div>
           </div>
         ))}

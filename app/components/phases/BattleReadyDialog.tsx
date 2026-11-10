@@ -9,17 +9,21 @@ export const BATTLE_READY_DIALOG = "phase-battle-ready";
 
 type BattleReadyDialogProps = {
   wave: NonNullable<WavePreviewView>;
+  /** The city's HP going into the battle; the wave preview only carries attack and defense. */
+  cityHp: number;
+  cityMaxHp: number;
   pending: boolean;
   onStart: () => void;
 };
 
 /** phase "battleReady": the wave is at the gates; the player starts the battle. */
-export default function BattleReadyDialog({ wave, pending, onStart }: BattleReadyDialogProps) {
+export default function BattleReadyDialog({ wave, cityHp, cityMaxHp, pending, onStart }: BattleReadyDialogProps) {
   const { art } = waveInfo(wave.wave, wave.name);
-  const sides: { title: string; rows: { label: string; icon: IconName; value: number }[] }[] = [
+  const sides: { title: string; rows: { label: string; icon: IconName; value: number | string }[] }[] = [
     {
       title: "Your City",
       rows: [
+        { label: "HP", icon: "cityHp", value: `${cityHp} / ${cityMaxHp}` },
         { label: "Attack", icon: "attack", value: wave.cityAttack },
         { label: "Defense", icon: "defense", value: wave.cityDefense },
       ],

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
-import type { RunResponse } from "@/contracts/api";
+import type { AuthResponse, RunResponse } from "@/contracts/api";
 import GameProvider from "@/components/GameProvider";
 import GameScreen from "@/components/GameScreen";
 import { ApiError } from "@/lib/api";
@@ -20,11 +20,15 @@ export default function PlayPage() {
   );
 }
 
-/** Loads the player's current run and hands it to the client-side game. */
+/** Loads the player's current run (and who they are, for the City Record) and hands it to the game. */
 async function LoadedGame() {
   let run: RunResponse;
+  let me: AuthResponse;
   try {
-    run = await serverApiRequest<RunResponse>("/api/runs/current");
+    [run, me] = await Promise.all([
+      serverApiRequest<RunResponse>("/api/runs/current"),
+      serverApiRequest<AuthResponse>("/api/auth/me"),
+    ]);
   } catch (error) {
     // proxy.ts only checks the cookie exists; an expired session lands here as 401.
     if (error instanceof ApiError && error.code === "UNAUTHENTICATED") redirect("/login");
@@ -36,7 +40,7 @@ async function LoadedGame() {
   return (
     // Keyed by run: starting a new game from the end screen must not keep the old run's state.
     <GameProvider key={run.runId} runId={run.runId} initialGame={run.game}>
-      <GameScreen />
+      <GameScreen lord={me.user.username} />
     </GameProvider>
   );
 }

@@ -1,9 +1,8 @@
 "use client";
 
 import { useEffect } from "react";
-import type { GamePhase } from "../../src/game";
-import { gameConfig } from "../../src/game/config";
-import type { RewardOption } from "../../src/game/types";
+import type { ActiveEvent, GamePhase, GameState } from "../../src/game";
+import { EVENT_PACKAGES, rewardsForWave } from "../../src/game/config";
 import { useGame } from "./GameProvider";
 import BattleReadyDialog, { BATTLE_READY_DIALOG } from "./phases/BattleReadyDialog";
 import BattleReportDialog, { BATTLE_REPORT_DIALOG } from "./phases/BattleReportDialog";
@@ -21,17 +20,17 @@ const DIALOG_FOR_PHASE: Partial<Record<GamePhase, string>> = {
   gameOver: GAME_OVER_DIALOG,
 };
 
-// The engine's reward labels are Indonesian; ids, kinds and amounts still come from its config.
-const REWARD_LABELS: Record<string, string> = {
-  "reward-gold": "Royal Aid",
-  "reward-income": "Trade Route",
-  "reward-discount": "City Logistics",
-};
-
-const REWARDS: RewardOption[] = gameConfig.rewards.map((reward) => ({
-  ...reward,
-  label: REWARD_LABELS[reward.id] ?? reward.label,
-}));
+/**
+ * For a consequence event: the earlier choice that caused it, by its trusted engine label, and the day
+ * it was made (from the run's event plan; a follow-up of a follow-up has no plan entry, so no day).
+ */
+function consequenceCause(event: ActiveEvent, state: GameState) {
+  if (!event.isConsequence || !event.originChoiceId) return null;
+  const choice = EVENT_PACKAGES.flatMap((pkg) => pkg.choices).find((c) => c.id === event.originChoiceId);
+  if (!choice) return null;
+  const day = state.eventPlan.find((entry) => entry.eventId === event.originEventId)?.day ?? null;
+  return { label: choice.label, day };
+}
 
 /** Opens the screen the current `state.phase` asks for. The player can't close it without answering. */
 export default function PhaseDialogs({ hidden = false }: { hidden?: boolean }) {
@@ -54,6 +53,7 @@ export default function PhaseDialogs({ hidden = false }: { hidden?: boolean }) {
         eventNarrative && (
           <EventDialog
             event={eventNarrative}
+            cause={consequenceCause(eventNarrative, state)}
             pending={pending}
             onChoose={(choiceId) => act("chooseEventOption", { choiceId })}
           />
@@ -64,6 +64,8 @@ export default function PhaseDialogs({ hidden = false }: { hidden?: boolean }) {
         wavePreview && (
           <BattleReadyDialog
             wave={{ ...wavePreview, name: waveInfo(wavePreview.wave, wavePreview.name).name }}
+            cityHp={state.cityHp}
+            cityMaxHp={state.cityMaxHp}
             pending={pending}
             onStart={() => act("startBattle", {})}
           />
@@ -80,7 +82,15 @@ export default function PhaseDialogs({ hidden = false }: { hidden?: boolean }) {
         )
       );
     case "reward":
-      return <RewardDialog rewards={REWARDS} pending={pending} onChoose={(rewardId) => act("chooseReward", { rewardId })} />;
+      // Each cleared wave (1–9) has its own three rewards in the engine config.
+      return (
+        <RewardDialog
+          wave={state.wavesCleared}
+          rewards={rewardsForWave(state.wavesCleared)?.options ?? []}
+          pending={pending}
+          onChoose={(rewardId) => act("chooseReward", { rewardId })}
+        />
+      );
     case "victory":
     case "gameOver":
       return (

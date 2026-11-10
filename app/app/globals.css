@@ -158,3 +158,57 @@ body {
     scrollbar-color: var(--game-frame) transparent;
   }
 }
+
+/* A part of the city whose sprite just moved up a tier: a white band rises through it twice, bottom to
+   top. The element is masked by the sprite's image (set inline), so only the sprite's own pixels light up.
+   Restarted by remounting (CityDefense keys it by the number of tier-ups). */
+@keyframes upgrade-sweep {
+  from {
+    background-position: 0 300%;
+  }
+  to {
+    background-position: 0 -100%;
+  }
+}
+
+.upgrade-sweep {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(to top, transparent, rgb(255 255 255 / 0.9) 50%, transparent) no-repeat;
+  background-size: 100% 50%;
+  background-position: 0 300%;
+  mask-repeat: no-repeat;
+  mask-position: center;
+  -webkit-mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  animation: upgrade-sweep 0.7s ease-in-out 2;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .upgrade-sweep {
+    display: none;
+  }
+}
+
+/* A flying wave bobs gently in the air (BattleScene). */
+@keyframes wave-hover {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-0.8cqw);
+  }
+}
+
+.wave-hover {
+  animation: wave-hover 1.6s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wave-hover {
+    animation: none;
+  }
+}
+

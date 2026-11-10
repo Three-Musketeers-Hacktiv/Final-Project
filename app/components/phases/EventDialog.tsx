@@ -5,12 +5,16 @@ import Modal from "../Modal";
 export const EVENT_DIALOG = "phase-event";
 
 /** Wording only: the amounts come from the engine's event package. */
-function describeEffect(effect: Effect) {
+function describeEffect(effect: Effect): string {
   switch (effect.type) {
     case "grantGold":
       return `+${effect.amount} gold`;
     case "damageCity":
       return `City HP −${effect.amount}`;
+    case "healCity":
+      return `City HP +${effect.amount}`;
+    case "maxHpBonus":
+      return `Max HP +${effect.amount}`;
     case "nextWaveDefense":
       return `Defense +${effect.amount} during wave ${effect.wave}`;
     case "upgradeDiscount":
@@ -20,20 +24,41 @@ function describeEffect(effect: Effect) {
 
 type EventDialogProps = {
   event: ActiveEvent;
+  /** For a consequence event: the earlier choice that led to it, and its day when known. */
+  cause: { label: string; day: number | null } | null;
   pending: boolean;
   onChoose: (choiceId: string) => void;
 };
 
-/** phase "event": the player must pick one of two choices before the day goes on. */
-export default function EventDialog({ event, pending, onChoose }: EventDialogProps) {
+/**
+ * phase "event": the player must pick one of the choices (2–4) before the day goes on. A choice can
+ * open a follow-up event on the same day; the phase stays "event" and this dialog simply shows it.
+ */
+export default function EventDialog({ event, cause, pending, onChoose }: EventDialogProps) {
   return (
     <Modal
       id={EVENT_DIALOG}
       title={event.title}
-      subtitle={`Day ${event.day} · Event`}
+      subtitle={`Day ${event.day} · ${event.isConsequence ? "Consequence" : "Event"}`}
       icon={<Icon name="timeline" className="size-6" />}
+      // A consequence is a payback for an earlier choice: the red header marks it at a glance.
+      accent={event.isConsequence}
       dismissible={false}
     >
+      {/* Ties the payback to the decision that caused it. */}
+      {event.isConsequence && (
+        <p className="mb-4 rounded-sm border-2 border-crimson/70 bg-crimson/15 px-3 py-2">
+          <span className="font-bold text-crimson day:text-red-700">⚠ Consequence</span>
+          {cause ? (
+            <>
+              {" · "}You chose <q className="italic">{cause.label}</q>
+              {cause.day !== null && ` on day ${cause.day}`}.
+            </>
+          ) : (
+            " · This follows from an earlier choice."
+          )}
+        </p>
+      )}
       <p className="text-lg">{event.description}</p>
 
       <div className="mt-5 grid gap-3 sm:grid-cols-2">

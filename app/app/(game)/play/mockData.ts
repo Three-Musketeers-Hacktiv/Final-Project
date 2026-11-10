@@ -1,4 +1,4 @@
-// Placeholder data the API doesn't provide yet (only the City Record panel still uses it).
+// Placeholder data the API doesn't provide yet (only the City Record panel's name, faction and region).
 
 export const mockRun = {
   day: 6,
@@ -6,12 +6,8 @@ export const mockRun = {
   daysUntilInvasion: 4,
   city: {
     name: "Asterfall",
-    campaign: "Campaign 01",
     faction: "Kingdom of Aster",
     region: "Northreach Plains",
-    difficulty: "Normal",
-    tier: "Tier II (Town)",
-    defenseType: "Walled City",
   },
   stats: {
     hp: 210,
