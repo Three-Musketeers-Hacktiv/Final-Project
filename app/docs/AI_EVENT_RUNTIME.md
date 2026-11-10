@@ -99,8 +99,8 @@ Backend restores trusted costs/effects after validation. Labels pass through the
 3. Backend derives input from that trusted scheduled/consequence event, including origin IDs when present.
 4. Backend reuses an existing `runs_event` snapshot for the same run/event when present.
 5. Otherwise backend calls Gemini before opening the MongoDB transaction and validates with Zod plus trusted choice IDs.
-6. If generation is unavailable or fails, backend tries the newest valid `source: "ai"` catalog entry for the same ruleset/package/day; invalid catalog text is ignored.
-7. Valid narrative fields decorate the trusted event; otherwise fallback copies trusted engine text.
+6. If generation is unavailable or fails, backend tries seeded `source: "fallback"` rows for the same ruleset/package/day, preferring `fallback-catalog-v2`, then older seeded rows. Shared `source: "ai"` rows are not reused, because they may describe another city's condition. Invalid rows are skipped.
+7. If no seeded row fits, the trusted engine scene text is used. A new AI success is stored for that run's `runs_event` snapshot and is not regenerated on refresh.
 8. The action transaction persists state, logs, properties, any new `event_data`, and `runs_event` atomically. Shared catalog reuse creates only the run allocation.
 9. If resolving one event activates another on the same day, backend repeats this flow for the successor event in the same action response.
 

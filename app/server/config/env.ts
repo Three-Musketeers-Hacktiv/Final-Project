@@ -36,11 +36,32 @@ export function parseServerEnv(input: NodeJS.ProcessEnv | Record<string, unknown
 }
 
 let cachedEnv: ServerEnv | undefined;
+let cachedEnvFingerprint: string | undefined;
+
+function envFingerprint(env: NodeJS.ProcessEnv): string {
+  return [
+    env.AI_TIMEOUT_MS ?? "",
+    env.AI_MAX_RETRIES ?? "",
+    env.AI_MAX_OUTPUT_TOKENS ?? "",
+    env.GEMINI_API_KEY ?? "",
+    env.GEMINI_MODEL ?? "",
+    env.AI_PROVIDER ?? "",
+    env.AI_PROMPT_VERSION ?? "",
+  ].join("|");
+}
 
 export function getServerEnv(): ServerEnv {
-  if (!cachedEnv) {
+  const fingerprint = envFingerprint(process.env);
+  if (!cachedEnv || cachedEnvFingerprint !== fingerprint) {
     cachedEnv = parseServerEnv(process.env);
+    cachedEnvFingerprint = fingerprint;
   }
 
   return cachedEnv;
+}
+
+/** Clears cached env so tests can re-parse process.env. */
+export function resetServerEnv(): void {
+  cachedEnv = undefined;
+  cachedEnvFingerprint = undefined;
 }

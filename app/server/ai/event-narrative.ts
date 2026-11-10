@@ -4,6 +4,7 @@ import { z } from "zod";
 import { getServerEnv } from "@/server/config/env";
 import type { GameState } from "@/server/game-engine/adapter";
 import { trustedChoiceLabel } from "../../../src/game/narrative";
+import { SCENE_PROMPT_VERSION, type NarrativeContext } from "./narrative-context";
 
 type ActiveEvent = NonNullable<GameState["activeEvent"]>;
 
@@ -16,29 +17,37 @@ export const generatedEventNarrativeSchema = z.object({
   }).strict()).min(2).max(4),
 }).strict();
 
+/**
+ * Gemini structured-output accepts a JSON Schema subset.
+ * Avoid minLength/maxLength/additionalProperties — they cause 400 Bad Request.
+ * Length and strict shape are enforced by Zod after the response.
+ */
 const generatedEventNarrativeJsonSchema = {
   type: "object",
-  additionalProperties: false,
   required: ["title", "description", "choices"],
+  propertyOrdering: ["title", "description", "choices"],
   properties: {
-    title: { type: "string", minLength: 1, maxLength: 120 },
-    description: { type: "string", minLength: 1, maxLength: 1200 },
+    title: { type: "string" },
+    description: { type: "string" },
     choices: {
       type: "array",
       minItems: 2,
       maxItems: 4,
       items: {
         type: "object",
-        additionalProperties: false,
         required: ["id", "label"],
+        propertyOrdering: ["id", "label"],
         properties: {
-          id: { type: "string", minLength: 1 },
-          label: { type: "string", minLength: 1, maxLength: 240 },
+          id: { type: "string" },
+          label: { type: "string" },
         },
       },
     },
   },
 } as const;
+
+/** Gemini rejects manually set deadlines below 10s. */
+const GEMINI_MIN_DEADLINE_MS = 10_000;
 
 export type GeneratedEventNarrative = z.infer<typeof generatedEventNarrativeSchema>;
 export type NarrativeResult = {
@@ -49,8 +58,11 @@ export type NarrativeResult = {
   promptVersion: string;
 };
 
+export const SCENE_SYSTEM_INSTRUCTION =
+  "You are the city advisor speaking to the lord in English. Write the event as a scene happening now: who is involved, where, what is going wrong, and why a decision is needed today. Tie every choice label to that same scene as a concrete action the lord can order. Do not invent choices, costs, effects, or outcomes. Do not mention gold, coin, coins, treasury, or gp in labels; the cost is shown separately. Do not say \"wave\", \"upgrade discount\", \"Max HP\", \"consequence\", or \"choose carefully\". Describe the coming battle by nextEnemyName when provided. Use city.hpBand and city.goldBand only for tone, never invent numbers. For consequence events, refer only to the supplied origin decision. Preserve every event.trustedChoices id exactly. Prefer two to four short sentences. Address \"my lord\" at most once.";
+
 export interface EventNarrativeGenerator {
-  generate(event: ActiveEvent): Promise<GeneratedEventNarrative>;
+  generate(event: ActiveEvent, context?: NarrativeContext): Promise<GeneratedEventNarrative>;
   readonly provider: string;
   readonly model: string | null;
 }
@@ -70,7 +82,7 @@ export class GeminiEventNarrativeGenerator implements EventNarrativeGenerator {
     this.client = new GoogleGenAI({
       apiKey: env.GEMINI_API_KEY,
       httpOptions: {
-        timeout: env.AI_TIMEOUT_MS,
+        timeout: Math.max(env.AI_TIMEOUT_MS, GEMINI_MIN_DEADLINE_MS),
         retryOptions: {
           attempts: env.AI_MAX_RETRIES + 1,
           httpStatusCodes: [408, 429, 500, 502, 503, 504],
@@ -79,29 +91,29 @@ export class GeminiEventNarrativeGenerator implements EventNarrativeGenerator {
     });
   }
 
-  async generate(event: ActiveEvent): Promise<GeneratedEventNarrative> {
+  async generate(event: ActiveEvent, context?: NarrativeContext): Promise<GeneratedEventNarrative> {
     const env = getServerEnv();
     const response = await this.client.models.generateContent({
       model: this.model,
-      contents: JSON.stringify({
+      contents: JSON.stringify(context ?? {
         locale: "en-US",
-        day: event.day,
-        eventId: event.eventId,
-        packageId: event.packageId,
-        isConsequence: event.isConsequence ?? false,
-        originEventId: event.originEventId ?? null,
-        originChoiceId: event.originChoiceId ?? null,
-        originalTitle: event.title,
-        originalDescription: event.description,
-        trustedChoices: event.choices.map((choice) => ({
-          id: choice.id,
-          goldCost: choice.goldCost,
-          effects: choice.effects,
-        })),
+        promptVersion: SCENE_PROMPT_VERSION,
+        event: {
+          eventId: event.eventId,
+          packageId: event.packageId,
+          isConsequence: event.isConsequence ?? false,
+          originalTitle: event.title,
+          originalDescription: event.description,
+          trustedChoices: event.choices.map((choice) => ({
+            id: choice.id,
+            goldCost: choice.goldCost,
+            effects: choice.effects,
+            engineLabel: choice.label,
+          })),
+        },
       }),
       config: {
-        systemInstruction:
-          "Provide the narrative and choices as if a loyal city advisor is recommending options to his lord, using English. Address the player as \"my lord\". Preserve every supplied choice id exactly. Do not invent choices, change gold costs, invent effects, or invent gameplay rules. Choice labels may be rephrased, but must not mention any currency term such as gold, coin, coins, treasury, or gp. The effective cost is trustedChoices[].goldCost and is shown separately by the client.",
+        systemInstruction: SCENE_SYSTEM_INSTRUCTION,
         responseMimeType: "application/json",
         responseJsonSchema: generatedEventNarrativeJsonSchema,
         maxOutputTokens: env.AI_MAX_OUTPUT_TOKENS,
@@ -156,11 +168,12 @@ function defaultGenerator(): EventNarrativeGenerator | null {
 export async function generateEventNarrative(
   event: ActiveEvent,
   generator: EventNarrativeGenerator | null = defaultGenerator(),
+  context?: NarrativeContext,
 ): Promise<NarrativeResult> {
-  const promptVersion = getServerEnv().AI_PROMPT_VERSION;
+  const promptVersion = SCENE_PROMPT_VERSION;
   if (generator) {
     try {
-      const narrative = generatedEventNarrativeSchema.parse(await generator.generate(event));
+      const narrative = generatedEventNarrativeSchema.parse(await generator.generate(event, context));
       validateTrustedChoiceIds(event, narrative);
       return {
         narrative,
@@ -170,11 +183,17 @@ export async function generateEventNarrative(
         promptVersion,
       };
     } catch (error) {
+      const status =
+        error && typeof error === "object" && "status" in error
+          ? (error as { status?: unknown }).status
+          : undefined;
       console.warn("Event narrative generation failed; using fallback", {
         eventId: event.eventId,
         provider: generator.provider,
         model: generator.model,
         error: error instanceof Error ? error.name : "UnknownError",
+        status,
+        message: error instanceof Error ? error.message : String(error),
       });
     }
   }

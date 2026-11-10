@@ -270,7 +270,13 @@ function buildLaterDecades(): EventPackage[] {
     decade: number;
     wave: number;
     titleA: string;
+    threatScene: string;
+    foe: string;
     titleB: string;
+    marketScene: string;
+    bargain: string;
+    shelter: string;
+    refuse: string;
     consecRaid: string;
     consecUnrest: string;
   }> = [
@@ -278,7 +284,15 @@ function buildLaterDecades(): EventPackage[] {
       decade: 3,
       wave: 3,
       titleA: "Wolf howls beyond the treeline",
+      foe: "the wolves",
+      threatScene:
+        "My lord, wolves are pacing the treeline and the night watch wants orders before they test the palisade.",
       titleB: "Hunters demand hazard pay",
+      marketScene:
+        "Hunters crowd the west gate and will not range the wolf woods until you answer their terms.",
+      bargain: "Bargain cheaper timber from the hunting camps",
+      shelter: "Raise extra lodges along the palisade",
+      refuse: "Turn the hunters away from the gate",
       consecRaid: "c-raid-mid",
       consecUnrest: "c-unrest-mid",
     },
@@ -286,7 +300,15 @@ function buildLaterDecades(): EventPackage[] {
       decade: 4,
       wave: 4,
       titleA: "Cyclops tracks in the mud",
+      foe: "the cyclops",
+      threatScene:
+        "My lord, a cyclops has left fresh tracks in the mud beyond the north fields. The farmers will not stay in their houses unless you act.",
       titleB: "Quarry collapse rumor",
+      marketScene:
+        "Masons from the quarry say a gallery is cracking. They stand in the yard and will not keep cutting stone until you decide.",
+      bargain: "Strike a cheaper stone contract with the masons",
+      shelter: "Shore the quarry sheds and storehouses",
+      refuse: "Send the masons back to the quarry unanswered",
       consecRaid: "c-raid-mid",
       consecUnrest: "c-unrest-mid",
     },
@@ -294,7 +316,15 @@ function buildLaterDecades(): EventPackage[] {
       decade: 5,
       wave: 5,
       titleA: "Wyvern shadow over the spires",
+      foe: "the wyvern",
+      threatScene:
+        "My lord, a wyvern's shadow crosses the spires. The tower watch is shouting for barricades, bandages, or leave to strip the racks.",
       titleB: "Alchemists sell fire oil",
+      marketScene:
+        "My lord, alchemists have wheeled casks of fire oil into the east market and will not leave until you speak. The watch is already arguing over the street.",
+      bargain: "Strike a supply bargain for cheaper city works",
+      shelter: "Claim casks to reinforce shelters and storehouses",
+      refuse: "Send the alchemists away empty-handed",
       consecRaid: "c-raid-mid",
       consecUnrest: "c-unrest-mid",
     },
@@ -302,7 +332,15 @@ function buildLaterDecades(): EventPackage[] {
       decade: 6,
       wave: 6,
       titleA: "Lich whispers in the crypt",
+      foe: "the lich",
+      threatScene:
+        "My lord, a cold voice in the crypt district has the burial crews refusing the night shift. They wait at the stair for your word.",
       titleB: "Necromancer's bargain",
+      marketScene:
+        "A necromancer's agent waits at the crypt gate with a grim offer. The priests want you to answer before dusk.",
+      bargain: "Accept warded tools that cheapen later works",
+      shelter: "Seal extra crypt vaults into the city's bulk",
+      refuse: "Dismiss the agent from the crypt gate",
       consecRaid: "c-raid-late",
       consecUnrest: "c-unrest-late",
     },
@@ -310,7 +348,15 @@ function buildLaterDecades(): EventPackage[] {
       decade: 7,
       wave: 7,
       titleA: "Lesser demon sighted",
+      foe: "the lesser demon",
+      threatScene:
+        "My lord, a lesser demon was seen on the ash road. The gate captain will not close the watch without your order.",
       titleB: "Hellgate cracks",
+      marketScene:
+        "A crack of hellfire has split the old chapel floor. Wardens and masons are in the nave, each demanding a different order.",
+      bargain: "Buy warded stone so later works cost less",
+      shelter: "Brace the chapel into a thicker refuge",
+      refuse: "Leave the cracked chapel to the wardens",
       consecRaid: "c-raid-late",
       consecUnrest: "c-unrest-late",
     },
@@ -318,7 +364,15 @@ function buildLaterDecades(): EventPackage[] {
       decade: 8,
       wave: 8,
       titleA: "Demon banners on the ridge",
+      foe: "the demon host",
+      threatScene:
+        "My lord, demon banners stand on the ridge. The outer companies are formed in the yard and waiting.",
       titleB: "Iron levy demand",
+      marketScene:
+        "Armorers block the foundry doors. They will not keep the forges hot unless you answer the levy they demand.",
+      bargain: "Lock a cheaper iron contract for city works",
+      shelter: "Turn spare plate into thicker civic shelters",
+      refuse: "Refuse the armorers and reopen the foundry by order",
       consecRaid: "c-raid-late",
       consecUnrest: "c-unrest-late",
     },
@@ -326,7 +380,15 @@ function buildLaterDecades(): EventPackage[] {
       decade: 9,
       wave: 9,
       titleA: "Dragon smoke on the horizon",
+      foe: "the dragon",
+      threatScene:
+        "My lord, dragon smoke stains the horizon. The roofs are clearing and the watch wants a decision before the next pass.",
       titleB: "Dragon cult emissaries",
+      marketScene:
+        "Dragon-cult emissaries have entered the high square with offerings and threats. The crowd will not disperse until you answer.",
+      bargain: "Take their tribute terms for cheaper later works",
+      shelter: "Convert their wagons into extra refuges",
+      refuse: "Drive the emissaries out of the square",
       consecRaid: "c-raid-finale",
       consecUnrest: "c-unrest-finale",
     },
@@ -334,7 +396,15 @@ function buildLaterDecades(): EventPackage[] {
       decade: 10,
       wave: 10,
       titleA: "Demon King envoys",
+      foe: "the Demon King's envoys",
+      threatScene:
+        "My lord, envoys of the Demon King stand outside the final gate. The household is silent, waiting for your order.",
       titleB: "Final mustering call",
+      marketScene:
+        "Captains and stewards fill the muster yard. The last levy will not form until you say how the city spends this hour.",
+      bargain: "Promise cheaper works in exchange for their labor",
+      shelter: "Fold the muster wagons into the city's last refuge",
+      refuse: "Dismiss the muster and keep the yard empty",
       consecRaid: "c-raid-finale",
       consecUnrest: "c-unrest-finale",
     },
@@ -349,30 +419,30 @@ function buildLaterDecades(): EventPackage[] {
       eventId: `d${d}-threat-a`,
       decade: d,
       title: row.titleA,
-      description: `My lord, danger gathers before wave ${w}. Pay for defense, take a risky shortcut, or save gold and face later fallout.`,
+      description: row.threatScene,
       choices: [
         {
           id: `d${d}-threat-a-pay`,
-          label: `Fortify: pay {goldCost} gold, defense +${3 + Math.floor(d / 3)} for wave ${w}`,
+          label: `Raise barricades against ${row.foe}: pay {goldCost} gold`,
           goldCost: 18 + d,
           effects: [{ type: "nextWaveDefense", amount: 3 + Math.floor(d / 3), wave: w }],
         },
         {
           id: `d${d}-threat-a-heal`,
-          label: `Tend the wounded: heal ${12 + d} HP`,
+          label: `Tend the wounded from the latest probes`,
           goldCost: 0,
           effects: [{ type: "healCity", amount: 12 + d }],
         },
         {
           id: `d${d}-threat-a-gold`,
-          label: `Strip the armory for coin: gold +${14 + d}`,
+          label: `Strip the spare racks for a quick surplus`,
           goldCost: 0,
           effects: [{ type: "grantGold", amount: 14 + d }],
           consequence: consec(row.consecUnrest),
         },
         {
           id: `d${d}-threat-a-skip`,
-          label: "Do nothing for now.",
+          label: `Leave ${row.foe} unanswered for now`,
           goldCost: 0,
           effects: [],
           consequence: consec(row.consecRaid),
@@ -384,23 +454,23 @@ function buildLaterDecades(): EventPackage[] {
       eventId: `d${d}-market-b`,
       decade: d,
       title: row.titleB,
-      description: `Merchants and captains quarrel before wave ${w}. Choose carefully; greed may return as a consequence.`,
+      description: row.marketScene,
       choices: [
         {
           id: `d${d}-market-b-discount`,
-          label: `Buy goodwill: pay {goldCost} gold for 25% upgrade discount until wave ${w}`,
+          label: `${row.bargain}: pay {goldCost} gold`,
           goldCost: 15 + d,
           effects: [{ type: "upgradeDiscount", rate: 0.25, untilWave: w }],
         },
         {
           id: `d${d}-market-b-maxhp`,
-          label: `Expand shelters: +${15 + Math.floor(d / 2)} Max HP`,
+          label: row.shelter,
           goldCost: 0,
           effects: [{ type: "maxHpBonus", amount: 15 + Math.floor(d / 2) }],
         },
         {
           id: `d${d}-market-b-skip`,
-          label: "Refuse every demand.",
+          label: row.refuse,
           goldCost: 0,
           effects: [],
           consequence: consec(row.consecUnrest),
@@ -469,7 +539,7 @@ export const CONSEQUENCE_PACKAGES: EventPackage[] = [
     decade: 0,
     title: "Night raid fallout",
     description:
-      "The scouts you ignored return with raiders. Mitigate the damage or endure it, my lord.",
+      "Raiders are in the lower streets after an earlier refusal left the approach open. Blunt them, brace the barricades, or endure the night, my lord.",
     choices: [
       {
         id: "c-raid-wave1-pay",
@@ -496,7 +566,7 @@ export const CONSEQUENCE_PACKAGES: EventPackage[] = [
     eventId: "c-unrest-wave1",
     decade: 0,
     title: "Market unrest",
-    description: "Your earlier thrift sparks unrest in the markets.",
+    description: "A crowd from an earlier hard bargain is shouting in the market square.",
     choices: [
       {
         id: "c-unrest-wave1-pay",
@@ -517,7 +587,7 @@ export const CONSEQUENCE_PACKAGES: EventPackage[] = [
     eventId: "c-shortage-wave2",
     decade: 0,
     title: "Material shortage",
-    description: "Builders lack materials after the guild snub.",
+    description: "Builders are short of stone after an earlier caravan or guild was turned aside.",
     choices: [
       {
         id: "c-shortage-wave2-pay",
@@ -544,7 +614,7 @@ export const CONSEQUENCE_PACKAGES: EventPackage[] = [
     eventId: "c-raid-wave2",
     decade: 0,
     title: "Orc probing raid",
-    description: "Thin patrols invite a probing raid before the host arrives.",
+    description: "A probing raid is testing the walls after an earlier lapse in the watch.",
     choices: [
       {
         id: "c-raid-wave2-pay",
@@ -602,7 +672,7 @@ export const CONSEQUENCE_PACKAGES: EventPackage[] = [
     eventId: "c-unrest-mid",
     decade: 0,
     title: "Mid-campaign unrest",
-    description: "Greedy earlier choices sour the people.",
+    description: "Petitioners fill the square over an earlier refusal or a stripped store.",
     choices: [
       {
         id: "c-unrest-mid-pay",
@@ -671,7 +741,7 @@ export const CONSEQUENCE_PACKAGES: EventPackage[] = [
     eventId: "c-raid-finale",
     decade: 0,
     title: "Pre-finale ambush",
-    description: "Ignored omens culminate in an ambush before the Demon King.",
+    description: "An ambush is forming on the last road, born of a warning you let pass before the Demon King.",
     choices: [
       {
         id: "c-raid-finale-pay",

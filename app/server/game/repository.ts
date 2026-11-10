@@ -173,6 +173,18 @@ export async function findLatestReport(runId: ObjectId): Promise<GameReportDocum
   );
 }
 
+export async function findRecentResolvedRunEvents(
+  runId: ObjectId,
+  limit = 3,
+): Promise<RunEventDocument[]> {
+  const database = await getDatabase();
+  return database.collection<RunEventDocument>("runs_event")
+    .find({ gameRunId: runId, chosenChoiceId: { $ne: null } })
+    .sort({ resolvedAt: -1 })
+    .limit(limit)
+    .toArray();
+}
+
 export async function findRunEvent(
   runId: ObjectId,
   eventId: string,
@@ -181,16 +193,37 @@ export async function findRunEvent(
   return database.collection<RunEventDocument>("runs_event").findOne({ gameRunId: runId, eventId });
 }
 
+export async function findSharedEventDataCandidates(
+  gameRulesetId: ObjectId,
+  packageId: string,
+  day: number,
+  source: "ai" | "fallback",
+  limit = 8,
+): Promise<EventDataDocument[]> {
+  const database = await getDatabase();
+  return database.collection<EventDataDocument>("event_data")
+    .find({ gameRulesetId, packageId, day, source, validationStatus: "valid" })
+    .sort({ createdAt: -1 })
+    .limit(limit)
+    .toArray();
+}
+
 export async function findSharedAiEventData(
   gameRulesetId: ObjectId,
   packageId: string,
   day: number,
 ): Promise<EventDataDocument | null> {
-  const database = await getDatabase();
-  return database.collection<EventDataDocument>("event_data").findOne(
-    { gameRulesetId, packageId, day, source: "ai", validationStatus: "valid" },
-    { sort: { createdAt: -1 } },
-  );
+  const [newest] = await findSharedEventDataCandidates(gameRulesetId, packageId, day, "ai", 1);
+  return newest ?? null;
+}
+
+export async function findSharedFallbackEventData(
+  gameRulesetId: ObjectId,
+  packageId: string,
+  day: number,
+): Promise<EventDataDocument | null> {
+  const [newest] = await findSharedEventDataCandidates(gameRulesetId, packageId, day, "fallback", 1);
+  return newest ?? null;
 }
 
 export async function commitGameAction(input: {

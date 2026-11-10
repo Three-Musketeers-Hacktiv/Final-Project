@@ -1,0 +1,1218 @@
+[
+  {
+    "seedKey": "fallback-catalog-v2:d1-scouts-a:d3:v01",
+    "packageId": "d1-scouts-a",
+    "day": 3,
+    "kind": "scheduled",
+    "narrative": {
+      "title": "Scouts at the gate, while the dawn watch is still thin",
+      "description": "My lord, while the dawn watch is still thin. enemy scouts linger beyond the gate. We can harden the walls, pay for quiet rumors, or let them pass.",
+      "choices": [
+        {
+          "id": "d1-scouts-a-pay-def",
+          "label": "Reinforce the gate: pay, defense + for wave, while the dawn watch is still thin."
+        },
+        {
+          "id": "d1-scouts-a-bribe",
+          "label": "Bribe the scouts: pay for quiet, while the dawn watch is still thin."
+        },
+        {
+          "id": "d1-scouts-a-skip",
+          "label": "Let them pass. Save the for now., while the dawn watch is still thin."
+        }
+      ]
+    }
+  },
+  {
+    "seedKey": "fallback-catalog-v2:d1-scouts-a:d7:v01",
+    "packageId": "d1-scouts-a",
+    "day": 7,
+    "kind": "scheduled",
+    "narrative": {
+      "title": "Scouts at the gate, with rumors already at the gate",
+      "description": "My lord, with rumors already at the gate. enemy scouts linger beyond the gate. We can harden the walls, pay for quiet rumors, or let them pass.",
+      "choices": [
+        {
+          "id": "d1-scouts-a-pay-def",
+          "label": "Reinforce the gate: pay, defense + for wave, with rumors already at the gate."
+        },
+        {
+          "id": "d1-scouts-a-bribe",
+          "label": "Bribe the scouts: pay for quiet, with rumors already at the gate."
+        },
+        {
+          "id": "d1-scouts-a-skip",
+          "label": "Let them pass. Save the for now., with rumors already at the gate."
+        }
+      ]
+    }
+  },
+  {
+    "seedKey": "fallback-catalog-v2:d1-envoy-b:d4:v01",
+    "packageId": "d1-envoy-b",
+    "day": 4,
+    "kind": "scheduled",
+    "narrative": {
+      "title": "Nervous border envoy, before the market fully wakes",
+      "description": "My lord, before the market fully wakes. A border envoy begs escort before the first wave. Paying hardens our walls; refusing costs nothing today.",
+      "choices": [
+        {
+          "id": "d1-envoy-b-pay",
+          "label": "Fund the escort: pay, defense + for wave, before the market fully wakes."
+        },
+        {
+          "id": "d1-envoy-b-heal",
+          "label": "Share rations instead: heal HP, before the market fully wakes."
+        },
+        {
+          "id": "d1-envoy-b-skip",
+          "label": "Send them away empty-handed., before the market fully wakes."
+        }
+      ]
+    }
+  },
+  {
+    "seedKey": "fallback-catalog-v2:d1-envoy-b:d8:v01",
+    "packageId": "d1-envoy-b",
+    "day": 8,
+    "kind": "scheduled",
+    "narrative": {
+      "title": "Nervous border envoy, after a sleepless night on the walls",
+      "description": "My lord, after a sleepless night on the walls. A border envoy begs escort before the first wave. Paying hardens our walls; refusing costs nothing today.",
+      "choices": [
+        {
+          "id": "d1-envoy-b-pay",
+          "label": "Fund the escort: pay, defense + for wave, after a sleepless night on the walls."
+        },
+        {
+          "id": "d1-envoy-b-heal",
+          "label": "Share rations instead: heal HP, after a sleepless night on the walls."
+        },
+        {
+          "id": "d1-envoy-b-skip",
+          "label": "Send them away empty-handed., after a sleepless night on the walls."
+        }
+      ]
+    }
+  },
+  {
+    "seedKey": "fallback-catalog-v2:d1-supplies-a:d3:v01",
+    "packageId": "d1-supplies-a",
+    "day": 3,
+    "kind": "scheduled",
+    "narrative": {
+      "title": "Supply dilemma, while the dawn watch is still thin",
+      "description": "My lord, while the dawn watch is still thin. The stores run low. Buy supplies, squeeze workers for, or refuse and risk later damage.",
+      "choices": [
+        {
+          "id": "d1-supplies-a-pay",
+          "label": "Buy supplies: pay, while the dawn watch is still thin."
+        },
+        {
+          "id": "d1-supplies-a-gold",
+          "label": "Tax the stalls: + now, while the dawn watch is still thin."
+        },
+        {
+          "id": "d1-supplies-a-hurt",
+          "label": "Refuse the offer. City loses HP now., while the dawn watch is still thin."
+        },
+        {
+          "id": "d1-supplies-a-skip",
+          "label": "Delay the decision. No immediate cost., while the dawn watch is still thin."
+        }
+      ]
+    }
+  },
+  {
+    "seedKey": "fallback-catalog-v2:d1-supplies-a:d6:v01",
+    "packageId": "d1-supplies-a",
+    "day": 6,
+    "kind": "scheduled",
+    "narrative": {
+      "title": "Supply dilemma, under a pale and watchful sky",
+      "description": "My lord, under a pale and watchful sky. The stores run low. Buy supplies, squeeze workers for, or refuse and risk later damage.",
+      "choices": [
+        {
+          "id": "d1-supplies-a-pay",
+          "label": "Buy supplies: pay, under a pale and watchful sky."
+        },
+        {
+          "id": "d1-supplies-a-gold",
+          "label": "Tax the stalls: + now, under a pale and watchful sky."
+        },
+        {
+          "id": "d1-supplies-a-hurt",
+          "label": "Refuse the offer. City loses HP now., under a pale and watchful sky."
+        },
+        {
+          "id": "d1-supplies-a-skip",
+          "label": "Delay the decision. No immediate cost., under a pale and watchful sky."
+        }
+      ]
+    }
+  },
+  {
+    "seedKey": "fallback-catalog-v2:d1-labor-b:d5:v01",
+    "packageId": "d1-labor-b",
+    "day": 5,
+    "kind": "scheduled",
+    "narrative": {
+      "title": "Exhausted work crews, as smoke stains the lower streets",
+      "description": "My lord, as smoke stains the lower streets. Labor crews are spent. A wage keeps walls sound; unpaid work strains the city.",
+      "choices": [
+        {
+          "id": "d1-labor-b-pay",
+          "label": "Pay the crews: pay, as smoke stains the lower streets."
+        },
+        {
+          "id": "d1-labor-b-discount",
+          "label": "Promise cheaper stone later: % upgrade discount until wave, as smoke stains the lower streets."
+        },
+        {
+          "id": "d1-labor-b-hurt",
+          "label": "Order them onward unpaid. City loses HP., as smoke stains the lower streets."
+        }
+      ]
+    }
+  },
+  {
+    "seedKey": "fallback-catalog-v2:d1-labor-b:d9:v01",
+    "packageId": "d1-labor-b",
+    "day": 9,
+    "kind": "scheduled",
+    "narrative": {
+      "title": "Exhausted work crews, on the eve of the first assault",
+      "description": "My lord, on the eve of the first assault. Labor crews are spent. A wage keeps walls sound; unpaid work strains the city.",
+      "choices": [
+        {
+          "id": "d1-labor-b-pay",
+          "label": "Pay the crews: pay, on the eve of the first assault."
+        },
+        {
+          "id": "d1-labor-b-discount",
+          "label": "Promise cheaper stone later: % upgrade discount until wave, on the eve of the first assault."
+        },
+        {
+          "id": "d1-labor-b-hurt",
+          "label": "Order them onward unpaid. City loses HP., on the eve of the first assault."
+        }
+      ]
+    }
+  },
+  {
+    "seedKey": "fallback-catalog-v2:d2-caravan-a:d12:v01",
+    "packageId": "d2-caravan-a",
+    "day": 12,
+    "kind": "scheduled",
+    "narrative": {
+      "title": "Trade opportunity, as caravans crowd the south road",
+      "description": "My lord, as caravans crowd the south road. A caravan offers now or cheaper building until the next wave.",
+      "choices": [
+        {
+          "id": "d2-caravan-a-gold",
+          "label": "Take the: +, as caravans crowd the south road."
+        },
+        {
+          "id": "d2-caravan-a-discount",
+          "label": "Lock material prices: % upgrade discount until wave, as caravans crowd the south road."
+        },
+        {
+          "id": "d2-caravan-a-skip",
+          "label": "Turn the caravan away., as caravans crowd the south road."
+        }
+      ]
+    }
+  },
+  {
+    "seedKey": "fallback-catalog-v2:d2-caravan-a:d16:v01",
+    "packageId": "d2-caravan-a",
+    "day": 16,
+    "kind": "scheduled",
+    "narrative": {
+      "title": "Trade opportunity, with the second watch changing",
+      "description": "My lord, with the second watch changing. A caravan offers now or cheaper building until the next wave.",
+      "choices": [
+        {
+          "id": "d2-caravan-a-gold",
+          "label": "Take the: +, with the second watch changing."
+        },
+        {
+          "id": "d2-caravan-a-discount",
+          "label": "Lock material prices: % upgrade discount until wave, with the second watch changing."
+        },
+        {
+          "id": "d2-caravan-a-skip",
+          "label": "Turn the caravan away., with the second watch changing."
+        }
+      ]
+    }
+  },
+  {
+    "seedKey": "fallback-catalog-v2:d2-guild-b:d13:v01",
+    "packageId": "d2-guild-b",
+    "day": 13,
+    "kind": "scheduled",
+    "narrative": {
+      "title": "Builders' guild charter, while guild banners argue in the square",
+      "description": "My lord, while guild banners argue in the square. The guild wants a fee for preferred rates, or a risky free bargain.",
+      "choices": [
+        {
+          "id": "d2-guild-b-pay",
+          "label": "Pay the guild fee:, % discount until wave, while guild banners argue in the square."
+        },
+        {
+          "id": "d2-guild-b-gold",
+          "label": "Demand tribute instead: +, while guild banners argue in the square."
+        },
+        {
+          "id": "d2-guild-b-skip",
+          "label": "Ignore the guild., while guild banners argue in the square."
+        }
+      ]
+    }
+  },
+  {
+    "seedKey": "fallback-catalog-v2:d2-guild-b:d17:v01",
+    "packageId": "d2-guild-b",
+    "day": 17,
+    "kind": "scheduled",
+    "narrative": {
+      "title": "Builders' guild charter, before dusk closes the gates",
+      "description": "My lord, before dusk closes the gates. The guild wants a fee for preferred rates, or a risky free bargain.",
+      "choices": [
+        {
+          "id": "d2-guild-b-pay",
+          "label": "Pay the guild fee:, % discount until wave, before dusk closes the gates."
+        },
+        {
+          "id": "d2-guild-b-gold",
+          "label": "Demand tribute instead: +, before dusk closes the gates."
+        },
+        {
+          "id": "d2-guild-b-skip",
+          "label": "Ignore the guild., before dusk closes the gates."
+        }
+      ]
+    }
+  },
+  {
+    "seedKey": "fallback-catalog-v2:d2-patrol-a:d14:v01",
+    "packageId": "d2-patrol-a",
+    "day": 14,
+    "kind": "scheduled",
+    "narrative": {
+      "title": "Night patrol request, beneath a hard afternoon sun",
+      "description": "My lord, beneath a hard afternoon sun. Captains ask for to double patrols before the orcs.",
+      "choices": [
+        {
+          "id": "d2-patrol-a-pay",
+          "label": "Fund patrols: pay, defense + for wave, beneath a hard afternoon sun."
+        },
+        {
+          "id": "d2-patrol-a-heal",
+          "label": "Rest the wounded instead: heal HP, beneath a hard afternoon sun."
+        },
+        {
+          "id": "d2-patrol-a-skip",
+          "label": "Keep the night watch thin., beneath a hard afternoon sun."
+        },
+        {
+          "id": "d2-patrol-a-risk",
+          "label": "Press civilians into service: +, city - HP, beneath a hard afternoon sun."
+        }
+      ]
+    }
+  },
+  {
+    "seedKey": "fallback-catalog-v2:d2-patrol-a:d18:v01",
+    "packageId": "d2-patrol-a",
+    "day": 18,
+    "kind": "scheduled",
+    "narrative": {
+      "title": "Night patrol request, as torches are counted for the night",
+      "description": "My lord, as torches are counted for the night. Captains ask for to double patrols before the orcs.",
+      "choices": [
+        {
+          "id": "d2-patrol-a-pay",
+          "label": "Fund patrols: pay, defense + for wave, as torches are counted for the night."
+        },
+        {
+          "id": "d2-patrol-a-heal",
+          "label": "Rest the wounded instead: heal HP, as torches are counted for the night."
+        },
+        {
+          "id": "d2-patrol-a-skip",
+          "label": "Keep the night watch thin., as torches are counted for the night."
+        },
+        {
+          "id": "d2-patrol-a-risk",
+          "label": "Press civilians into service: +, city - HP, as torches are counted for the night."
+        }
+      ]
+    }
+  },
+  {
+    "seedKey": "fallback-catalog-v2:d2-omen-b:d12:v01",
+    "packageId": "d2-omen-b",
+    "day": 12,
+    "kind": "scheduled",
+    "narrative": {
+      "title": "Ill omen at the shrine, as caravans crowd the south road",
+      "description": "My lord, as caravans crowd the south road. Priests warn of a raid unless offerings are made.",
+      "choices": [
+        {
+          "id": "d2-omen-b-pay",
+          "label": "Offer: pay, as caravans crowd the south road."
+        },
+        {
+          "id": "d2-omen-b-maxhp",
+          "label": "Bless the walls: + Max HP, as caravans crowd the south road."
+        },
+        {
+          "id": "d2-omen-b-skip",
+          "label": "Dismiss the omen., as caravans crowd the south road."
+        }
+      ]
+    }
+  },
+  {
+    "seedKey": "fallback-catalog-v2:d2-omen-b:d15:v01",
+    "packageId": "d2-omen-b",
+    "day": 15,
+    "kind": "scheduled",
+    "narrative": {
+      "title": "Ill omen at the shrine, as omens stir the chapel yard",
+      "description": "My lord, as omens stir the chapel yard. Priests warn of a raid unless offerings are made.",
+      "choices": [
+        {
+          "id": "d2-omen-b-pay",
+          "label": "Offer: pay, as omens stir the chapel yard."
+        },
+        {
+          "id": "d2-omen-b-maxhp",
+          "label": "Bless the walls: + Max HP, as omens stir the chapel yard."
+        },
+        {
+          "id": "d2-omen-b-skip",
+          "label": "Dismiss the omen., as omens stir the chapel yard."
+        }
+      ]
+    }
+  },
+  {
+    "seedKey": "fallback-catalog-v2:d3-threat-a:d23:v01",
+    "packageId": "d3-threat-a",
+    "day": 23,
+    "kind": "scheduled",
+    "narrative": {
+      "title": "Wolf howls beyond the treeline, in the uneasy quiet after the last battle",
+      "description": "My lord, in the uneasy quiet after the last battle. wolves are pacing the treeline and the night watch wants orders before they test the palisade.",
+      "choices": [
+        {
+          "id": "d3-threat-a-pay",
+          "label": "Raise barricades against the wolves: pay, in the uneasy quiet after the last battle."
+        },
+        {
+          "id": "d3-threat-a-heal",
+          "label": "Tend the wounded from the latest probes, in the uneasy quiet after the last battle."
+        },
+        {
+          "id": "d3-threat-a-gold",
+          "label": "Strip the spare racks for a quick surplus, in the uneasy quiet after the last battle."
+        },
+        {
+          "id": "d3-threat-a-skip",
+          "label": "Leave the wolves unanswered for now, in the uneasy quiet after the last battle."
+        }
+      ]
+    }
+  },
+  {
+    "seedKey": "fallback-catalog-v2:d3-market-b:d26:v01",
+    "packageId": "d3-market-b",
+    "day": 26,
+    "kind": "scheduled",
+    "narrative": {
+      "title": "Hunters demand hazard pay, while merchants test your patience",
+      "description": "My lord, while merchants test your patience. Hunters crowd the west gate and will not range the wolf woods until you answer their terms.",
+      "choices": [
+        {
+          "id": "d3-market-b-discount",
+          "label": "Bargain cheaper timber from the hunting camps: pay, while merchants test your patience."
+        },
+        {
+          "id": "d3-market-b-maxhp",
+          "label": "Raise extra lodges along the palisade, while merchants test your patience."
+        },
+        {
+          "id": "d3-market-b-skip",
+          "label": "Turn the hunters away from the gate, while merchants test your patience."
+        }
+      ]
+    }
+  },
+  {
+    "seedKey": "fallback-catalog-v2:d4-threat-a:d33:v01",
+    "packageId": "d4-threat-a",
+    "day": 33,
+    "kind": "scheduled",
+    "narrative": {
+      "title": "Cyclops tracks in the mud, as the mid-campaign roads grow bold",
+      "description": "My lord, as the mid-campaign roads grow bold. a cyclops has left fresh tracks in the mud beyond the north fields. The farmers will not stay in their houses unless you act.",
+      "choices": [
+        {
+          "id": "d4-threat-a-pay",
+          "label": "Raise barricades against the cyclops: pay, as the mid-campaign roads grow bold."
+        },
+        {
+          "id": "d4-threat-a-heal",
+          "label": "Tend the wounded from the latest probes, as the mid-campaign roads grow bold."
+        },
+        {
+          "id": "d4-threat-a-gold",
+          "label": "Strip the spare racks for a quick surplus, as the mid-campaign roads grow bold."
+        },
+        {
+          "id": "d4-threat-a-skip",
+          "label": "Leave the cyclops unanswered for now, as the mid-campaign roads grow bold."
+        }
+      ]
+    }
+  },
+  {
+    "seedKey": "fallback-catalog-v2:d4-market-b:d36:v01",
+    "packageId": "d4-market-b",
+    "day": 36,
+    "kind": "scheduled",
+    "narrative": {
+      "title": "Quarry collapse rumor, when every bargain carries a hook",
+      "description": "My lord, when every bargain carries a hook. Masons from the quarry say a gallery is cracking. They stand in the yard and will not keep cutting stone until you decide.",
+      "choices": [
+        {
+          "id": "d4-market-b-discount",
+          "label": "Strike a cheaper stone contract with the masons: pay, when every bargain carries a hook."
+        },
+        {
+          "id": "d4-market-b-maxhp",
+          "label": "Shore the quarry sheds and storehouses, when every bargain carries a hook."
+        },
+        {
+          "id": "d4-market-b-skip",
+          "label": "Send the masons back to the quarry unanswered, when every bargain carries a hook."
+        }
+      ]
+    }
+  },
+  {
+    "seedKey": "fallback-catalog-v2:d5-threat-a:d43:v01",
+    "packageId": "d5-threat-a",
+    "day": 43,
+    "kind": "scheduled",
+    "narrative": {
+      "title": "Wyvern shadow over the spires, with the horizon darkening toward the wyvern days",
+      "description": "My lord, with the horizon darkening toward the wyvern days. a wyvern's shadow crosses the spires. The tower watch is shouting for barricades, bandages, or leave to strip the racks.",
+      "choices": [
+        {
+          "id": "d5-threat-a-pay",
+          "label": "Raise barricades against the wyvern: pay, with the horizon darkening toward the wyvern days."
+        },
+        {
+          "id": "d5-threat-a-heal",
+          "label": "Tend the wounded from the latest probes, with the horizon darkening toward the wyvern days."
+        },
+        {
+          "id": "d5-threat-a-gold",
+          "label": "Strip the spare racks for a quick surplus, with the horizon darkening toward the wyvern days."
+        },
+        {
+          "id": "d5-threat-a-skip",
+          "label": "Leave the wyvern unanswered for now, with the horizon darkening toward the wyvern days."
+        }
+      ]
+    }
+  },
+  {
+    "seedKey": "fallback-catalog-v2:d5-market-b:d46:v01",
+    "packageId": "d5-market-b",
+    "day": 46,
+    "kind": "scheduled",
+    "narrative": {
+      "title": "Alchemists sell fire oil, as the market splits into factions",
+      "description": "My lord, as the market splits into factions. alchemists have wheeled casks of fire oil into the east market and will not leave until you speak. The watch is already arguing over the street.",
+      "choices": [
+        {
+          "id": "d5-market-b-discount",
+          "label": "Strike a supply bargain for cheaper city works: pay, as the market splits into factions."
+        },
+        {
+          "id": "d5-market-b-maxhp",
+          "label": "Claim casks to reinforce shelters and storehouses, as the market splits into factions."
+        },
+        {
+          "id": "d5-market-b-skip",
+          "label": "Send the alchemists away empty-handed, as the market splits into factions."
+        }
+      ]
+    }
+  },
+  {
+    "seedKey": "fallback-catalog-v2:d6-threat-a:d53:v01",
+    "packageId": "d6-threat-a",
+    "day": 53,
+    "kind": "scheduled",
+    "narrative": {
+      "title": "Lich whispers in the crypt, deep in the long campaign",
+      "description": "My lord, deep in the long campaign. a cold voice in the crypt district has the burial crews refusing the night shift. They wait at the stair for your word.",
+      "choices": [
+        {
+          "id": "d6-threat-a-pay",
+          "label": "Raise barricades against the lich: pay, deep in the long campaign."
+        },
+        {
+          "id": "d6-threat-a-heal",
+          "label": "Tend the wounded from the latest probes, deep in the long campaign."
+        },
+        {
+          "id": "d6-threat-a-gold",
+          "label": "Strip the spare racks for a quick surplus, deep in the long campaign."
+        },
+        {
+          "id": "d6-threat-a-skip",
+          "label": "Leave the lich unanswered for now, deep in the long campaign."
+        }
+      ]
+    }
+  },
+  {
+    "seedKey": "fallback-catalog-v2:d6-market-b:d56:v01",
+    "packageId": "d6-market-b",
+    "day": 56,
+    "kind": "scheduled",
+    "narrative": {
+      "title": "Necromancer's bargain, while captains and merchants quarrel",
+      "description": "My lord, while captains and merchants quarrel. A necromancer's agent waits at the crypt gate with a grim offer. The priests want you to answer before dusk.",
+      "choices": [
+        {
+          "id": "d6-market-b-discount",
+          "label": "Accept warded tools that cheapen later works: pay, while captains and merchants quarrel."
+        },
+        {
+          "id": "d6-market-b-maxhp",
+          "label": "Seal extra crypt vaults into the city's bulk, while captains and merchants quarrel."
+        },
+        {
+          "id": "d6-market-b-skip",
+          "label": "Dismiss the agent from the crypt gate, while captains and merchants quarrel."
+        }
+      ]
+    }
+  },
+  {
+    "seedKey": "fallback-catalog-v2:d7-threat-a:d63:v01",
+    "packageId": "d7-threat-a",
+    "day": 63,
+    "kind": "scheduled",
+    "narrative": {
+      "title": "Lesser demon sighted, as late-war fear reaches the walls",
+      "description": "My lord, as late-war fear reaches the walls. a lesser demon was seen on the ash road. The gate captain will not close the watch without your order.",
+      "choices": [
+        {
+          "id": "d7-threat-a-pay",
+          "label": "Raise barricades against the lesser demon: pay, as late-war fear reaches the walls."
+        },
+        {
+          "id": "d7-threat-a-heal",
+          "label": "Tend the wounded from the latest probes, as late-war fear reaches the walls."
+        },
+        {
+          "id": "d7-threat-a-gold",
+          "label": "Strip the spare racks for a quick surplus, as late-war fear reaches the walls."
+        },
+        {
+          "id": "d7-threat-a-skip",
+          "label": "Leave the lesser demon unanswered for now, as late-war fear reaches the walls."
+        }
+      ]
+    }
+  },
+  {
+    "seedKey": "fallback-catalog-v2:d7-market-b:d66:v01",
+    "packageId": "d7-market-b",
+    "day": 66,
+    "kind": "scheduled",
+    "narrative": {
+      "title": "Hellgate cracks, when favor is bought with promises",
+      "description": "My lord, when favor is bought with promises. A crack of hellfire has split the old chapel floor. Wardens and masons are in the nave, each demanding a different order.",
+      "choices": [
+        {
+          "id": "d7-market-b-discount",
+          "label": "Buy warded stone so later works cost less: pay, when favor is bought with promises."
+        },
+        {
+          "id": "d7-market-b-maxhp",
+          "label": "Brace the chapel into a thicker refuge, when favor is bought with promises."
+        },
+        {
+          "id": "d7-market-b-skip",
+          "label": "Leave the cracked chapel to the wardens, when favor is bought with promises."
+        }
+      ]
+    }
+  },
+  {
+    "seedKey": "fallback-catalog-v2:d8-threat-a:d73:v01",
+    "packageId": "d8-threat-a",
+    "day": 73,
+    "kind": "scheduled",
+    "narrative": {
+      "title": "Demon banners on the ridge, under the shadow of the demon marches",
+      "description": "My lord, under the shadow of the demon marches. demon banners stand on the ridge. The outer companies are formed in the yard and waiting.",
+      "choices": [
+        {
+          "id": "d8-threat-a-pay",
+          "label": "Raise barricades against the demon host: pay, under the shadow of the demon marches."
+        },
+        {
+          "id": "d8-threat-a-heal",
+          "label": "Tend the wounded from the latest probes, under the shadow of the demon marches."
+        },
+        {
+          "id": "d8-threat-a-gold",
+          "label": "Strip the spare racks for a quick surplus, under the shadow of the demon marches."
+        },
+        {
+          "id": "d8-threat-a-skip",
+          "label": "Leave the demon host unanswered for now, under the shadow of the demon marches."
+        }
+      ]
+    }
+  },
+  {
+    "seedKey": "fallback-catalog-v2:d9-threat-a:d83:v01",
+    "packageId": "d9-threat-a",
+    "day": 83,
+    "kind": "scheduled",
+    "narrative": {
+      "title": "Dragon smoke on the horizon, as the finale road comes into view",
+      "description": "My lord, as the finale road comes into view. dragon smoke stains the horizon. The roofs are clearing and the watch wants a decision before the next pass.",
+      "choices": [
+        {
+          "id": "d9-threat-a-pay",
+          "label": "Raise barricades against the dragon: pay, as the finale road comes into view."
+        },
+        {
+          "id": "d9-threat-a-heal",
+          "label": "Tend the wounded from the latest probes, as the finale road comes into view."
+        },
+        {
+          "id": "d9-threat-a-gold",
+          "label": "Strip the spare racks for a quick surplus, as the finale road comes into view."
+        },
+        {
+          "id": "d9-threat-a-skip",
+          "label": "Leave the dragon unanswered for now, as the finale road comes into view."
+        }
+      ]
+    }
+  },
+  {
+    "seedKey": "fallback-catalog-v2:d9-market-b:d86:v01",
+    "packageId": "d9-market-b",
+    "day": 86,
+    "kind": "scheduled",
+    "narrative": {
+      "title": "Dragon cult emissaries, while the final markets hoard their goods",
+      "description": "My lord, while the final markets hoard their goods. Dragon-cult emissaries have entered the high square with offerings and threats. The crowd will not disperse until you answer.",
+      "choices": [
+        {
+          "id": "d9-market-b-discount",
+          "label": "Take their tribute terms for cheaper later works: pay, while the final markets hoard their goods."
+        },
+        {
+          "id": "d9-market-b-maxhp",
+          "label": "Convert their wagons into extra refuges, while the final markets hoard their goods."
+        },
+        {
+          "id": "d9-market-b-skip",
+          "label": "Drive the emissaries out of the square, while the final markets hoard their goods."
+        }
+      ]
+    }
+  },
+  {
+    "seedKey": "fallback-catalog-v2:d10-threat-a:d93:v01",
+    "packageId": "d10-threat-a",
+    "day": 93,
+    "kind": "scheduled",
+    "narrative": {
+      "title": "Demon King envoys, on the last stretch before the king of demons",
+      "description": "My lord, on the last stretch before the king of demons. envoys of the Demon King stand outside the final gate. The household is silent, waiting for your order.",
+      "choices": [
+        {
+          "id": "d10-threat-a-pay",
+          "label": "Raise barricades against the Demon King's envoys: pay, on the last stretch before the king of demons."
+        },
+        {
+          "id": "d10-threat-a-heal",
+          "label": "Tend the wounded from the latest probes, on the last stretch before the king of demons."
+        },
+        {
+          "id": "d10-threat-a-gold",
+          "label": "Strip the spare racks for a quick surplus, on the last stretch before the king of demons."
+        },
+        {
+          "id": "d10-threat-a-skip",
+          "label": "Leave the Demon King's envoys unanswered for now, on the last stretch before the king of demons."
+        }
+      ]
+    }
+  },
+  {
+    "seedKey": "fallback-catalog-v2:c-raid-wave1:d5:v01",
+    "packageId": "c-raid-wave1",
+    "day": 5,
+    "kind": "consequence",
+    "narrative": {
+      "title": "Night raid fallout, as smoke stains the lower streets",
+      "description": "My lord, as smoke stains the lower streets. Raiders are in the lower streets after an earlier refusal left the approach open. Blunt them, brace the barricades, or endure the night,.",
+      "choices": [
+        {
+          "id": "c-raid-wave1-pay",
+          "label": "Pay militia: to blunt the raid, as smoke stains the lower streets."
+        },
+        {
+          "id": "c-raid-wave1-def",
+          "label": "Rush barricades: pay, defense + for wave, as smoke stains the lower streets."
+        },
+        {
+          "id": "c-raid-wave1-accept",
+          "label": "Endure the raid: city loses HP, as smoke stains the lower streets."
+        }
+      ]
+    }
+  },
+  {
+    "seedKey": "fallback-catalog-v2:c-raid-wave1:d8:v01",
+    "packageId": "c-raid-wave1",
+    "day": 8,
+    "kind": "consequence",
+    "narrative": {
+      "title": "Night raid fallout, after a sleepless night on the walls",
+      "description": "My lord, after a sleepless night on the walls. Raiders are in the lower streets after an earlier refusal left the approach open. Blunt them, brace the barricades, or endure the night,.",
+      "choices": [
+        {
+          "id": "c-raid-wave1-pay",
+          "label": "Pay militia: to blunt the raid, after a sleepless night on the walls."
+        },
+        {
+          "id": "c-raid-wave1-def",
+          "label": "Rush barricades: pay, defense + for wave, after a sleepless night on the walls."
+        },
+        {
+          "id": "c-raid-wave1-accept",
+          "label": "Endure the raid: city loses HP, after a sleepless night on the walls."
+        }
+      ]
+    }
+  },
+  {
+    "seedKey": "fallback-catalog-v2:c-unrest-wave1:d4:v01",
+    "packageId": "c-unrest-wave1",
+    "day": 4,
+    "kind": "consequence",
+    "narrative": {
+      "title": "Market unrest, before the market fully wakes",
+      "description": "My lord, before the market fully wakes. A crowd from an earlier hard bargain is shouting in the market square.",
+      "choices": [
+        {
+          "id": "c-unrest-wave1-pay",
+          "label": "Buy peace: pay, before the market fully wakes."
+        },
+        {
+          "id": "c-unrest-wave1-accept",
+          "label": "Let them riot: city loses HP, before the market fully wakes."
+        }
+      ]
+    }
+  },
+  {
+    "seedKey": "fallback-catalog-v2:c-unrest-wave1:d7:v01",
+    "packageId": "c-unrest-wave1",
+    "day": 7,
+    "kind": "consequence",
+    "narrative": {
+      "title": "Market unrest, with rumors already at the gate",
+      "description": "My lord, with rumors already at the gate. A crowd from an earlier hard bargain is shouting in the market square.",
+      "choices": [
+        {
+          "id": "c-unrest-wave1-pay",
+          "label": "Buy peace: pay, with rumors already at the gate."
+        },
+        {
+          "id": "c-unrest-wave1-accept",
+          "label": "Let them riot: city loses HP, with rumors already at the gate."
+        }
+      ]
+    }
+  },
+  {
+    "seedKey": "fallback-catalog-v2:c-shortage-wave2:d14:v01",
+    "packageId": "c-shortage-wave2",
+    "day": 14,
+    "kind": "consequence",
+    "narrative": {
+      "title": "Material shortage, beneath a hard afternoon sun",
+      "description": "My lord, beneath a hard afternoon sun. Builders are short of stone after an earlier caravan or guild was turned aside.",
+      "choices": [
+        {
+          "id": "c-shortage-wave2-pay",
+          "label": "Import stone: pay, beneath a hard afternoon sun."
+        },
+        {
+          "id": "c-shortage-wave2-discount",
+          "label": "Accept inflated prices later: no now, lose discount chance, beneath a hard afternoon sun."
+        },
+        {
+          "id": "c-shortage-wave2-hurt",
+          "label": "Push unfinished walls: city loses HP, beneath a hard afternoon sun."
+        }
+      ]
+    }
+  },
+  {
+    "seedKey": "fallback-catalog-v2:c-shortage-wave2:d17:v01",
+    "packageId": "c-shortage-wave2",
+    "day": 17,
+    "kind": "consequence",
+    "narrative": {
+      "title": "Material shortage, before dusk closes the gates",
+      "description": "My lord, before dusk closes the gates. Builders are short of stone after an earlier caravan or guild was turned aside.",
+      "choices": [
+        {
+          "id": "c-shortage-wave2-pay",
+          "label": "Import stone: pay, before dusk closes the gates."
+        },
+        {
+          "id": "c-shortage-wave2-discount",
+          "label": "Accept inflated prices later: no now, lose discount chance, before dusk closes the gates."
+        },
+        {
+          "id": "c-shortage-wave2-hurt",
+          "label": "Push unfinished walls: city loses HP, before dusk closes the gates."
+        }
+      ]
+    }
+  },
+  {
+    "seedKey": "fallback-catalog-v2:c-raid-wave2:d13:v01",
+    "packageId": "c-raid-wave2",
+    "day": 13,
+    "kind": "consequence",
+    "narrative": {
+      "title": "Orc probing raid, while guild banners argue in the square",
+      "description": "My lord, while guild banners argue in the square. A probing raid is testing the walls after an earlier lapse in the watch.",
+      "choices": [
+        {
+          "id": "c-raid-wave2-pay",
+          "label": "Sortie with: pay, while guild banners argue in the square."
+        },
+        {
+          "id": "c-raid-wave2-def",
+          "label": "Dig trenches: defense + for wave, while guild banners argue in the square."
+        },
+        {
+          "id": "c-raid-wave2-accept",
+          "label": "Take the hit: city loses HP, while guild banners argue in the square."
+        }
+      ]
+    }
+  },
+  {
+    "seedKey": "fallback-catalog-v2:c-raid-wave2:d16:v01",
+    "packageId": "c-raid-wave2",
+    "day": 16,
+    "kind": "consequence",
+    "narrative": {
+      "title": "Orc probing raid, with the second watch changing",
+      "description": "My lord, with the second watch changing. A probing raid is testing the walls after an earlier lapse in the watch.",
+      "choices": [
+        {
+          "id": "c-raid-wave2-pay",
+          "label": "Sortie with: pay, with the second watch changing."
+        },
+        {
+          "id": "c-raid-wave2-def",
+          "label": "Dig trenches: defense + for wave, with the second watch changing."
+        },
+        {
+          "id": "c-raid-wave2-accept",
+          "label": "Take the hit: city loses HP, with the second watch changing."
+        }
+      ]
+    }
+  },
+  {
+    "seedKey": "fallback-catalog-v2:c-raid-mid:d35:v01",
+    "packageId": "c-raid-mid",
+    "day": 35,
+    "kind": "consequence",
+    "narrative": {
+      "title": "Mid-campaign raid, as raiders probe the outer farms",
+      "description": "My lord, as raiders probe the outer farms. Ignored threats return as a sharp raid before the next battle.",
+      "choices": [
+        {
+          "id": "c-raid-mid-pay",
+          "label": "Hire mercenaries: pay, as raiders probe the outer farms."
+        },
+        {
+          "id": "c-raid-mid-accept",
+          "label": "Brace for impact: city loses HP, as raiders probe the outer farms."
+        },
+        {
+          "id": "c-raid-mid-heal-cost",
+          "label": "Burn stores to hold: heal, then lose HP, as raiders probe the outer farms."
+        }
+      ]
+    }
+  },
+  {
+    "seedKey": "fallback-catalog-v2:c-raid-mid:d45:v01",
+    "packageId": "c-raid-mid",
+    "day": 45,
+    "kind": "consequence",
+    "narrative": {
+      "title": "Mid-campaign raid, while scouts report fresh tracks",
+      "description": "My lord, while scouts report fresh tracks. Ignored threats return as a sharp raid before the next battle.",
+      "choices": [
+        {
+          "id": "c-raid-mid-pay",
+          "label": "Hire mercenaries: pay, while scouts report fresh tracks."
+        },
+        {
+          "id": "c-raid-mid-accept",
+          "label": "Brace for impact: city loses HP, while scouts report fresh tracks."
+        },
+        {
+          "id": "c-raid-mid-heal-cost",
+          "label": "Burn stores to hold: heal, then lose HP, while scouts report fresh tracks."
+        }
+      ]
+    }
+  },
+  {
+    "seedKey": "fallback-catalog-v2:c-unrest-mid:d34:v01",
+    "packageId": "c-unrest-mid",
+    "day": 34,
+    "kind": "consequence",
+    "narrative": {
+      "title": "Mid-campaign unrest, with unrest moving through the stalls",
+      "description": "My lord, with unrest moving through the stalls. Petitioners fill the square over an earlier refusal or a stripped store.",
+      "choices": [
+        {
+          "id": "c-unrest-mid-pay",
+          "label": "Distribute grain: pay, with unrest moving through the stalls."
+        },
+        {
+          "id": "c-unrest-mid-accept",
+          "label": "Ignore petitions: city loses HP, with unrest moving through the stalls."
+        }
+      ]
+    }
+  },
+  {
+    "seedKey": "fallback-catalog-v2:c-unrest-mid:d44:v01",
+    "packageId": "c-unrest-mid",
+    "day": 44,
+    "kind": "consequence",
+    "narrative": {
+      "title": "Mid-campaign unrest, as the city grumbles under short rations",
+      "description": "My lord, as the city grumbles under short rations. Petitioners fill the square over an earlier refusal or a stripped store.",
+      "choices": [
+        {
+          "id": "c-unrest-mid-pay",
+          "label": "Distribute grain: pay, as the city grumbles under short rations."
+        },
+        {
+          "id": "c-unrest-mid-accept",
+          "label": "Ignore petitions: city loses HP, as the city grumbles under short rations."
+        }
+      ]
+    }
+  },
+  {
+    "seedKey": "fallback-catalog-v2:c-raid-late:d65:v01",
+    "packageId": "c-raid-late",
+    "day": 65,
+    "kind": "consequence",
+    "narrative": {
+      "title": "Late-war assault, as night raids grow more daring",
+      "description": "My lord, as night raids grow more daring. A delayed raid strikes as the endgame nears.",
+      "choices": [
+        {
+          "id": "c-raid-late-pay",
+          "label": "Emergency levy: pay, as night raids grow more daring."
+        },
+        {
+          "id": "c-raid-late-accept",
+          "label": "Hold the line poorly: city loses HP, as night raids grow more daring."
+        },
+        {
+          "id": "c-raid-late-def",
+          "label": "Last-minute wards: pay (no HP loss), as night raids grow more daring."
+        }
+      ]
+    }
+  },
+  {
+    "seedKey": "fallback-catalog-v2:c-raid-late:d75:v01",
+    "packageId": "c-raid-late",
+    "day": 75,
+    "kind": "consequence",
+    "narrative": {
+      "title": "Late-war assault, while the outer watch burns low",
+      "description": "My lord, while the outer watch burns low. A delayed raid strikes as the endgame nears.",
+      "choices": [
+        {
+          "id": "c-raid-late-pay",
+          "label": "Emergency levy: pay, while the outer watch burns low."
+        },
+        {
+          "id": "c-raid-late-accept",
+          "label": "Hold the line poorly: city loses HP, while the outer watch burns low."
+        },
+        {
+          "id": "c-raid-late-def",
+          "label": "Last-minute wards: pay (no HP loss), while the outer watch burns low."
+        }
+      ]
+    }
+  },
+  {
+    "seedKey": "fallback-catalog-v2:c-unrest-late:d64:v01",
+    "packageId": "c-unrest-late",
+    "day": 64,
+    "kind": "consequence",
+    "narrative": {
+      "title": "Late-war unrest, with the streets one insult from riot",
+      "description": "My lord, with the streets one insult from riot. The city tires of unpaid promises.",
+      "choices": [
+        {
+          "id": "c-unrest-late-pay",
+          "label": "Appease the crowd: pay, with the streets one insult from riot."
+        },
+        {
+          "id": "c-unrest-late-accept",
+          "label": "Crack down hard: city loses HP, with the streets one insult from riot."
+        }
+      ]
+    }
+  },
+  {
+    "seedKey": "fallback-catalog-v2:c-unrest-late:d74:v01",
+    "packageId": "c-unrest-late",
+    "day": 74,
+    "kind": "consequence",
+    "narrative": {
+      "title": "Late-war unrest, as the last loyal districts grow thin",
+      "description": "My lord, as the last loyal districts grow thin. The city tires of unpaid promises.",
+      "choices": [
+        {
+          "id": "c-unrest-late-pay",
+          "label": "Appease the crowd: pay, as the last loyal districts grow thin."
+        },
+        {
+          "id": "c-unrest-late-accept",
+          "label": "Crack down hard: city loses HP, as the last loyal districts grow thin."
+        }
+      ]
+    }
+  },
+  {
+    "seedKey": "fallback-catalog-v2:c-raid-finale:d85:v01",
+    "packageId": "c-raid-finale",
+    "day": 85,
+    "kind": "consequence",
+    "narrative": {
+      "title": "Pre-finale ambush, as the last raiders circle wide",
+      "description": "My lord, as the last raiders circle wide. An ambush is forming on the last road, born of a warning you let pass before the Demon King.",
+      "choices": [
+        {
+          "id": "c-raid-finale-pay",
+          "label": "Burn the: pay, as the last raiders circle wide."
+        },
+        {
+          "id": "c-raid-finale-accept",
+          "label": "Suffer the ambush: city loses HP, as the last raiders circle wide."
+        },
+        {
+          "id": "c-raid-finale-combo",
+          "label": "Desperate stand: heal then lose HP, as the last raiders circle wide."
+        }
+      ]
+    }
+  },
+  {
+    "seedKey": "fallback-catalog-v2:c-raid-finale:d95:v01",
+    "packageId": "c-raid-finale",
+    "day": 95,
+    "kind": "consequence",
+    "narrative": {
+      "title": "Pre-finale ambush, with the final assault almost upon us",
+      "description": "My lord, with the final assault almost upon us. An ambush is forming on the last road, born of a warning you let pass before the Demon King.",
+      "choices": [
+        {
+          "id": "c-raid-finale-pay",
+          "label": "Burn the: pay, with the final assault almost upon us."
+        },
+        {
+          "id": "c-raid-finale-accept",
+          "label": "Suffer the ambush: city loses HP, with the final assault almost upon us."
+        },
+        {
+          "id": "c-raid-finale-combo",
+          "label": "Desperate stand: heal then lose HP, with the final assault almost upon us."
+        }
+      ]
+    }
+  },
+  {
+    "seedKey": "fallback-catalog-v2:c-unrest-finale:d84:v01",
+    "packageId": "c-unrest-finale",
+    "day": 84,
+    "kind": "consequence",
+    "narrative": {
+      "title": "Finale unrest, with the city holding its breath",
+      "description": "My lord, with the city holding its breath. The people nearly revolt before the final battle.",
+      "choices": [
+        {
+          "id": "c-unrest-finale-pay",
+          "label": "Grand feast: pay, with the city holding its breath."
+        },
+        {
+          "id": "c-unrest-finale-accept",
+          "label": "Let them flee: city loses HP, with the city holding its breath."
+        }
+      ]
+    }
+  },
+  {
+    "seedKey": "fallback-catalog-v2:c-unrest-finale:d94:v01",
+    "packageId": "c-unrest-finale",
+    "day": 94,
+    "kind": "consequence",
+    "narrative": {
+      "title": "Finale unrest, as even loyal voices turn sharp",
+      "description": "My lord, as even loyal voices turn sharp. The people nearly revolt before the final battle.",
+      "choices": [
+        {
+          "id": "c-unrest-finale-pay",
+          "label": "Grand feast: pay, as even loyal voices turn sharp."
+        },
+        {
+          "id": "c-unrest-finale-accept",
+          "label": "Let them flee: city loses HP, as even loyal voices turn sharp."
+        }
+      ]
+    }
+  }
+]
