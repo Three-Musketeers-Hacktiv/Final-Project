@@ -6,6 +6,8 @@
   "scripts": {
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
+    "test:engine": "vitest run tests/game-engine",
+    "test:all-root": "vitest run",
     "test:watch": "vitest",
     "play": "vite"
   },
