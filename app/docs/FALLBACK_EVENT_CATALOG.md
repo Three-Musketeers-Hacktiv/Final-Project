@@ -14,7 +14,7 @@ There are 30 scheduled variations and 20 consequence variations. A run still pla
 
 1. Existing `runs_event` snapshot for that run and event id.
 2. Live Gemini, when configured.
-3. Newest valid seeded `event_data` row with `source: "fallback"` for the same ruleset, package, and day. Rows whose `promptVersion` starts with `fallback-catalog-v2` are preferred.
+3. Newest valid seeded `event_data` row with `source: "fallback"` for the same ruleset, package, and day. Rows whose `promptVersion` starts with `fallback-catalog-v3` are preferred, then `fallback-catalog-v2`, then older rows. Existing rows are not deleted or overwritten.
 4. Trusted local engine title, description, and labels.
 
 Shared `source: "ai"` rows are not reused across runs.
@@ -31,6 +31,6 @@ npm run db:seed-fallback-events
 npm run db:seed-fallback-events -- --write
 ```
 
-The seed command is a dry-run unless `--write` is passed. It checks the current engine ruleset (`campaign-v4-100-day-v3` plus config fingerprint) and only inserts missing `promptVersion` keys. It does not drop data and does not update rows that already exist.
+The seed command is a dry-run unless `--write` is passed. It checks the current engine ruleset (`campaign-v4-100-day-v3` plus config fingerprint) and only inserts missing `promptVersion` keys for `fallback-catalog-v3`. It does not drop data, does not update rows that already exist, and does not run on `npm run dev`. Run it once per database after the ruleset document exists. Active `runs_event` snapshots stay as they were.
 
 The app must have created the ruleset document first. Do not commit database credentials, and do not expect this command to print a connection string.

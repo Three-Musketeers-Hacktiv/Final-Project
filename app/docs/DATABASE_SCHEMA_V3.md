@@ -323,7 +323,7 @@ Aturan:
 - Tidak menyimpan arbitrary cost/effects dari model.
 - `packageId`, day, dan choice IDs diverifikasi terhadap engine package.
 - Katalog valid dapat dipakai banyak run.
-- Setelah AI live gagal, backend mencoba dokumen valid `source: "fallback"` untuk `gameRulesetId + packageId + day` yang sama, dengan `fallback-catalog-v2` didahulukan.
+- Setelah AI live gagal, backend mencoba dokumen valid `source: "fallback"` untuk `gameRulesetId + packageId + day` yang sama, dengan `fallback-catalog-v3` didahulukan, lalu `fallback-catalog-v2`.
 - Narasi `source: "ai"` tidak dipakai ulang antar-run, karena boleh menyebut kondisi kota pada run asalnya.
 - Kandidat yang gagal validasi choice ID dilewati. Jika tidak ada yang sah, salinan teks engine dipakai.
 - Document yang sudah dirujuk run tidak diedit; buat variasi baru.

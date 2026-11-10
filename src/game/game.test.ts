@@ -39,7 +39,7 @@ import {
   type GameState,
   type PendingConsequence,
 } from "./index";
-import { CONSEQUENCE_PACKAGES } from "./eventPackages";
+import { CONSEQUENCE_PACKAGES, SCHEDULED_EVENT_PACKAGES } from "./eventPackages";
 
 function mustOk(result: { ok: true; state: GameState } | { ok: false; error: unknown }): GameState {
   expect(result.ok).toBe(true);
@@ -566,8 +566,8 @@ describe("event gold cost scaling", () => {
     const pay = state.activeEvent!.choices.find((choice) => choice.id === "d1-envoy-b-pay");
     expect(pay?.goldCost).toBe(expectedCost);
     expect(pay?.goldCost).toBe(scaleEventGoldCost(20, difficulty));
-    expect(pay?.label).toContain(`pay ${expectedCost} gold`);
     expect(pay?.label.includes("{goldCost}")).toBe(false);
+    expect(pay?.label.match(/\d/)).toBeNull();
     const before = state.gold;
     state = mustOk(chooseEventOption(state, "d1-envoy-b-pay"));
     expect(state.gold).toBe(before - expectedCost);
@@ -654,7 +654,7 @@ describe("event gold cost scaling", () => {
     expect(JSON.stringify(state)).toBe(snapshot);
     const pay = decorated.activeEvent!.choices.find((choice) => choice.id === "d1-envoy-b-pay")!;
     expect(pay.label).toBe(engineLabel);
-    expect(pay.label).toContain("17");
+    expect(pay.label).not.toMatch(/\d/);
     expect(pay.goldCost).toBe(17);
     expect(pay.effects).toEqual(effects);
     expect(decorated.activeEvent!.description).toContain("99 gold");
@@ -876,6 +876,42 @@ describe("consequence collision and queue", () => {
     expect(shifted[0]!.eventId).toBe("d1-scouts-a");
     expect(shifted[0]!.day).toBeGreaterThan(9);
     expect(isPreparationDay(shifted[0]!.day)).toBe(true);
+  });
+});
+
+describe("scheduled choice dilemmas", () => {
+  it("keeps a free choice and avoids a free reward that shares a skip's consequence", () => {
+    for (const pkg of SCHEDULED_EVENT_PACKAGES) {
+      expect(pkg.choices.some((choice) => choice.goldCost === 0)).toBe(true);
+      expect(pkg.choices.some((choice) => /no hp loss|no further loss|lose discount/i.test(choice.label))).toBe(false);
+      const rewarded = pkg.choices.filter(
+        (choice) =>
+          choice.goldCost === 0 &&
+          choice.effects.some((effect) => effect.type === "grantGold" || effect.type === "maxHpBonus"),
+      );
+      for (const reward of rewarded) {
+        const twin = pkg.choices.find(
+          (choice) =>
+            choice.id !== reward.id &&
+            choice.goldCost === 0 &&
+            choice.effects.length === 0 &&
+            (choice.consequence?.packageId ?? null) === (reward.consequence?.packageId ?? null),
+        );
+        expect(twin, `${pkg.packageId}:${reward.id}`).toBeUndefined();
+      }
+    }
+  });
+
+  it("charges the same scaled cost on normal and hard for every paid choice", () => {
+    for (const pkg of [...SCHEDULED_EVENT_PACKAGES, ...CONSEQUENCE_PACKAGES]) {
+      for (const choice of pkg.choices) {
+        if (choice.goldCost === 0) continue;
+        const normal = scaleEventGoldCost(choice.goldCost, "normal");
+        const hard = scaleEventGoldCost(choice.goldCost, "hard");
+        expect(normal).toBe(choice.goldCost);
+        expect(hard).toBeGreaterThanOrEqual(normal);
+      }
+    }
   });
 });
 

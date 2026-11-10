@@ -73,15 +73,17 @@ describe("selectSharedNarrative", () => {
     expect(selected.result.narrative.title).toBe("Seeded");
   });
 
-  it("prefers a v2 seeded row over an older seeded row", () => {
+  it("prefers a v3 seeded row over v2 and older rows", () => {
     const older = doc("fallback", { ...trusted, title: "Old seed" }, "fallback-catalog-v1:d1-scouts-a:d3:v01");
-    const newer = doc("fallback", { ...trusted, title: "Scene seed" }, "fallback-catalog-v2:d1-scouts-a:d3:v01");
+    const previous = doc("fallback", { ...trusted, title: "Scene seed" }, "fallback-catalog-v2:d1-scouts-a:d3:v01");
+    const current = doc("fallback", { ...trusted, title: "Current scene" }, "fallback-catalog-v3:d1-scouts-a:d3:v01");
     const selected = selectSharedNarrative({
       local,
       event,
-      fallbackCandidates: [older, newer],
+      fallbackCandidates: [older, previous, current],
     });
-    expect(selected.result.narrative.title).toBe("Scene seed");
+    expect(selected.result.narrative.title).toBe("Current scene");
+    expect(selected.result.promptVersion.startsWith("fallback-catalog-v3")).toBe(true);
   });
 
   it("uses seeded fallback when AI catalog is missing", () => {
