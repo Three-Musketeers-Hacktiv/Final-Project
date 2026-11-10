@@ -1,5 +1,5 @@
 {
-  "catalogVersion": "fallback-catalog-v2",
+  "catalogVersion": "fallback-catalog-v3",
   "targetRulesetId": "campaign-v4-100-day-v3",
   "expected": {
     "scheduled": 30,
@@ -12,301 +12,301 @@
   ],
   "entries": [
     {
-      "seedKey": "fallback-catalog-v2:d1-scouts-a:d3:v01",
+      "seedKey": "fallback-catalog-v3:d1-scouts-a:d3:v01",
       "packageId": "d1-scouts-a",
       "day": 3,
       "kind": "scheduled"
     },
     {
-      "seedKey": "fallback-catalog-v2:d1-scouts-a:d7:v01",
+      "seedKey": "fallback-catalog-v3:d1-scouts-a:d7:v01",
       "packageId": "d1-scouts-a",
       "day": 7,
       "kind": "scheduled"
     },
     {
-      "seedKey": "fallback-catalog-v2:d1-envoy-b:d4:v01",
+      "seedKey": "fallback-catalog-v3:d1-envoy-b:d4:v01",
       "packageId": "d1-envoy-b",
       "day": 4,
       "kind": "scheduled"
     },
     {
-      "seedKey": "fallback-catalog-v2:d1-envoy-b:d8:v01",
+      "seedKey": "fallback-catalog-v3:d1-envoy-b:d8:v01",
       "packageId": "d1-envoy-b",
       "day": 8,
       "kind": "scheduled"
     },
     {
-      "seedKey": "fallback-catalog-v2:d1-supplies-a:d3:v01",
+      "seedKey": "fallback-catalog-v3:d1-supplies-a:d3:v01",
       "packageId": "d1-supplies-a",
       "day": 3,
       "kind": "scheduled"
     },
     {
-      "seedKey": "fallback-catalog-v2:d1-supplies-a:d6:v01",
+      "seedKey": "fallback-catalog-v3:d1-supplies-a:d6:v01",
       "packageId": "d1-supplies-a",
       "day": 6,
       "kind": "scheduled"
     },
     {
-      "seedKey": "fallback-catalog-v2:d1-labor-b:d5:v01",
+      "seedKey": "fallback-catalog-v3:d1-labor-b:d5:v01",
       "packageId": "d1-labor-b",
       "day": 5,
       "kind": "scheduled"
     },
     {
-      "seedKey": "fallback-catalog-v2:d1-labor-b:d9:v01",
+      "seedKey": "fallback-catalog-v3:d1-labor-b:d9:v01",
       "packageId": "d1-labor-b",
       "day": 9,
       "kind": "scheduled"
     },
     {
-      "seedKey": "fallback-catalog-v2:d2-caravan-a:d12:v01",
+      "seedKey": "fallback-catalog-v3:d2-caravan-a:d12:v01",
       "packageId": "d2-caravan-a",
       "day": 12,
       "kind": "scheduled"
     },
     {
-      "seedKey": "fallback-catalog-v2:d2-caravan-a:d16:v01",
+      "seedKey": "fallback-catalog-v3:d2-caravan-a:d16:v01",
       "packageId": "d2-caravan-a",
       "day": 16,
       "kind": "scheduled"
     },
     {
-      "seedKey": "fallback-catalog-v2:d2-guild-b:d13:v01",
+      "seedKey": "fallback-catalog-v3:d2-guild-b:d13:v01",
       "packageId": "d2-guild-b",
       "day": 13,
       "kind": "scheduled"
     },
     {
-      "seedKey": "fallback-catalog-v2:d2-guild-b:d17:v01",
+      "seedKey": "fallback-catalog-v3:d2-guild-b:d17:v01",
       "packageId": "d2-guild-b",
       "day": 17,
       "kind": "scheduled"
     },
     {
-      "seedKey": "fallback-catalog-v2:d2-patrol-a:d14:v01",
+      "seedKey": "fallback-catalog-v3:d2-patrol-a:d14:v01",
       "packageId": "d2-patrol-a",
       "day": 14,
       "kind": "scheduled"
     },
     {
-      "seedKey": "fallback-catalog-v2:d2-patrol-a:d18:v01",
+      "seedKey": "fallback-catalog-v3:d2-patrol-a:d18:v01",
       "packageId": "d2-patrol-a",
       "day": 18,
       "kind": "scheduled"
     },
     {
-      "seedKey": "fallback-catalog-v2:d2-omen-b:d12:v01",
+      "seedKey": "fallback-catalog-v3:d2-omen-b:d12:v01",
       "packageId": "d2-omen-b",
       "day": 12,
       "kind": "scheduled"
     },
     {
-      "seedKey": "fallback-catalog-v2:d2-omen-b:d15:v01",
+      "seedKey": "fallback-catalog-v3:d2-omen-b:d15:v01",
       "packageId": "d2-omen-b",
       "day": 15,
       "kind": "scheduled"
     },
     {
-      "seedKey": "fallback-catalog-v2:d3-threat-a:d23:v01",
+      "seedKey": "fallback-catalog-v3:d3-threat-a:d23:v01",
       "packageId": "d3-threat-a",
       "day": 23,
       "kind": "scheduled"
     },
     {
-      "seedKey": "fallback-catalog-v2:d3-market-b:d26:v01",
+      "seedKey": "fallback-catalog-v3:d3-market-b:d26:v01",
       "packageId": "d3-market-b",
       "day": 26,
       "kind": "scheduled"
     },
     {
-      "seedKey": "fallback-catalog-v2:d4-threat-a:d33:v01",
+      "seedKey": "fallback-catalog-v3:d4-threat-a:d33:v01",
       "packageId": "d4-threat-a",
       "day": 33,
       "kind": "scheduled"
     },
     {
-      "seedKey": "fallback-catalog-v2:d4-market-b:d36:v01",
+      "seedKey": "fallback-catalog-v3:d4-market-b:d36:v01",
       "packageId": "d4-market-b",
       "day": 36,
       "kind": "scheduled"
     },
     {
-      "seedKey": "fallback-catalog-v2:d5-threat-a:d43:v01",
+      "seedKey": "fallback-catalog-v3:d5-threat-a:d43:v01",
       "packageId": "d5-threat-a",
       "day": 43,
       "kind": "scheduled"
     },
     {
-      "seedKey": "fallback-catalog-v2:d5-market-b:d46:v01",
+      "seedKey": "fallback-catalog-v3:d5-market-b:d46:v01",
       "packageId": "d5-market-b",
       "day": 46,
       "kind": "scheduled"
     },
     {
-      "seedKey": "fallback-catalog-v2:d6-threat-a:d53:v01",
+      "seedKey": "fallback-catalog-v3:d6-threat-a:d53:v01",
       "packageId": "d6-threat-a",
       "day": 53,
       "kind": "scheduled"
     },
     {
-      "seedKey": "fallback-catalog-v2:d6-market-b:d56:v01",
+      "seedKey": "fallback-catalog-v3:d6-market-b:d56:v01",
       "packageId": "d6-market-b",
       "day": 56,
       "kind": "scheduled"
     },
     {
-      "seedKey": "fallback-catalog-v2:d7-threat-a:d63:v01",
+      "seedKey": "fallback-catalog-v3:d7-threat-a:d63:v01",
       "packageId": "d7-threat-a",
       "day": 63,
       "kind": "scheduled"
     },
     {
-      "seedKey": "fallback-catalog-v2:d7-market-b:d66:v01",
+      "seedKey": "fallback-catalog-v3:d7-market-b:d66:v01",
       "packageId": "d7-market-b",
       "day": 66,
       "kind": "scheduled"
     },
     {
-      "seedKey": "fallback-catalog-v2:d8-threat-a:d73:v01",
+      "seedKey": "fallback-catalog-v3:d8-threat-a:d73:v01",
       "packageId": "d8-threat-a",
       "day": 73,
       "kind": "scheduled"
     },
     {
-      "seedKey": "fallback-catalog-v2:d9-threat-a:d83:v01",
+      "seedKey": "fallback-catalog-v3:d9-threat-a:d83:v01",
       "packageId": "d9-threat-a",
       "day": 83,
       "kind": "scheduled"
     },
     {
-      "seedKey": "fallback-catalog-v2:d9-market-b:d86:v01",
+      "seedKey": "fallback-catalog-v3:d9-market-b:d86:v01",
       "packageId": "d9-market-b",
       "day": 86,
       "kind": "scheduled"
     },
     {
-      "seedKey": "fallback-catalog-v2:d10-threat-a:d93:v01",
+      "seedKey": "fallback-catalog-v3:d10-threat-a:d93:v01",
       "packageId": "d10-threat-a",
       "day": 93,
       "kind": "scheduled"
     },
     {
-      "seedKey": "fallback-catalog-v2:c-raid-wave1:d5:v01",
+      "seedKey": "fallback-catalog-v3:c-raid-wave1:d5:v01",
       "packageId": "c-raid-wave1",
       "day": 5,
       "kind": "consequence"
     },
     {
-      "seedKey": "fallback-catalog-v2:c-raid-wave1:d8:v01",
+      "seedKey": "fallback-catalog-v3:c-raid-wave1:d8:v01",
       "packageId": "c-raid-wave1",
       "day": 8,
       "kind": "consequence"
     },
     {
-      "seedKey": "fallback-catalog-v2:c-unrest-wave1:d4:v01",
+      "seedKey": "fallback-catalog-v3:c-unrest-wave1:d4:v01",
       "packageId": "c-unrest-wave1",
       "day": 4,
       "kind": "consequence"
     },
     {
-      "seedKey": "fallback-catalog-v2:c-unrest-wave1:d7:v01",
+      "seedKey": "fallback-catalog-v3:c-unrest-wave1:d7:v01",
       "packageId": "c-unrest-wave1",
       "day": 7,
       "kind": "consequence"
     },
     {
-      "seedKey": "fallback-catalog-v2:c-shortage-wave2:d14:v01",
+      "seedKey": "fallback-catalog-v3:c-shortage-wave2:d14:v01",
       "packageId": "c-shortage-wave2",
       "day": 14,
       "kind": "consequence"
     },
     {
-      "seedKey": "fallback-catalog-v2:c-shortage-wave2:d17:v01",
+      "seedKey": "fallback-catalog-v3:c-shortage-wave2:d17:v01",
       "packageId": "c-shortage-wave2",
       "day": 17,
       "kind": "consequence"
     },
     {
-      "seedKey": "fallback-catalog-v2:c-raid-wave2:d13:v01",
+      "seedKey": "fallback-catalog-v3:c-raid-wave2:d13:v01",
       "packageId": "c-raid-wave2",
       "day": 13,
       "kind": "consequence"
     },
     {
-      "seedKey": "fallback-catalog-v2:c-raid-wave2:d16:v01",
+      "seedKey": "fallback-catalog-v3:c-raid-wave2:d16:v01",
       "packageId": "c-raid-wave2",
       "day": 16,
       "kind": "consequence"
     },
     {
-      "seedKey": "fallback-catalog-v2:c-raid-mid:d35:v01",
+      "seedKey": "fallback-catalog-v3:c-raid-mid:d35:v01",
       "packageId": "c-raid-mid",
       "day": 35,
       "kind": "consequence"
     },
     {
-      "seedKey": "fallback-catalog-v2:c-raid-mid:d45:v01",
+      "seedKey": "fallback-catalog-v3:c-raid-mid:d45:v01",
       "packageId": "c-raid-mid",
       "day": 45,
       "kind": "consequence"
     },
     {
-      "seedKey": "fallback-catalog-v2:c-unrest-mid:d34:v01",
+      "seedKey": "fallback-catalog-v3:c-unrest-mid:d34:v01",
       "packageId": "c-unrest-mid",
       "day": 34,
       "kind": "consequence"
     },
     {
-      "seedKey": "fallback-catalog-v2:c-unrest-mid:d44:v01",
+      "seedKey": "fallback-catalog-v3:c-unrest-mid:d44:v01",
       "packageId": "c-unrest-mid",
       "day": 44,
       "kind": "consequence"
     },
     {
-      "seedKey": "fallback-catalog-v2:c-raid-late:d65:v01",
+      "seedKey": "fallback-catalog-v3:c-raid-late:d65:v01",
       "packageId": "c-raid-late",
       "day": 65,
       "kind": "consequence"
     },
     {
-      "seedKey": "fallback-catalog-v2:c-raid-late:d75:v01",
+      "seedKey": "fallback-catalog-v3:c-raid-late:d75:v01",
       "packageId": "c-raid-late",
       "day": 75,
       "kind": "consequence"
     },
     {
-      "seedKey": "fallback-catalog-v2:c-unrest-late:d64:v01",
+      "seedKey": "fallback-catalog-v3:c-unrest-late:d64:v01",
       "packageId": "c-unrest-late",
       "day": 64,
       "kind": "consequence"
     },
     {
-      "seedKey": "fallback-catalog-v2:c-unrest-late:d74:v01",
+      "seedKey": "fallback-catalog-v3:c-unrest-late:d74:v01",
       "packageId": "c-unrest-late",
       "day": 74,
       "kind": "consequence"
     },
     {
-      "seedKey": "fallback-catalog-v2:c-raid-finale:d85:v01",
+      "seedKey": "fallback-catalog-v3:c-raid-finale:d85:v01",
       "packageId": "c-raid-finale",
       "day": 85,
       "kind": "consequence"
     },
     {
-      "seedKey": "fallback-catalog-v2:c-raid-finale:d95:v01",
+      "seedKey": "fallback-catalog-v3:c-raid-finale:d95:v01",
       "packageId": "c-raid-finale",
       "day": 95,
       "kind": "consequence"
     },
     {
-      "seedKey": "fallback-catalog-v2:c-unrest-finale:d84:v01",
+      "seedKey": "fallback-catalog-v3:c-unrest-finale:d84:v01",
       "packageId": "c-unrest-finale",
       "day": 84,
       "kind": "consequence"
     },
     {
-      "seedKey": "fallback-catalog-v2:c-unrest-finale:d94:v01",
+      "seedKey": "fallback-catalog-v3:c-unrest-finale:d94:v01",
       "packageId": "c-unrest-finale",
       "day": 94,
       "kind": "consequence"
@@ -329,28 +329,18 @@
       "consequencePackageId": "c-unrest-wave1"
     },
     {
-      "scheduledPackageId": "d1-supplies-a",
-      "choiceId": "d1-supplies-a-skip",
-      "consequencePackageId": "c-unrest-wave1"
-    },
-    {
       "scheduledPackageId": "d1-labor-b",
       "choiceId": "d1-labor-b-discount",
       "consequencePackageId": "c-unrest-wave1"
     },
     {
       "scheduledPackageId": "d2-caravan-a",
-      "choiceId": "d2-caravan-a-skip",
+      "choiceId": "d2-caravan-a-gold",
       "consequencePackageId": "c-shortage-wave2"
     },
     {
       "scheduledPackageId": "d2-guild-b",
       "choiceId": "d2-guild-b-gold",
-      "consequencePackageId": "c-shortage-wave2"
-    },
-    {
-      "scheduledPackageId": "d2-guild-b",
-      "choiceId": "d2-guild-b-skip",
       "consequencePackageId": "c-shortage-wave2"
     },
     {
@@ -361,11 +351,6 @@
     {
       "scheduledPackageId": "d2-omen-b",
       "choiceId": "d2-omen-b-maxhp",
-      "consequencePackageId": "c-raid-wave2"
-    },
-    {
-      "scheduledPackageId": "d2-omen-b",
-      "choiceId": "d2-omen-b-skip",
       "consequencePackageId": "c-raid-wave2"
     },
     {
@@ -380,7 +365,7 @@
     },
     {
       "scheduledPackageId": "d3-market-b",
-      "choiceId": "d3-market-b-skip",
+      "choiceId": "d3-market-b-maxhp",
       "consequencePackageId": "c-unrest-mid"
     },
     {
@@ -395,7 +380,7 @@
     },
     {
       "scheduledPackageId": "d4-market-b",
-      "choiceId": "d4-market-b-skip",
+      "choiceId": "d4-market-b-maxhp",
       "consequencePackageId": "c-unrest-mid"
     },
     {
@@ -410,7 +395,7 @@
     },
     {
       "scheduledPackageId": "d5-market-b",
-      "choiceId": "d5-market-b-skip",
+      "choiceId": "d5-market-b-maxhp",
       "consequencePackageId": "c-unrest-mid"
     },
     {
@@ -425,7 +410,7 @@
     },
     {
       "scheduledPackageId": "d6-market-b",
-      "choiceId": "d6-market-b-skip",
+      "choiceId": "d6-market-b-maxhp",
       "consequencePackageId": "c-unrest-late"
     },
     {
@@ -440,7 +425,7 @@
     },
     {
       "scheduledPackageId": "d7-market-b",
-      "choiceId": "d7-market-b-skip",
+      "choiceId": "d7-market-b-maxhp",
       "consequencePackageId": "c-unrest-late"
     },
     {
@@ -455,7 +440,7 @@
     },
     {
       "scheduledPackageId": "d8-market-b",
-      "choiceId": "d8-market-b-skip",
+      "choiceId": "d8-market-b-maxhp",
       "consequencePackageId": "c-unrest-late"
     },
     {
@@ -470,7 +455,7 @@
     },
     {
       "scheduledPackageId": "d9-market-b",
-      "choiceId": "d9-market-b-skip",
+      "choiceId": "d9-market-b-maxhp",
       "consequencePackageId": "c-unrest-finale"
     },
     {
@@ -485,7 +470,7 @@
     },
     {
       "scheduledPackageId": "d10-market-b",
-      "choiceId": "d10-market-b-skip",
+      "choiceId": "d10-market-b-maxhp",
       "consequencePackageId": "c-unrest-finale"
     }
   ],

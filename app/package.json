@@ -15,7 +15,8 @@
     "test:timeline": "tsx scripts/run-timeline.ts",
     "db:indexes": "tsx scripts/setup-indexes.ts",
     "content:validate-fallback-events": "vitest run server/content/fallback-events.validation.test.ts",
-    "db:seed-fallback-events": "tsx scripts/seed-fallback-events.ts"
+    "db:seed-fallback-events": "tsx scripts/seed-fallback-events.ts",
+    "db:seed-fallback-events:write": "tsx scripts/seed-fallback-events.ts --write"
   },
   "dependencies": {
     "@google/genai": "^2.32.0",
@@ -37,6 +38,6 @@
     "tailwindcss": "^4",
     "tsx": "^4.23.15",
     "typescript": "^5",
-    "vitest": "^4.1.12"
+    "vitest": "^3.2.4"
   }
 }

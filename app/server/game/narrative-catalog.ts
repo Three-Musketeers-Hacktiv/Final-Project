@@ -7,7 +7,8 @@ type ActiveEvent = NonNullable<GameState["activeEvent"]>;
 /**
  * After a live provider miss, reuse seeded fallback rows only.
  * Shared AI rows are not reused: they may describe another city's condition.
- * Prefer fallback-catalog-v2, then older seeded rows. Invalid rows are skipped.
+ * Prefer fallback-catalog-v3, then v2, then older seeded rows. Invalid rows are skipped.
+ * Older rows stay in MongoDB and are not deleted; a valid newer catalog wins.
  */
 export function selectSharedNarrative(input: {
   local: NarrativeResult;
@@ -15,8 +16,12 @@ export function selectSharedNarrative(input: {
   aiCandidates?: EventDataDocument[];
   fallbackCandidates: EventDataDocument[];
 }): { result: NarrativeResult; reused: EventDataDocument | null } {
-  const preferred = input.fallbackCandidates.filter((doc) => doc.promptVersion.startsWith("fallback-catalog-v2"));
-  const older = input.fallbackCandidates.filter((doc) => !doc.promptVersion.startsWith("fallback-catalog-v2"));
+  const current = input.fallbackCandidates.filter((doc) => doc.promptVersion.startsWith("fallback-catalog-v3"));
+  const previous = input.fallbackCandidates.filter((doc) => doc.promptVersion.startsWith("fallback-catalog-v2"));
+  const older = input.fallbackCandidates.filter(
+    (doc) => !doc.promptVersion.startsWith("fallback-catalog-v3") && !doc.promptVersion.startsWith("fallback-catalog-v2"),
+  );
+  const preferred = [...current, ...previous];
   for (const doc of [...preferred, ...older]) {
     if (doc.validationStatus !== "valid" || doc.source !== "fallback") continue;
     try {

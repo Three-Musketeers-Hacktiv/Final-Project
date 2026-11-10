@@ -47,7 +47,7 @@ describe("narrative context", () => {
     expect(context.event.trustedChoices.map((choice) => choice.intent)).toEqual([
       "bargain_cheaper_works",
       "reinforce_structures",
-      "may_draw_later_trouble",
+      "hold_position",
     ]);
     expect(JSON.stringify(context)).not.toContain("c-raid-wave1");
     expect(JSON.stringify(context)).not.toContain("pendingConsequences");

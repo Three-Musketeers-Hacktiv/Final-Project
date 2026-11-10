@@ -3,7 +3,7 @@ import { loadEnvConfig } from "@next/env";
 import { getDatabase, getMongoClient } from "../server/db/mongodb";
 import { getEngineRulesetMetadata } from "../server/game-engine/adapter";
 import type { EventDataDocument, GameRulesetDocument } from "../server/game/types";
-import { loadFallbackCatalog, validateFallbackCatalog } from "./lib/fallback-catalog";
+import { FALLBACK_CATALOG_VERSION, loadFallbackCatalog, validateFallbackCatalog } from "./lib/fallback-catalog";
 import {
   assertSeedRuleset,
   deterministicEventId,
@@ -58,7 +58,7 @@ async function main() {
     const existingKeys = new Set(existingById.map((doc) => doc.promptVersion));
     const plan = planFallbackInserts(events, existingKeys);
     console.info(
-      `Fallback seed ${write ? "write" : "dry-run"}: insert ${plan.insert.length}, skip ${plan.skip.length}, rejected 0`,
+      `Fallback seed ${FALLBACK_CATALOG_VERSION} ${write ? "write" : "dry-run"}: insert ${plan.insert.length}, skip ${plan.skip.length}, rejected 0`,
     );
 
     if (!write) return;

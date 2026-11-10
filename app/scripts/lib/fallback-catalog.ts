@@ -12,7 +12,7 @@ import {
 import { gameConfig, isPreparationDay, nextBattleDay } from "../../../src/game";
 import type { EventPackage } from "../../../src/game/types";
 
-export const FALLBACK_CATALOG_VERSION = "fallback-catalog-v2";
+export const FALLBACK_CATALOG_VERSION = "fallback-catalog-v3";
 export const FALLBACK_RULESET_ID = "campaign-v4-100-day-v3";
 
 export const CATALOG_DIR = path.resolve(
@@ -163,6 +163,19 @@ export function validateFallbackCatalog(
       errors.push(`${key} description must address my lord`);
     }
     if (/\d/.test(prose)) errors.push(`${key} narrative must not include digits`);
+    const misleading = [
+      /no hp loss/i,
+      /no further loss/i,
+      /lose discount/i,
+      /heal then lose/i,
+      /heal, then lose/i,
+      /save the for/i,
+      /defense \+ for/i,
+      /%\s*upgrade/i,
+    ];
+    for (const pattern of misleading) {
+      if (pattern.test(prose)) errors.push(`${key} narrative contradicts trusted effects: ${pattern}`);
+    }
     for (const choice of event.narrative.choices) {
       if (labelStatesCurrencyAmount(choice.label)) {
         errors.push(`${key} label mentions currency: ${choice.id}`);

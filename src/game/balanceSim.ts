@@ -56,7 +56,7 @@ function eventChoiceId(state: GameState): string {
       else if (effect.type === "damageCity") score -= effect.amount * 4;
     }
     if (choice.consequence) score -= 6;
-    if (choice.goldCost > 0) score -= 30;
+    if (choice.goldCost > 0) score -= choice.goldCost * 0.35;
     return { id: choice.id, score };
   });
   scored.sort((left, right) => right.score - left.score || left.id.localeCompare(right.id));

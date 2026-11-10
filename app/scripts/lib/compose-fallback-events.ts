@@ -1,6 +1,6 @@
-import type { EventChoice } from "../../../src/game/types";
 import { packageById, seedKeyFor, type FallbackEventSource, type FallbackKind } from "./fallback-catalog";
 import { CONSEQUENCE_SLOTS, SCHEDULED_SLOTS } from "./fallback-catalog";
+import { FALLBACK_SCENES } from "./fallback-scenes";
 
 const DAY_CLAUSE: Record<number, string> = {
   3: "while the dawn watch is still thin",
@@ -45,62 +45,40 @@ const DAY_CLAUSE: Record<number, string> = {
   95: "with the final assault almost upon us",
 };
 
-function cleanEngineLabel(label: string): string {
-  return label
-    .replace(/\{goldCost\}/gi, "")
-    .replace(/\b(?:gold|coins?|treasury|gp)\b/gi, "")
-    .replace(/\d+/g, "")
-    .replace(/\s+/g, " ")
-    .replace(/\s+([,:.])/g, "$1")
-    .replace(/:\s*$/g, "")
-    .trim();
-}
-
-function labelFor(choice: EventChoice, day: number): string {
-  const clause = DAY_CLAUSE[day] ?? "while the city waits";
-  const action = cleanEngineLabel(choice.label);
-  return `${action}, ${clause}.`;
-}
-
-function titleFor(packageTitle: string, day: number): string {
-  const cleaned = packageTitle.replace(/\d+/g, "").replace(/\s+/g, " ").trim();
-  const when = DAY_CLAUSE[day] ?? "while the city waits";
-  return `${cleaned}, ${when}`.slice(0, 120);
-}
-
-function descriptionFor(packageDescription: string, day: number): string {
-  const cleaned = packageDescription
-    .replace(/\b(?:gold|coins?|treasury|gp)\b/gi, "")
-    .replace(/\d+/g, "")
-    .replace(/\{[^}]+\}/g, "")
-    .replace(/\bmy lord,?\s*/gi, "")
-    .replace(/\s+/g, " ")
-    .replace(/\s+([,.])/g, "$1")
-    .trim();
-  const when = DAY_CLAUSE[day] ?? "while the city waits";
-  return `My lord, ${when}. ${cleaned}`;
+function sceneFor(packageId: string) {
+  const scene = FALLBACK_SCENES[packageId];
+  if (!scene) throw new Error(`Missing fallback scene for ${packageId}`);
+  return scene;
 }
 
 export function composeFallbackEvents(): FallbackEventSource[] {
   const slots: Array<{ packageId: string; day: number; kind: FallbackKind }> = [
     ...SCHEDULED_SLOTS.flatMap((slot) => slot.days.map((day) => ({ ...slot, day, kind: "scheduled" as const }))),
     ...CONSEQUENCE_SLOTS.flatMap((slot) => slot.days.map((day) => ({ ...slot, day, kind: "consequence" as const }))),
-  ].map(({ packageId, day, kind }) => ({ packageId, day, kind }));
+  ];
 
   return slots.map((slot) => {
     const pkg = packageById(slot.packageId);
     if (!pkg) throw new Error(`Missing package ${slot.packageId}`);
+    const scene = sceneFor(slot.packageId);
+    const when = DAY_CLAUSE[slot.day] ?? "while the city waits";
+    const body = scene.description.replace(/^My lord,\s*/i, "");
+    const sentence = body.charAt(0).toUpperCase() + body.slice(1);
+    const missing = pkg.choices.filter((choice) => !scene.choices[choice.id]);
+    if (missing.length > 0) {
+      throw new Error(`Scene ${slot.packageId} missing choices: ${missing.map((choice) => choice.id).join(", ")}`);
+    }
     return {
       seedKey: seedKeyFor(slot.packageId, slot.day),
       packageId: slot.packageId,
       day: slot.day,
       kind: slot.kind,
       narrative: {
-        title: titleFor(pkg.title, slot.day),
-        description: descriptionFor(pkg.description, slot.day),
+        title: `${scene.title}, ${when}`.slice(0, 120),
+        description: `My lord, ${when}. ${sentence}`,
         choices: pkg.choices.map((choice) => ({
           id: choice.id,
-          label: labelFor(choice, slot.day),
+          label: scene.choices[choice.id]!,
         })),
       },
     };

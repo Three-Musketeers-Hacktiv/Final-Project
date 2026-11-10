@@ -6,8 +6,14 @@ Manual check after a play session. Do not assert exact AI sentences in tests.
 
 - Context bands, next enemy name, origin choice, and no pending-consequence leak: `server/ai/narrative-context.test.ts`.
 - Choice IDs, currency label policy, and local fallback: `server/ai/event-narrative.test.ts`.
-- Shared AI rows are ignored; v2 seed is preferred: `server/game/narrative-catalog.test.ts`.
-- Fifty seeded scenes still match engine choice IDs: `server/content/fallback-events.validation.test.ts`.
+- Shared AI rows are ignored; v3 seed is preferred over v2: `server/game/narrative-catalog.test.ts`.
+- Fifty seeded scenes still match engine choice IDs and reject contradictory phrases: `server/content/fallback-events.validation.test.ts`.
+
+## Editorial pass (catalog v3)
+
+Reviewed the authored scene bank, not only schema checks. Each scheduled and consequence package has one scene: who is present, where, and why an order is needed today. Choice labels are orders. Costs and effect numbers stay on the engine buttons.
+
+Checked specifically that shortage, late raid, mid raid, and finale scenes no longer say "no HP loss", "lose the discount", or "heal then lose HP". Consequence prose names the kind of earlier decision (gate, bargain, warning) and does not invent a different origin. Day clauses only change the opening sentence so the same package can appear on two days without copying a broken label.
 
 ## Manual scenes
 
