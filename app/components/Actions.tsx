@@ -16,16 +16,31 @@ const ACTIONS: { id: ActionId; label: string; icon: IconName }[] = [
 type ActionsProps = {
   phase: GamePhase;
   actionUsedToday: boolean;
+  /** The city's gold, shown in the panel's title bar next to the action costs it pays for. */
+  gold: number;
   /** Gold cost per action, from GameView.stats (never computed in the UI). */
   costs: Record<ActionId, number>;
   /** A request is in flight: block every button so a double click can't send twice. */
   pending: boolean;
   onAction: (id: ActionId) => void;
   onEndDay: () => void;
+  /** End the day automatically after a successful action. */
+  autoEndDay: boolean;
+  onAutoEndDayChange: (on: boolean) => void;
 };
 
 /** One action per preparation day (`actionUsedToday`), then End Day moves to the next day. */
-export default function Actions({ phase, actionUsedToday, costs, pending, onAction, onEndDay }: ActionsProps) {
+export default function Actions({
+  phase,
+  actionUsedToday,
+  gold,
+  costs,
+  pending,
+  onAction,
+  onEndDay,
+  autoEndDay,
+  onAutoEndDayChange,
+}: ActionsProps) {
   const preparing = phase === "preparation";
   const status = !preparing
     ? "Actions are only available on preparation days."
@@ -34,7 +49,17 @@ export default function Actions({ phase, actionUsedToday, costs, pending, onActi
       : "1 action left today.";
 
   return (
-    <Panel title="Actions" subtitle="(1 per day)" className="@container">
+    <Panel
+      title="Actions"
+      subtitle="(1 per day)"
+      className="@container"
+      aside={
+        <span className="flex items-center gap-2 text-lg font-semibold text-gold" aria-label={`Gold: ${gold}`}>
+          <Icon name="gold" className="size-6" />
+          {gold}
+        </span>
+      }
+    >
       <div className="grid grid-cols-2 gap-3 @2xl:grid-cols-4">
         {ACTIONS.map((action) => (
           <button
@@ -58,9 +83,20 @@ export default function Actions({ phase, actionUsedToday, costs, pending, onActi
 
       <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t-2 border-frame/40 pt-3">
         <p className="text-muted">{status}</p>
-        <GameButton variant="primary" disabled={!preparing || pending} onClick={onEndDay}>
-          End Day ▸
-        </GameButton>
+        <div className="ml-auto flex items-center gap-4">
+          <label className="flex cursor-pointer items-center gap-2 text-sm select-none">
+            <input
+              type="checkbox"
+              checked={autoEndDay}
+              onChange={(e) => onAutoEndDayChange(e.target.checked)}
+              className="size-4 accent-gold"
+            />
+            Auto end day
+          </label>
+          <GameButton variant="primary" disabled={!preparing || pending} onClick={onEndDay}>
+            End Day ▸
+          </GameButton>
+        </div>
       </div>
     </Panel>
   );

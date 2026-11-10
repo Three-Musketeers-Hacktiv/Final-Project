@@ -12,7 +12,6 @@ import GameToast from "./GameToast";
 import { PlayMusic } from "./MusicProvider";
 import PhaseDialogs from "./PhaseDialogs";
 import { useGame } from "./GameProvider";
-import Resources from "./Resources";
 import SettingsDialog, { SETTINGS_DIALOG } from "./SettingsDialog";
 import ThisWave from "./ThisWave";
 import Timeline from "./Timeline";
@@ -20,16 +19,20 @@ import TopBar from "./TopBar";
 import UpcomingWaves from "./UpcomingWaves";
 import { useBattlePlayback } from "./useBattlePlayback";
 import { useDayTimer, type Speed } from "./useDayTimer";
+import { useStoredFlag } from "./useStoredFlag";
 import { upcomingWaves, waveInfo } from "./waveInfo";
 
 /** The /play dashboard, drawn from the GameView in GameProvider. */
-export default function GameScreen() {
+export default function GameScreen({ lord }: { lord: string }) {
   const { game, pending, act } = useGame();
   const { state, stats, wavePreview } = game;
 
   // Starts paused, so opening or refreshing /play never runs the clock until the player presses Play.
   const [paused, setPaused] = useState(true);
   const [speed, setSpeed] = useState<Speed>(1);
+  // Ends the day right after a successful action, for players who take one action a day anyway.
+  // Remembered in this browser.
+  const [autoEndDay, setAutoEndDay] = useStoredFlag("bastionfall:auto-end-day");
   // The settings dialog pauses the game; closing it restores the pause state from before.
   const pausedBeforeSettings = useRef(false);
 
@@ -56,8 +59,14 @@ export default function GameScreen() {
   // the wave fought today and moves on to the next one when the following day starts.
   const foughtToday = state.battleResult?.day === state.day ? state.battleResult : null;
   const foughtConfig = foughtToday && gameConfig.waves.find((w) => w.wave === foughtToday.wave);
+  // HP and attack come from the battle itself: the config holds base values, before difficulty scaling.
   const wave = foughtConfig
-    ? { ...foughtConfig, ...waveInfo(foughtConfig.wave, foughtConfig.name) }
+    ? {
+        ...foughtConfig,
+        ...waveInfo(foughtConfig.wave, foughtConfig.name),
+        hp: foughtToday.monsterHpBefore,
+        attack: foughtToday.monsterAttack,
+      }
     : wavePreview && { ...wavePreview, ...waveInfo(wavePreview.wave, wavePreview.name) };
   // The wave in the scene: only on a battle day, from the gates until the report is closed.
   const fought = replaying ?? (state.phase === "battleReport" ? state.battleResult : null);
@@ -96,16 +105,21 @@ export default function GameScreen() {
       <main className="mx-auto grid w-full max-w-[1600px] flex-1 grid-cols-[minmax(0,1fr)] content-start gap-5 p-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,20rem)] xl:grid-cols-[minmax(0,22rem)_minmax(0,1fr)_minmax(0,22rem)]">
         {/*
           In one column (below lg) the column wrappers dissolve (`contents`) and each panel takes its
-          place from order-*: scene, actions, resources, city status, timeline, then the rest.
+          place from order-*: scene, actions, city status, timeline, then the rest.
         */}
         <div className="contents lg:flex lg:flex-col lg:gap-5">
-          {/* The API has no city profile yet, so this stays placeholder text. */}
+          {/* The API has no city profile: name, faction and region are placeholder text; the rest is the run's. */}
           <div className="order-6 lg:order-none">
-            <CityRecord {...mockRun.city} />
+            <CityRecord
+              {...mockRun.city}
+              lord={lord}
+              difficulty={state.difficulty}
+              cityLevel={state.cityLevel}
+              effects={state.effects}
+              wavesCleared={state.wavesCleared}
+            />
           </div>
-          <div className="order-3 lg:order-none">
-            <Resources gold={state.gold} />
-          </div>
+          {/* Resources is hidden for now: its gold is shown in the Actions title bar. */}
           <div className="order-4 lg:order-none">
             <CityStatus
               hp={cityHp}
@@ -113,7 +127,6 @@ export default function GameScreen() {
               wallLevel={state.wallLevel}
               troopLevel={state.troopLevel}
               cityLevel={state.cityLevel}
-              maxLevel={gameConfig.maxTrackLevel}
               attack={stats.attack}
               defense={stats.defense}
               income={stats.dailyIncome}
@@ -141,10 +154,16 @@ export default function GameScreen() {
             <Actions
               phase={state.phase}
               actionUsedToday={state.actionUsedToday}
+              gold={state.gold}
               costs={{ upgradeCity: stats.cityCost, upgradeTroops: stats.troopCost, upgradeWall: stats.wallCost, repairCity: stats.repairCost }}
               pending={pending}
-              onAction={(id) => act(id, {})}
+              onAction={async (id) => {
+                // The day only moves on when the action went through (not on, say, too little gold).
+                if ((await act(id, {})) && autoEndDay) act("endPreparationDay", {});
+              }}
               onEndDay={() => act("endPreparationDay", {})}
+              autoEndDay={autoEndDay}
+              onAutoEndDayChange={setAutoEndDay}
             />
           </div>
           {/* The server keeps the whole run's history, oldest first; show the newest on top. */}
