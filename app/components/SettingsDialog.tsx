@@ -13,10 +13,12 @@ export const SETTINGS_DIALOG = "settings";
 type SettingsDialogProps = {
   /** Called whenever the dialog closes; `resume` is true when the player pressed Resume. */
   onClose: (resume: boolean) => void;
+  /** Replays the tutorial; the dialog closes first. */
+  onStartTutorial: () => void;
 };
 
-/** In-game menu behind the ⚙ button: run overview, Resume, Main Menu, Surrender and Log Out. */
-export default function SettingsDialog({ onClose }: SettingsDialogProps) {
+/** In-game menu behind the ⚙ button: run overview, Resume, Tutorial, Main Menu, Surrender and Log Out. */
+export default function SettingsDialog({ onClose, onStartTutorial }: SettingsDialogProps) {
   const router = useRouter();
   const { game, pending, act } = useGame();
   const { state } = game;
@@ -48,6 +50,11 @@ export default function SettingsDialog({ onClose }: SettingsDialogProps) {
     document.getElementById(SETTINGS_DIALOG)?.hidePopover();
   }
 
+  function tutorial() {
+    document.getElementById(SETTINGS_DIALOG)?.hidePopover();
+    onStartTutorial();
+  }
+
   // The run is saved after every action, so leaving keeps it; Continue on the menu picks it up again.
   // Close the dialog first: Next.js keeps /play alive in the background, and an open dialog would stay
   // on screen over the menu (and still be open on returning).
@@ -70,6 +77,8 @@ export default function SettingsDialog({ onClose }: SettingsDialogProps) {
         <GameButton variant="primary" onClick={resume}>
           Resume
         </GameButton>
+
+        <GameButton onClick={tutorial}>Tutorial</GameButton>
 
         <GameButton onClick={mainMenu}>Main Menu</GameButton>
 

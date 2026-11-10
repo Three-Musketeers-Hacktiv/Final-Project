@@ -23,14 +23,14 @@ function subscribe(onChange: () => void) {
 }
 
 /**
- * An on/off preference kept in this browser's localStorage. The server render (and hydration) always
- * sees `false`, then the stored value takes over, so the page never mismatches.
+ * An on/off preference kept in this browser's localStorage, or null while it is not known yet (the
+ * server render and hydration), so callers can wait for it instead of acting on a default.
  */
-export function useStoredFlag(key: string): [boolean, (on: boolean) => void] {
+export function useStoredFlagState(key: string): [boolean | null, (on: boolean) => void] {
   const value = useSyncExternalStore(
     subscribe,
     () => read(key),
-    () => false,
+    () => null,
   );
   const set = useCallback(
     (on: boolean) => {
@@ -44,4 +44,13 @@ export function useStoredFlag(key: string): [boolean, (on: boolean) => void] {
     [key],
   );
   return [value, set];
+}
+
+/**
+ * An on/off preference kept in this browser's localStorage. The server render (and hydration) always
+ * sees `false`, then the stored value takes over, so the page never mismatches.
+ */
+export function useStoredFlag(key: string): [boolean, (on: boolean) => void] {
+  const [value, set] = useStoredFlagState(key);
+  return [value ?? false, set];
 }

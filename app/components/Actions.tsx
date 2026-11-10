@@ -51,16 +51,19 @@ export default function Actions({
   return (
     <Panel
       title="Actions"
-      subtitle="(1 per day)"
       className="@container"
       aside={
-        <span className="flex items-center gap-2 text-lg font-semibold text-gold" aria-label={`Gold: ${gold}`}>
+        <span
+          data-tutorial="gold"
+          className="flex items-center gap-2 text-lg font-semibold text-gold"
+          aria-label={`Gold: ${gold}`}
+        >
           <Icon name="gold" className="size-6" />
           {gold}
         </span>
       }
     >
-      <div className="grid grid-cols-2 gap-3 @2xl:grid-cols-4">
+      <div data-tutorial="action-buttons" className="grid grid-cols-2 gap-3 @2xl:grid-cols-4">
         {ACTIONS.map((action) => (
           <button
             key={action.id}
@@ -81,7 +84,10 @@ export default function Actions({
         ))}
       </div>
 
-      <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t-2 border-frame/40 pt-3">
+      <div
+        data-tutorial="end-day"
+        className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t-2 border-frame/40 pt-3"
+      >
         <p className="text-muted">{status}</p>
         <div className="ml-auto flex items-center gap-4">
           <label className="flex cursor-pointer items-center gap-2 text-sm select-none">
