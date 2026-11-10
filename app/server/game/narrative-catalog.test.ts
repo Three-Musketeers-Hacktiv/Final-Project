@@ -59,18 +59,29 @@ describe("selectSharedNarrative", () => {
     choices: event.choices.map((choice) => ({ id: choice.id, label: `Counsel ${choice.id}` })),
   };
 
-  it("prefers a valid AI catalog row over seeded fallback", () => {
+  it("ignores a shared AI row and uses the seeded fallback", () => {
     const ai = doc("ai", trusted, "ai-row");
-    const fallback = doc("fallback", { ...trusted, title: "Seeded" }, "fallback-row");
+    const fallback = doc("fallback", { ...trusted, title: "Seeded" }, "fallback-catalog-v2:d1-scouts-a:d3:v01");
     const selected = selectSharedNarrative({
       local,
       event,
       aiCandidates: [ai],
       fallbackCandidates: [fallback],
     });
-    expect(selected.reused?._id).toEqual(ai._id);
-    expect(selected.result.source).toBe("ai");
-    expect(selected.result.narrative.title).toBe("Shared counsel");
+    expect(selected.reused?._id).toEqual(fallback._id);
+    expect(selected.result.source).toBe("fallback");
+    expect(selected.result.narrative.title).toBe("Seeded");
+  });
+
+  it("prefers a v2 seeded row over an older seeded row", () => {
+    const older = doc("fallback", { ...trusted, title: "Old seed" }, "fallback-catalog-v1:d1-scouts-a:d3:v01");
+    const newer = doc("fallback", { ...trusted, title: "Scene seed" }, "fallback-catalog-v2:d1-scouts-a:d3:v01");
+    const selected = selectSharedNarrative({
+      local,
+      event,
+      fallbackCandidates: [older, newer],
+    });
+    expect(selected.result.narrative.title).toBe("Scene seed");
   });
 
   it("uses seeded fallback when AI catalog is missing", () => {

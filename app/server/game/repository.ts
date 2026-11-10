@@ -173,6 +173,18 @@ export async function findLatestReport(runId: ObjectId): Promise<GameReportDocum
   );
 }
 
+export async function findRecentResolvedRunEvents(
+  runId: ObjectId,
+  limit = 3,
+): Promise<RunEventDocument[]> {
+  const database = await getDatabase();
+  return database.collection<RunEventDocument>("runs_event")
+    .find({ gameRunId: runId, chosenChoiceId: { $ne: null } })
+    .sort({ resolvedAt: -1 })
+    .limit(limit)
+    .toArray();
+}
+
 export async function findRunEvent(
   runId: ObjectId,
   eventId: string,

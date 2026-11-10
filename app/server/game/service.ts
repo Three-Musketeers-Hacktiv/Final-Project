@@ -6,6 +6,7 @@ import {
   restoreEventNarrative,
   type NarrativeResult,
 } from "@/server/ai/event-narrative";
+import { buildNarrativeContext } from "@/server/ai/narrative-context";
 import type { UserDocument } from "@/server/auth/types";
 import {
   applyGameAction,
@@ -28,6 +29,7 @@ import {
   findCurrentRun,
   findLatestReport,
   findRunByStartRequest,
+  findRecentResolvedRunEvents,
   findRunEvent,
   findRunForUser,
   findRulesetById,
@@ -157,6 +159,7 @@ function runEventDocument(
 
 async function resolveEventNarrative(
   run: GameRunDocument,
+  state: GameRunDocument["state"],
   event: ActiveEvent,
   now: Date,
 ): Promise<{ result: NarrativeResult; write: GeneratedEventWrite | null }> {
@@ -174,17 +177,34 @@ async function resolveEventNarrative(
     };
   }
 
-  let result = await generateEventNarrative(event);
+  const recent = await findRecentResolvedRunEvents(run._id, 3);
+  const context = buildNarrativeContext(
+    state,
+    event,
+    recent.flatMap((entry) => {
+      if (!entry.chosenChoiceId) return [];
+      const label = entry.narrativeSnapshot.choices.find((choice) => choice.id === entry.chosenChoiceId)?.label
+        ?? entry.chosenChoiceId;
+      return [{
+        day: entry.day,
+        packageId: entry.packageId,
+        choiceId: entry.chosenChoiceId,
+        choiceLabel: label,
+      }];
+    }),
+  );
+  let result = await generateEventNarrative(event, undefined, context);
   let reusedEventData: EventDataDocument | null = null;
   if (result.source === "fallback") {
-    const [aiCandidates, fallbackCandidates] = await Promise.all([
-      findSharedEventDataCandidates(run.gameRulesetId, event.packageId, event.day, "ai"),
-      findSharedEventDataCandidates(run.gameRulesetId, event.packageId, event.day, "fallback"),
-    ]);
+    const fallbackCandidates = await findSharedEventDataCandidates(
+      run.gameRulesetId,
+      event.packageId,
+      event.day,
+      "fallback",
+    );
     const selected = selectSharedNarrative({
       local: result,
       event,
-      aiCandidates,
       fallbackCandidates,
     });
     result = selected.result;
@@ -284,14 +304,14 @@ export async function submitGameAction(
   let nextState = result.state;
   const generatedEvents: GeneratedEventWrite[] = [];
   if (recoveredEvent) {
-    const recoveredNarrative = await resolveEventNarrative(currentRun, recoveredEvent, now);
+    const recoveredNarrative = await resolveEventNarrative(currentRun, actionRun.state, recoveredEvent, now);
     if (recoveredNarrative.write) generatedEvents.push(recoveredNarrative.write);
   }
   if (
     result.state.activeEvent &&
     actionRun.state.activeEvent?.eventId !== result.state.activeEvent.eventId
   ) {
-    const resolvedNarrative = await resolveEventNarrative(currentRun, result.state.activeEvent, now);
+    const resolvedNarrative = await resolveEventNarrative(currentRun, result.state, result.state.activeEvent, now);
     nextState = decorateActiveEvent(result.state, resolvedNarrative.result);
     if (resolvedNarrative.write) generatedEvents.push(resolvedNarrative.write);
   }

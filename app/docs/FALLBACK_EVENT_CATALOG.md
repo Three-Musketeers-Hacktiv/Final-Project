@@ -14,9 +14,10 @@ There are 30 scheduled variations and 20 consequence variations. A run still pla
 
 1. Existing `runs_event` snapshot for that run and event id.
 2. Live Gemini, when configured.
-3. Newest valid shared `event_data` row with `source: "ai"` for the same ruleset, package, and day.
-4. Newest valid seeded row with `source: "fallback"` for that same key.
-5. Trusted local engine title, description, and labels.
+3. Newest valid seeded `event_data` row with `source: "fallback"` for the same ruleset, package, and day. Rows whose `promptVersion` starts with `fallback-catalog-v2` are preferred.
+4. Trusted local engine title, description, and labels.
+
+Shared `source: "ai"` rows are not reused across runs.
 
 Invalid catalog rows are skipped. A seeded fallback is not relabeled as AI. The first accepted narrative is snapshotted, so refresh does not change it or reapply effects.
 

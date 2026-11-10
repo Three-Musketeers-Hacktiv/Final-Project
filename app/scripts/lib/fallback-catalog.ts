@@ -12,7 +12,7 @@ import {
 import { gameConfig, isPreparationDay, nextBattleDay } from "../../../src/game";
 import type { EventPackage } from "../../../src/game/types";
 
-export const FALLBACK_CATALOG_VERSION = "fallback-catalog-v1";
+export const FALLBACK_CATALOG_VERSION = "fallback-catalog-v2";
 export const FALLBACK_RULESET_ID = "campaign-v4-100-day-v3";
 
 export const CATALOG_DIR = path.resolve(

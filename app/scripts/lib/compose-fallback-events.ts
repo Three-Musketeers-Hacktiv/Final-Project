@@ -1,4 +1,4 @@
-import type { Effect, EventChoice } from "../../../src/game/types";
+import type { EventChoice } from "../../../src/game/types";
 import { packageById, seedKeyFor, type FallbackEventSource, type FallbackKind } from "./fallback-catalog";
 import { CONSEQUENCE_SLOTS, SCHEDULED_SLOTS } from "./fallback-catalog";
 
@@ -45,47 +45,40 @@ const DAY_CLAUSE: Record<number, string> = {
   95: "with the final assault almost upon us",
 };
 
-function has(choice: EventChoice, type: Effect["type"]): boolean {
-  return choice.effects.some((effect) => effect.type === type);
+function cleanEngineLabel(label: string): string {
+  return label
+    .replace(/\{goldCost\}/gi, "")
+    .replace(/\b(?:gold|coins?|treasury|gp)\b/gi, "")
+    .replace(/\d+/g, "")
+    .replace(/\s+/g, " ")
+    .replace(/\s+([,:.])/g, "$1")
+    .replace(/:\s*$/g, "")
+    .trim();
 }
 
-function baseLabel(choice: EventChoice): string {
-  if (has(choice, "nextWaveDefense")) return "Brace the defenses before the next assault";
-  if (has(choice, "upgradeDiscount")) return "Secure cheaper works until the coming battle";
-  if (has(choice, "maxHpBonus")) return "Raise the city's lasting endurance";
-  if (has(choice, "healCity")) return "Tend the wounded and restore strength";
-  if (has(choice, "grantGold") && choice.consequence) return "Take the surplus now, knowing the slight may return";
-  if (has(choice, "grantGold")) return "Accept the surplus offered today";
-  if (has(choice, "damageCity") && choice.goldCost === 0) return "Endure the harm rather than spend now";
-  if (choice.goldCost > 0 && choice.effects.length === 0) return "Settle the matter cleanly before it spreads";
-  if (choice.goldCost > 0) return "Pay the levy and take the firmer path";
-  if (choice.consequence) return "Let it pass, though trouble may return before the next assault";
-  return "Hold your answer and keep the city as it stands";
-}
-
-function labelFor(choice: EventChoice, day: number, index: number): string {
+function labelFor(choice: EventChoice, day: number): string {
   const clause = DAY_CLAUSE[day] ?? "while the city waits";
-  const steer = index === 0 ? "I advise this first" : index === 1 ? "This is the sterner counsel" : "This is the quieter counsel";
-  return `${baseLabel(choice)}, ${clause}. ${steer}.`;
+  const action = cleanEngineLabel(choice.label);
+  return `${action}, ${clause}.`;
 }
 
-function titleFor(packageTitle: string, day: number, kind: FallbackKind): string {
+function titleFor(packageTitle: string, day: number): string {
   const cleaned = packageTitle.replace(/\d+/g, "").replace(/\s+/g, " ").trim();
   const when = DAY_CLAUSE[day] ?? "while the city waits";
-  const prefix = kind === "consequence" ? "Consequence" : "Counsel";
-  return `${prefix}: ${cleaned}, ${when}`.slice(0, 120);
+  return `${cleaned}, ${when}`.slice(0, 120);
 }
 
 function descriptionFor(packageDescription: string, day: number): string {
   const cleaned = packageDescription
-    .replace(/\b(?:gold|coins?|treasury|gp)\b/gi, "resources")
+    .replace(/\b(?:gold|coins?|treasury|gp)\b/gi, "")
     .replace(/\d+/g, "")
     .replace(/\{[^}]+\}/g, "")
+    .replace(/\bmy lord,?\s*/gi, "")
     .replace(/\s+/g, " ")
     .replace(/\s+([,.])/g, "$1")
     .trim();
   const when = DAY_CLAUSE[day] ?? "while the city waits";
-  return `My lord, ${when}, a matter demands your word. ${cleaned} I will not invent new powers; only these trusted paths remain.`;
+  return `My lord, ${when}. ${cleaned}`;
 }
 
 export function composeFallbackEvents(): FallbackEventSource[] {
@@ -103,11 +96,11 @@ export function composeFallbackEvents(): FallbackEventSource[] {
       day: slot.day,
       kind: slot.kind,
       narrative: {
-        title: titleFor(pkg.title, slot.day, slot.kind),
+        title: titleFor(pkg.title, slot.day),
         description: descriptionFor(pkg.description, slot.day),
-        choices: pkg.choices.map((choice, index) => ({
+        choices: pkg.choices.map((choice) => ({
           id: choice.id,
-          label: labelFor(choice, slot.day, index),
+          label: labelFor(choice, slot.day),
         })),
       },
     };
