@@ -79,3 +79,7 @@ Do not change the engine for this test. Reproduce run `late-3`:
 5. The same gate must still reject a pending package `c-foreign`, a reverse chain such as scheduled `c-raid-wave1` from origin `c-raid-wave2`, and a duplicated pending id.
 
 Until the adapter uses `isTrustedConsequencePackage`, step 4 fails on a valid engine save. That is an adapter bug, not an engine bug.
+
+## Ruleset after the normal/hard balance
+
+`GameState.version` stays `4`. Repair is 25/60, the normal wave table is the base HP/ATK in `gameConfig.waves` (150/22 through 600/64), and hard multipliers are monster HP 1.08, monster attack 1.06, upgrade 1.08, income 0.95, repair 1.05, event gold 1.08. That changes the config fingerprint. Publish a new immutable ruleset id (suggested `campaign-v4-100-day-v2`) and reject a stored id whose fingerprint does not match. Do not reuse `campaign-v4-100-day-v1` for new runs. Numbers and the full table: [CAMPAIGN_100_DAY_CONTRACT.md](./CAMPAIGN_100_DAY_CONTRACT.md).

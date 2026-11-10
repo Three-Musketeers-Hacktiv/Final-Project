@@ -297,3 +297,25 @@ Tes: plafon wave 9–10 easy/normal, kampanye 100 hari easy lewat aksi publik, r
 - Overlay label yang memuat istilah mata uang `gold`/`coin`/`treasury`/`gp` ditolak, tanpa parsing susunan harga; `decorateActiveEvent` memakai label engine. Deskripsi tidak dipindai.
 - `isTrustedConsequencePackage` diekspor agar BE menerima successor di `CONSEQUENCE_SUCCESSOR`, bukan hanya paket asal.
 - Kontrak implementasi: [ENGINE_TO_BE_CONTRACT.md](./ENGINE_TO_BE_CONTRACT.md), [ENGINE_TO_FE_CONTRACT.md](./ENGINE_TO_FE_CONTRACT.md). Kode `app/` dan `src/ui/` tidak diubah pada patch ini.
+
+---
+
+## 15. Balancing normal + hard, kurva 10 wave (2026-11-09)
+
+Save tetap `version: 4`. Normal adalah tabel dasar; hard hanya mengalikan tabel itu.
+
+| Knob | Nilai terkunci |
+|---|---|
+| Repair | 25 gold / 60 HP |
+| Wave 1–10 HP | 150, 200, 240, 290, 340, 390, 440, 490, 540, 600 |
+| Wave 1–10 ATK | 22, 28, 34, 36, 40, 44, 48, 54, 58, 64 |
+| Hard HP / ATK | 1.08 / 1.06 |
+| Hard upgrade / income / repair / event gold | 1.08 / 0.95 / 1.05 / 1.08 |
+
+Ruleset publik yang disarankan untuk BE: `campaign-v4-100-day-v2`. Jangan timpa fingerprint `campaign-v4-100-day-v1`.
+
+Simulasi aksi publik (4 strategi × 6 seed), bukan inject state:
+
+- Set A: easy 24/24, normal 24/24 (semua strategi), hard 4/24 dengan `repairBias` 4/6. Hard rata-rata repair 36.8 vs normal 25.3 pada strategi yang sama.
+- Set B: easy 24/24, normal 24/24, hard 4/24 dengan `repairBias` 3/6.
+- Kandidat C3 (repair 28/55, wave lebih tinggi) gagal: normal 0/24. Kurva ini yang lolos aturan normal-dulu lalu hard.

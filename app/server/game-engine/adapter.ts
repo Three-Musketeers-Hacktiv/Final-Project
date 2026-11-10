@@ -27,7 +27,7 @@ import {
 } from "../../../src/game";
 
 const SUPPORTED_STATE_VERSION = GAME_STATE_VERSION;
-const RULESET_ID = "campaign-v4-100-day-v2";
+const RULESET_ID = "campaign-v4-100-day-v3";
 
 export type EngineCompatibility = {
   stateVersion: typeof SUPPORTED_STATE_VERSION;

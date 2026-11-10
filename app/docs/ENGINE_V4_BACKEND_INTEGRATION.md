@@ -24,13 +24,13 @@ This document records the backend changes required by game-engine patch v4. Back
 
 ## Latest patch delta (2026-11-09)
 
-- Trusted balancing now uses wall defense `+3`, city maximum HP `+35`, hard monster HP multiplier `1.20`, and hard monster attack multiplier `1.12`. Backend obtains these values and its fingerprint from engine config.
+- Latest balancing uses repair `25 gold / 60 HP`; normal wave HP/attack from `150/22` through `600/64`; and hard multipliers HP `1.08`, attack `1.06`, upgrade `1.08`, income `0.95`, repair `1.05`, and event gold `1.08`. Backend obtains all runtime values and its fingerprint from engine config.
 - `activeEvent.choices[].goldCost` is already difficulty-scaled. It is the effective cost; backend and frontend must not scale it again.
 - AI choice labels may not mention supported currency terms (`gold`, `coin(s)`, `treasury`, `gp`), even without an amount. Backend supplies effective costs as prompt context, but labels are accepted only through the engine trusted-label policy. Descriptions remain narrative-only and are not scanned.
 - A consequence may move to a trusted successor package when its original window is occupied. Backend uses `isTrustedConsequencePackage`, not strict package equality.
 - Choosing an event can immediately activate another consequence on the same day. The response must decorate that new active event.
 - Narrative recovery order is: same run/event, configured Gemini generation, shared valid AI narrative for the ruleset/package/day after generation failure, then trusted local fallback.
-- The new immutable ruleset ID is `campaign-v4-100-day-v2`. Existing `v1` runs are not silently migrated because the config fingerprint changed.
+- The backend immutable ruleset ID is `campaign-v4-100-day-v3`. Engine documentation suggests v2 relative to its baseline, but this backend already used v2 for the preceding balance fingerprint. Reusing v2 would conflict with immutable Atlas metadata. Existing v1/v2 runs remain audit records and are not silently migrated.
 
 ## Latest patch implementation tickets
 
@@ -52,12 +52,12 @@ This document records the backend changes required by game-engine patch v4. Back
 
 ## Compatibility and rollout
 
-The v4 ruleset uses a new immutable ruleset ID and config fingerprint. Existing v3 runs remain stored for audit but cannot be resumed by the v4 application. A product migration, if desired later, requires a separately reviewed migration design.
+The latest balance keeps `GameState.version === 4` but changes the config fingerprint. New runs use backend ruleset `campaign-v4-100-day-v3`. Existing runs tied to older ruleset documents remain stored for audit but cannot be resumed under the new engine. A product migration, if desired later, requires a separately reviewed migration design.
 
 ## Verification gates
 
 - Backend-focused typecheck is clean.
 - Backend unit/contract tests pass, including dynamic days, 2–4 choices, trusted successor consequences, stored narrative validation, and missing-event recovery.
-- Latest campaign runner reaches `victory` through 215 normal API actions, 21 events, 100 days, and ten battles against MongoDB Atlas.
-- Root engine typecheck and all 56 root tests pass; all 61 backend tests and backend typecheck pass; backend lint passes.
+- Latest ruleset-v3 campaign runner reaches `victory` through 196 normal API actions, 22 events, 100 days, and ten battles against MongoDB Atlas.
+- Root engine typecheck and all 60 root tests pass; all 62 backend tests and backend typecheck pass; backend lint passes.
 - Production build compiles, then fails only on existing frontend v3 assumptions: missing create-run difficulty and outdated reward config/kinds. These frontend-owned files were not changed.

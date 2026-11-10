@@ -134,6 +134,8 @@ Aturan MVP:
 - Document ruleset yang sudah digunakan run immutable.
 - Perubahan balancing membuat ruleset metadata baru.
 - Existing `rulesetId` dengan fingerprint berbeda harus ditolak; fingerprint lama tidak boleh ditimpa.
+- Balance engine terbaru memakai `campaign-v4-100-day-v3`. ID v2 tidak dipakai ulang karena sudah menunjuk fingerprint patch sebelumnya di Atlas.
+- Run v1/v2 tetap tersimpan immutable untuk audit; backend tidak mengubah `gameRulesetId` run lama atau memigrasikan state secara implisit.
 
 Indeks:
 

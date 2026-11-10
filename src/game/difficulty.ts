@@ -27,12 +27,12 @@ const TABLE: Record<Difficulty, DifficultyModifiers> = {
     eventGoldCost: 1,
   },
   hard: {
-    monsterHp: 1.2,
-    monsterAttack: 1.12,
-    upgradeCost: 1.2,
-    dailyIncome: 0.9,
-    repairCost: 1.15,
-    eventGoldCost: 1.15,
+    monsterHp: 1.08,
+    monsterAttack: 1.06,
+    upgradeCost: 1.08,
+    dailyIncome: 0.95,
+    repairCost: 1.05,
+    eventGoldCost: 1.08,
   },
 };
 

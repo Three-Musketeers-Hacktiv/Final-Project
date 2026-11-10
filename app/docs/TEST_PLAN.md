@@ -71,6 +71,8 @@ Dokumen ini mendefinisikan bukti yang harus tersedia sebelum fitur backend diang
 | Pilihan event 2-4 | Unit/Integration | Semua label didekorasi, ID/cost/effect tetap trusted |
 | Campaign v4 | API smoke | Action normal mencapai victory pada hari 100 setelah 10 battle |
 | Ruleset ID dengan fingerprint berbeda | Integration | Ditolak; metadata lama tidak ditimpa |
+| Ruleset v3 balance terbaru | Adapter/Integration | Repair normal 25/60, hard repair cost 27, wave 1 hard 162/23, wave 10 normal 600/64 berasal dari selector engine |
+| Save ruleset v1/v2 | Integration | Ditolak sebagai incompatible; fingerprint dan reference lama tidak ditimpa |
 | Pointer run/revision tidak cocok | Integration | `SAVE_POINTER_MISMATCH` tanpa write |
 | Resume setelah logout/login | API | Current run user yang sama dikembalikan |
 | Akses run user lain | Security/API | Tidak ditemukan atau ditolak tanpa data leak |
