@@ -32,8 +32,9 @@ import {
   findRunForUser,
   findRulesetById,
   findSavePointer,
-  findSharedAiEventData,
+  findSharedEventDataCandidates,
 } from "@/server/game/repository";
+import { selectSharedNarrative } from "@/server/game/narrative-catalog";
 import type { CreateRunInput, SubmitActionInput } from "@/server/game/schemas";
 import type {
   EventDataDocument,
@@ -176,24 +177,18 @@ async function resolveEventNarrative(
   let result = await generateEventNarrative(event);
   let reusedEventData: EventDataDocument | null = null;
   if (result.source === "fallback") {
-    const shared = await findSharedAiEventData(
-      run.gameRulesetId,
-      event.packageId,
-      event.day,
-    );
-    if (shared) {
-      try {
-        result = restoreEventNarrative(event, shared.narrative, {
-          source: "ai",
-          provider: shared.provider ?? null,
-          model: shared.model ?? null,
-          promptVersion: shared.promptVersion,
-        });
-        reusedEventData = shared;
-      } catch {
-        // Invalid catalog entries are ignored; the already validated local fallback remains active.
-      }
-    }
+    const [aiCandidates, fallbackCandidates] = await Promise.all([
+      findSharedEventDataCandidates(run.gameRulesetId, event.packageId, event.day, "ai"),
+      findSharedEventDataCandidates(run.gameRulesetId, event.packageId, event.day, "fallback"),
+    ]);
+    const selected = selectSharedNarrative({
+      local: result,
+      event,
+      aiCandidates,
+      fallbackCandidates,
+    });
+    result = selected.result;
+    reusedEventData = selected.reused;
   }
 
   if (reusedEventData) {

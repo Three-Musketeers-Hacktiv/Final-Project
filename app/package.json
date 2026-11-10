@@ -13,7 +13,9 @@
     "test:campaign": "tsx scripts/run-campaign.ts",
     "test:surrender": "tsx scripts/run-surrender.ts",
     "test:timeline": "tsx scripts/run-timeline.ts",
-    "db:indexes": "tsx scripts/setup-indexes.ts"
+    "db:indexes": "tsx scripts/setup-indexes.ts",
+    "content:validate-fallback-events": "vitest run server/content/fallback-events.validation.test.ts",
+    "db:seed-fallback-events": "tsx scripts/seed-fallback-events.ts"
   },
   "dependencies": {
     "@google/genai": "^2.32.0",

@@ -1,0 +1,1218 @@
+[
+  {
+    "seedKey": "fallback-catalog-v1:d1-scouts-a:d3:v01",
+    "packageId": "d1-scouts-a",
+    "day": 3,
+    "kind": "scheduled",
+    "narrative": {
+      "title": "Counsel: Scouts at the gate, while the dawn watch is still thin",
+      "description": "My lord, while the dawn watch is still thin, a matter demands your word. My lord, enemy scouts linger beyond the gate. We can harden the walls, pay for quiet rumors, or let them pass. I will not invent new powers; only these trusted paths remain.",
+      "choices": [
+        {
+          "id": "d1-scouts-a-pay-def",
+          "label": "Brace the defenses before the next assault, while the dawn watch is still thin. I advise this first."
+        },
+        {
+          "id": "d1-scouts-a-bribe",
+          "label": "Settle the matter cleanly before it spreads, while the dawn watch is still thin. This is the sterner counsel."
+        },
+        {
+          "id": "d1-scouts-a-skip",
+          "label": "Let it pass, though trouble may return before the next assault, while the dawn watch is still thin. This is the quieter counsel."
+        }
+      ]
+    }
+  },
+  {
+    "seedKey": "fallback-catalog-v1:d1-scouts-a:d7:v01",
+    "packageId": "d1-scouts-a",
+    "day": 7,
+    "kind": "scheduled",
+    "narrative": {
+      "title": "Counsel: Scouts at the gate, with rumors already at the gate",
+      "description": "My lord, with rumors already at the gate, a matter demands your word. My lord, enemy scouts linger beyond the gate. We can harden the walls, pay for quiet rumors, or let them pass. I will not invent new powers; only these trusted paths remain.",
+      "choices": [
+        {
+          "id": "d1-scouts-a-pay-def",
+          "label": "Brace the defenses before the next assault, with rumors already at the gate. I advise this first."
+        },
+        {
+          "id": "d1-scouts-a-bribe",
+          "label": "Settle the matter cleanly before it spreads, with rumors already at the gate. This is the sterner counsel."
+        },
+        {
+          "id": "d1-scouts-a-skip",
+          "label": "Let it pass, though trouble may return before the next assault, with rumors already at the gate. This is the quieter counsel."
+        }
+      ]
+    }
+  },
+  {
+    "seedKey": "fallback-catalog-v1:d1-envoy-b:d4:v01",
+    "packageId": "d1-envoy-b",
+    "day": 4,
+    "kind": "scheduled",
+    "narrative": {
+      "title": "Counsel: Nervous border envoy, before the market fully wakes",
+      "description": "My lord, before the market fully wakes, a matter demands your word. A border envoy begs escort resources before the first wave. Paying hardens our walls; refusing costs nothing today. I will not invent new powers; only these trusted paths remain.",
+      "choices": [
+        {
+          "id": "d1-envoy-b-pay",
+          "label": "Brace the defenses before the next assault, before the market fully wakes. I advise this first."
+        },
+        {
+          "id": "d1-envoy-b-heal",
+          "label": "Tend the wounded and restore strength, before the market fully wakes. This is the sterner counsel."
+        },
+        {
+          "id": "d1-envoy-b-skip",
+          "label": "Let it pass, though trouble may return before the next assault, before the market fully wakes. This is the quieter counsel."
+        }
+      ]
+    }
+  },
+  {
+    "seedKey": "fallback-catalog-v1:d1-envoy-b:d8:v01",
+    "packageId": "d1-envoy-b",
+    "day": 8,
+    "kind": "scheduled",
+    "narrative": {
+      "title": "Counsel: Nervous border envoy, after a sleepless night on the walls",
+      "description": "My lord, after a sleepless night on the walls, a matter demands your word. A border envoy begs escort resources before the first wave. Paying hardens our walls; refusing costs nothing today. I will not invent new powers; only these trusted paths remain.",
+      "choices": [
+        {
+          "id": "d1-envoy-b-pay",
+          "label": "Brace the defenses before the next assault, after a sleepless night on the walls. I advise this first."
+        },
+        {
+          "id": "d1-envoy-b-heal",
+          "label": "Tend the wounded and restore strength, after a sleepless night on the walls. This is the sterner counsel."
+        },
+        {
+          "id": "d1-envoy-b-skip",
+          "label": "Let it pass, though trouble may return before the next assault, after a sleepless night on the walls. This is the quieter counsel."
+        }
+      ]
+    }
+  },
+  {
+    "seedKey": "fallback-catalog-v1:d1-supplies-a:d3:v01",
+    "packageId": "d1-supplies-a",
+    "day": 3,
+    "kind": "scheduled",
+    "narrative": {
+      "title": "Counsel: Supply dilemma, while the dawn watch is still thin",
+      "description": "My lord, while the dawn watch is still thin, a matter demands your word. The stores run low. Buy supplies, squeeze workers for resources, or refuse and risk later damage. I will not invent new powers; only these trusted paths remain.",
+      "choices": [
+        {
+          "id": "d1-supplies-a-pay",
+          "label": "Settle the matter cleanly before it spreads, while the dawn watch is still thin. I advise this first."
+        },
+        {
+          "id": "d1-supplies-a-gold",
+          "label": "Take the surplus now, knowing the slight may return, while the dawn watch is still thin. This is the sterner counsel."
+        },
+        {
+          "id": "d1-supplies-a-hurt",
+          "label": "Endure the harm rather than spend now, while the dawn watch is still thin. This is the quieter counsel."
+        },
+        {
+          "id": "d1-supplies-a-skip",
+          "label": "Let it pass, though trouble may return before the next assault, while the dawn watch is still thin. This is the quieter counsel."
+        }
+      ]
+    }
+  },
+  {
+    "seedKey": "fallback-catalog-v1:d1-supplies-a:d6:v01",
+    "packageId": "d1-supplies-a",
+    "day": 6,
+    "kind": "scheduled",
+    "narrative": {
+      "title": "Counsel: Supply dilemma, under a pale and watchful sky",
+      "description": "My lord, under a pale and watchful sky, a matter demands your word. The stores run low. Buy supplies, squeeze workers for resources, or refuse and risk later damage. I will not invent new powers; only these trusted paths remain.",
+      "choices": [
+        {
+          "id": "d1-supplies-a-pay",
+          "label": "Settle the matter cleanly before it spreads, under a pale and watchful sky. I advise this first."
+        },
+        {
+          "id": "d1-supplies-a-gold",
+          "label": "Take the surplus now, knowing the slight may return, under a pale and watchful sky. This is the sterner counsel."
+        },
+        {
+          "id": "d1-supplies-a-hurt",
+          "label": "Endure the harm rather than spend now, under a pale and watchful sky. This is the quieter counsel."
+        },
+        {
+          "id": "d1-supplies-a-skip",
+          "label": "Let it pass, though trouble may return before the next assault, under a pale and watchful sky. This is the quieter counsel."
+        }
+      ]
+    }
+  },
+  {
+    "seedKey": "fallback-catalog-v1:d1-labor-b:d5:v01",
+    "packageId": "d1-labor-b",
+    "day": 5,
+    "kind": "scheduled",
+    "narrative": {
+      "title": "Counsel: Exhausted work crews, as smoke stains the lower streets",
+      "description": "My lord, as smoke stains the lower streets, a matter demands your word. Labor crews are spent. A wage keeps walls sound; unpaid work strains the city. I will not invent new powers; only these trusted paths remain.",
+      "choices": [
+        {
+          "id": "d1-labor-b-pay",
+          "label": "Settle the matter cleanly before it spreads, as smoke stains the lower streets. I advise this first."
+        },
+        {
+          "id": "d1-labor-b-discount",
+          "label": "Secure cheaper works until the coming battle, as smoke stains the lower streets. This is the sterner counsel."
+        },
+        {
+          "id": "d1-labor-b-hurt",
+          "label": "Endure the harm rather than spend now, as smoke stains the lower streets. This is the quieter counsel."
+        }
+      ]
+    }
+  },
+  {
+    "seedKey": "fallback-catalog-v1:d1-labor-b:d9:v01",
+    "packageId": "d1-labor-b",
+    "day": 9,
+    "kind": "scheduled",
+    "narrative": {
+      "title": "Counsel: Exhausted work crews, on the eve of the first assault",
+      "description": "My lord, on the eve of the first assault, a matter demands your word. Labor crews are spent. A wage keeps walls sound; unpaid work strains the city. I will not invent new powers; only these trusted paths remain.",
+      "choices": [
+        {
+          "id": "d1-labor-b-pay",
+          "label": "Settle the matter cleanly before it spreads, on the eve of the first assault. I advise this first."
+        },
+        {
+          "id": "d1-labor-b-discount",
+          "label": "Secure cheaper works until the coming battle, on the eve of the first assault. This is the sterner counsel."
+        },
+        {
+          "id": "d1-labor-b-hurt",
+          "label": "Endure the harm rather than spend now, on the eve of the first assault. This is the quieter counsel."
+        }
+      ]
+    }
+  },
+  {
+    "seedKey": "fallback-catalog-v1:d2-caravan-a:d12:v01",
+    "packageId": "d2-caravan-a",
+    "day": 12,
+    "kind": "scheduled",
+    "narrative": {
+      "title": "Counsel: Trade opportunity, as caravans crowd the south road",
+      "description": "My lord, as caravans crowd the south road, a matter demands your word. A caravan offers resources now or cheaper building until the next wave. I will not invent new powers; only these trusted paths remain.",
+      "choices": [
+        {
+          "id": "d2-caravan-a-gold",
+          "label": "Accept the surplus offered today, as caravans crowd the south road. I advise this first."
+        },
+        {
+          "id": "d2-caravan-a-discount",
+          "label": "Secure cheaper works until the coming battle, as caravans crowd the south road. This is the sterner counsel."
+        },
+        {
+          "id": "d2-caravan-a-skip",
+          "label": "Let it pass, though trouble may return before the next assault, as caravans crowd the south road. This is the quieter counsel."
+        }
+      ]
+    }
+  },
+  {
+    "seedKey": "fallback-catalog-v1:d2-caravan-a:d16:v01",
+    "packageId": "d2-caravan-a",
+    "day": 16,
+    "kind": "scheduled",
+    "narrative": {
+      "title": "Counsel: Trade opportunity, with the second watch changing",
+      "description": "My lord, with the second watch changing, a matter demands your word. A caravan offers resources now or cheaper building until the next wave. I will not invent new powers; only these trusted paths remain.",
+      "choices": [
+        {
+          "id": "d2-caravan-a-gold",
+          "label": "Accept the surplus offered today, with the second watch changing. I advise this first."
+        },
+        {
+          "id": "d2-caravan-a-discount",
+          "label": "Secure cheaper works until the coming battle, with the second watch changing. This is the sterner counsel."
+        },
+        {
+          "id": "d2-caravan-a-skip",
+          "label": "Let it pass, though trouble may return before the next assault, with the second watch changing. This is the quieter counsel."
+        }
+      ]
+    }
+  },
+  {
+    "seedKey": "fallback-catalog-v1:d2-guild-b:d13:v01",
+    "packageId": "d2-guild-b",
+    "day": 13,
+    "kind": "scheduled",
+    "narrative": {
+      "title": "Counsel: Builders' guild charter, while guild banners argue in the square",
+      "description": "My lord, while guild banners argue in the square, a matter demands your word. The guild wants a fee for preferred rates, or a risky free bargain. I will not invent new powers; only these trusted paths remain.",
+      "choices": [
+        {
+          "id": "d2-guild-b-pay",
+          "label": "Secure cheaper works until the coming battle, while guild banners argue in the square. I advise this first."
+        },
+        {
+          "id": "d2-guild-b-gold",
+          "label": "Take the surplus now, knowing the slight may return, while guild banners argue in the square. This is the sterner counsel."
+        },
+        {
+          "id": "d2-guild-b-skip",
+          "label": "Let it pass, though trouble may return before the next assault, while guild banners argue in the square. This is the quieter counsel."
+        }
+      ]
+    }
+  },
+  {
+    "seedKey": "fallback-catalog-v1:d2-guild-b:d17:v01",
+    "packageId": "d2-guild-b",
+    "day": 17,
+    "kind": "scheduled",
+    "narrative": {
+      "title": "Counsel: Builders' guild charter, before dusk closes the gates",
+      "description": "My lord, before dusk closes the gates, a matter demands your word. The guild wants a fee for preferred rates, or a risky free bargain. I will not invent new powers; only these trusted paths remain.",
+      "choices": [
+        {
+          "id": "d2-guild-b-pay",
+          "label": "Secure cheaper works until the coming battle, before dusk closes the gates. I advise this first."
+        },
+        {
+          "id": "d2-guild-b-gold",
+          "label": "Take the surplus now, knowing the slight may return, before dusk closes the gates. This is the sterner counsel."
+        },
+        {
+          "id": "d2-guild-b-skip",
+          "label": "Let it pass, though trouble may return before the next assault, before dusk closes the gates. This is the quieter counsel."
+        }
+      ]
+    }
+  },
+  {
+    "seedKey": "fallback-catalog-v1:d2-patrol-a:d14:v01",
+    "packageId": "d2-patrol-a",
+    "day": 14,
+    "kind": "scheduled",
+    "narrative": {
+      "title": "Counsel: Night patrol request, beneath a hard afternoon sun",
+      "description": "My lord, beneath a hard afternoon sun, a matter demands your word. Captains ask for resources to double patrols before the orcs. I will not invent new powers; only these trusted paths remain.",
+      "choices": [
+        {
+          "id": "d2-patrol-a-pay",
+          "label": "Brace the defenses before the next assault, beneath a hard afternoon sun. I advise this first."
+        },
+        {
+          "id": "d2-patrol-a-heal",
+          "label": "Tend the wounded and restore strength, beneath a hard afternoon sun. This is the sterner counsel."
+        },
+        {
+          "id": "d2-patrol-a-skip",
+          "label": "Let it pass, though trouble may return before the next assault, beneath a hard afternoon sun. This is the quieter counsel."
+        },
+        {
+          "id": "d2-patrol-a-risk",
+          "label": "Accept the surplus offered today, beneath a hard afternoon sun. This is the quieter counsel."
+        }
+      ]
+    }
+  },
+  {
+    "seedKey": "fallback-catalog-v1:d2-patrol-a:d18:v01",
+    "packageId": "d2-patrol-a",
+    "day": 18,
+    "kind": "scheduled",
+    "narrative": {
+      "title": "Counsel: Night patrol request, as torches are counted for the night",
+      "description": "My lord, as torches are counted for the night, a matter demands your word. Captains ask for resources to double patrols before the orcs. I will not invent new powers; only these trusted paths remain.",
+      "choices": [
+        {
+          "id": "d2-patrol-a-pay",
+          "label": "Brace the defenses before the next assault, as torches are counted for the night. I advise this first."
+        },
+        {
+          "id": "d2-patrol-a-heal",
+          "label": "Tend the wounded and restore strength, as torches are counted for the night. This is the sterner counsel."
+        },
+        {
+          "id": "d2-patrol-a-skip",
+          "label": "Let it pass, though trouble may return before the next assault, as torches are counted for the night. This is the quieter counsel."
+        },
+        {
+          "id": "d2-patrol-a-risk",
+          "label": "Accept the surplus offered today, as torches are counted for the night. This is the quieter counsel."
+        }
+      ]
+    }
+  },
+  {
+    "seedKey": "fallback-catalog-v1:d2-omen-b:d12:v01",
+    "packageId": "d2-omen-b",
+    "day": 12,
+    "kind": "scheduled",
+    "narrative": {
+      "title": "Counsel: Ill omen at the shrine, as caravans crowd the south road",
+      "description": "My lord, as caravans crowd the south road, a matter demands your word. Priests warn of a raid unless offerings are made. I will not invent new powers; only these trusted paths remain.",
+      "choices": [
+        {
+          "id": "d2-omen-b-pay",
+          "label": "Settle the matter cleanly before it spreads, as caravans crowd the south road. I advise this first."
+        },
+        {
+          "id": "d2-omen-b-maxhp",
+          "label": "Raise the city's lasting endurance, as caravans crowd the south road. This is the sterner counsel."
+        },
+        {
+          "id": "d2-omen-b-skip",
+          "label": "Let it pass, though trouble may return before the next assault, as caravans crowd the south road. This is the quieter counsel."
+        }
+      ]
+    }
+  },
+  {
+    "seedKey": "fallback-catalog-v1:d2-omen-b:d15:v01",
+    "packageId": "d2-omen-b",
+    "day": 15,
+    "kind": "scheduled",
+    "narrative": {
+      "title": "Counsel: Ill omen at the shrine, as omens stir the chapel yard",
+      "description": "My lord, as omens stir the chapel yard, a matter demands your word. Priests warn of a raid unless offerings are made. I will not invent new powers; only these trusted paths remain.",
+      "choices": [
+        {
+          "id": "d2-omen-b-pay",
+          "label": "Settle the matter cleanly before it spreads, as omens stir the chapel yard. I advise this first."
+        },
+        {
+          "id": "d2-omen-b-maxhp",
+          "label": "Raise the city's lasting endurance, as omens stir the chapel yard. This is the sterner counsel."
+        },
+        {
+          "id": "d2-omen-b-skip",
+          "label": "Let it pass, though trouble may return before the next assault, as omens stir the chapel yard. This is the quieter counsel."
+        }
+      ]
+    }
+  },
+  {
+    "seedKey": "fallback-catalog-v1:d3-threat-a:d23:v01",
+    "packageId": "d3-threat-a",
+    "day": 23,
+    "kind": "scheduled",
+    "narrative": {
+      "title": "Counsel: Wolf howls beyond the treeline, in the uneasy quiet after the last battle",
+      "description": "My lord, in the uneasy quiet after the last battle, a matter demands your word. My lord, danger gathers before wave. Pay for defense, take a risky shortcut, or save resources and face later fallout. I will not invent new powers; only these trusted paths remain.",
+      "choices": [
+        {
+          "id": "d3-threat-a-pay",
+          "label": "Brace the defenses before the next assault, in the uneasy quiet after the last battle. I advise this first."
+        },
+        {
+          "id": "d3-threat-a-heal",
+          "label": "Tend the wounded and restore strength, in the uneasy quiet after the last battle. This is the sterner counsel."
+        },
+        {
+          "id": "d3-threat-a-gold",
+          "label": "Take the surplus now, knowing the slight may return, in the uneasy quiet after the last battle. This is the quieter counsel."
+        },
+        {
+          "id": "d3-threat-a-skip",
+          "label": "Let it pass, though trouble may return before the next assault, in the uneasy quiet after the last battle. This is the quieter counsel."
+        }
+      ]
+    }
+  },
+  {
+    "seedKey": "fallback-catalog-v1:d3-market-b:d26:v01",
+    "packageId": "d3-market-b",
+    "day": 26,
+    "kind": "scheduled",
+    "narrative": {
+      "title": "Counsel: Hunters demand hazard pay, while merchants test your patience",
+      "description": "My lord, while merchants test your patience, a matter demands your word. Merchants and captains quarrel before wave. Choose carefully; greed may return as a consequence. I will not invent new powers; only these trusted paths remain.",
+      "choices": [
+        {
+          "id": "d3-market-b-discount",
+          "label": "Secure cheaper works until the coming battle, while merchants test your patience. I advise this first."
+        },
+        {
+          "id": "d3-market-b-maxhp",
+          "label": "Raise the city's lasting endurance, while merchants test your patience. This is the sterner counsel."
+        },
+        {
+          "id": "d3-market-b-skip",
+          "label": "Let it pass, though trouble may return before the next assault, while merchants test your patience. This is the quieter counsel."
+        }
+      ]
+    }
+  },
+  {
+    "seedKey": "fallback-catalog-v1:d4-threat-a:d33:v01",
+    "packageId": "d4-threat-a",
+    "day": 33,
+    "kind": "scheduled",
+    "narrative": {
+      "title": "Counsel: Cyclops tracks in the mud, as the mid-campaign roads grow bold",
+      "description": "My lord, as the mid-campaign roads grow bold, a matter demands your word. My lord, danger gathers before wave. Pay for defense, take a risky shortcut, or save resources and face later fallout. I will not invent new powers; only these trusted paths remain.",
+      "choices": [
+        {
+          "id": "d4-threat-a-pay",
+          "label": "Brace the defenses before the next assault, as the mid-campaign roads grow bold. I advise this first."
+        },
+        {
+          "id": "d4-threat-a-heal",
+          "label": "Tend the wounded and restore strength, as the mid-campaign roads grow bold. This is the sterner counsel."
+        },
+        {
+          "id": "d4-threat-a-gold",
+          "label": "Take the surplus now, knowing the slight may return, as the mid-campaign roads grow bold. This is the quieter counsel."
+        },
+        {
+          "id": "d4-threat-a-skip",
+          "label": "Let it pass, though trouble may return before the next assault, as the mid-campaign roads grow bold. This is the quieter counsel."
+        }
+      ]
+    }
+  },
+  {
+    "seedKey": "fallback-catalog-v1:d4-market-b:d36:v01",
+    "packageId": "d4-market-b",
+    "day": 36,
+    "kind": "scheduled",
+    "narrative": {
+      "title": "Counsel: Quarry collapse rumor, when every bargain carries a hook",
+      "description": "My lord, when every bargain carries a hook, a matter demands your word. Merchants and captains quarrel before wave. Choose carefully; greed may return as a consequence. I will not invent new powers; only these trusted paths remain.",
+      "choices": [
+        {
+          "id": "d4-market-b-discount",
+          "label": "Secure cheaper works until the coming battle, when every bargain carries a hook. I advise this first."
+        },
+        {
+          "id": "d4-market-b-maxhp",
+          "label": "Raise the city's lasting endurance, when every bargain carries a hook. This is the sterner counsel."
+        },
+        {
+          "id": "d4-market-b-skip",
+          "label": "Let it pass, though trouble may return before the next assault, when every bargain carries a hook. This is the quieter counsel."
+        }
+      ]
+    }
+  },
+  {
+    "seedKey": "fallback-catalog-v1:d5-threat-a:d43:v01",
+    "packageId": "d5-threat-a",
+    "day": 43,
+    "kind": "scheduled",
+    "narrative": {
+      "title": "Counsel: Wyvern shadow over the spires, with the horizon darkening toward the wyvern days",
+      "description": "My lord, with the horizon darkening toward the wyvern days, a matter demands your word. My lord, danger gathers before wave. Pay for defense, take a risky shortcut, or save resources and face later fallout. I will not invent new powers; only these trusted paths remain.",
+      "choices": [
+        {
+          "id": "d5-threat-a-pay",
+          "label": "Brace the defenses before the next assault, with the horizon darkening toward the wyvern days. I advise this first."
+        },
+        {
+          "id": "d5-threat-a-heal",
+          "label": "Tend the wounded and restore strength, with the horizon darkening toward the wyvern days. This is the sterner counsel."
+        },
+        {
+          "id": "d5-threat-a-gold",
+          "label": "Take the surplus now, knowing the slight may return, with the horizon darkening toward the wyvern days. This is the quieter counsel."
+        },
+        {
+          "id": "d5-threat-a-skip",
+          "label": "Let it pass, though trouble may return before the next assault, with the horizon darkening toward the wyvern days. This is the quieter counsel."
+        }
+      ]
+    }
+  },
+  {
+    "seedKey": "fallback-catalog-v1:d5-market-b:d46:v01",
+    "packageId": "d5-market-b",
+    "day": 46,
+    "kind": "scheduled",
+    "narrative": {
+      "title": "Counsel: Alchemists sell fire oil, as the market splits into factions",
+      "description": "My lord, as the market splits into factions, a matter demands your word. Merchants and captains quarrel before wave. Choose carefully; greed may return as a consequence. I will not invent new powers; only these trusted paths remain.",
+      "choices": [
+        {
+          "id": "d5-market-b-discount",
+          "label": "Secure cheaper works until the coming battle, as the market splits into factions. I advise this first."
+        },
+        {
+          "id": "d5-market-b-maxhp",
+          "label": "Raise the city's lasting endurance, as the market splits into factions. This is the sterner counsel."
+        },
+        {
+          "id": "d5-market-b-skip",
+          "label": "Let it pass, though trouble may return before the next assault, as the market splits into factions. This is the quieter counsel."
+        }
+      ]
+    }
+  },
+  {
+    "seedKey": "fallback-catalog-v1:d6-threat-a:d53:v01",
+    "packageId": "d6-threat-a",
+    "day": 53,
+    "kind": "scheduled",
+    "narrative": {
+      "title": "Counsel: Lich whispers in the crypt, deep in the long campaign",
+      "description": "My lord, deep in the long campaign, a matter demands your word. My lord, danger gathers before wave. Pay for defense, take a risky shortcut, or save resources and face later fallout. I will not invent new powers; only these trusted paths remain.",
+      "choices": [
+        {
+          "id": "d6-threat-a-pay",
+          "label": "Brace the defenses before the next assault, deep in the long campaign. I advise this first."
+        },
+        {
+          "id": "d6-threat-a-heal",
+          "label": "Tend the wounded and restore strength, deep in the long campaign. This is the sterner counsel."
+        },
+        {
+          "id": "d6-threat-a-gold",
+          "label": "Take the surplus now, knowing the slight may return, deep in the long campaign. This is the quieter counsel."
+        },
+        {
+          "id": "d6-threat-a-skip",
+          "label": "Let it pass, though trouble may return before the next assault, deep in the long campaign. This is the quieter counsel."
+        }
+      ]
+    }
+  },
+  {
+    "seedKey": "fallback-catalog-v1:d6-market-b:d56:v01",
+    "packageId": "d6-market-b",
+    "day": 56,
+    "kind": "scheduled",
+    "narrative": {
+      "title": "Counsel: Necromancer's bargain, while captains and merchants quarrel",
+      "description": "My lord, while captains and merchants quarrel, a matter demands your word. Merchants and captains quarrel before wave. Choose carefully; greed may return as a consequence. I will not invent new powers; only these trusted paths remain.",
+      "choices": [
+        {
+          "id": "d6-market-b-discount",
+          "label": "Secure cheaper works until the coming battle, while captains and merchants quarrel. I advise this first."
+        },
+        {
+          "id": "d6-market-b-maxhp",
+          "label": "Raise the city's lasting endurance, while captains and merchants quarrel. This is the sterner counsel."
+        },
+        {
+          "id": "d6-market-b-skip",
+          "label": "Let it pass, though trouble may return before the next assault, while captains and merchants quarrel. This is the quieter counsel."
+        }
+      ]
+    }
+  },
+  {
+    "seedKey": "fallback-catalog-v1:d7-threat-a:d63:v01",
+    "packageId": "d7-threat-a",
+    "day": 63,
+    "kind": "scheduled",
+    "narrative": {
+      "title": "Counsel: Lesser demon sighted, as late-war fear reaches the walls",
+      "description": "My lord, as late-war fear reaches the walls, a matter demands your word. My lord, danger gathers before wave. Pay for defense, take a risky shortcut, or save resources and face later fallout. I will not invent new powers; only these trusted paths remain.",
+      "choices": [
+        {
+          "id": "d7-threat-a-pay",
+          "label": "Brace the defenses before the next assault, as late-war fear reaches the walls. I advise this first."
+        },
+        {
+          "id": "d7-threat-a-heal",
+          "label": "Tend the wounded and restore strength, as late-war fear reaches the walls. This is the sterner counsel."
+        },
+        {
+          "id": "d7-threat-a-gold",
+          "label": "Take the surplus now, knowing the slight may return, as late-war fear reaches the walls. This is the quieter counsel."
+        },
+        {
+          "id": "d7-threat-a-skip",
+          "label": "Let it pass, though trouble may return before the next assault, as late-war fear reaches the walls. This is the quieter counsel."
+        }
+      ]
+    }
+  },
+  {
+    "seedKey": "fallback-catalog-v1:d7-market-b:d66:v01",
+    "packageId": "d7-market-b",
+    "day": 66,
+    "kind": "scheduled",
+    "narrative": {
+      "title": "Counsel: Hellgate cracks, when favor is bought with promises",
+      "description": "My lord, when favor is bought with promises, a matter demands your word. Merchants and captains quarrel before wave. Choose carefully; greed may return as a consequence. I will not invent new powers; only these trusted paths remain.",
+      "choices": [
+        {
+          "id": "d7-market-b-discount",
+          "label": "Secure cheaper works until the coming battle, when favor is bought with promises. I advise this first."
+        },
+        {
+          "id": "d7-market-b-maxhp",
+          "label": "Raise the city's lasting endurance, when favor is bought with promises. This is the sterner counsel."
+        },
+        {
+          "id": "d7-market-b-skip",
+          "label": "Let it pass, though trouble may return before the next assault, when favor is bought with promises. This is the quieter counsel."
+        }
+      ]
+    }
+  },
+  {
+    "seedKey": "fallback-catalog-v1:d8-threat-a:d73:v01",
+    "packageId": "d8-threat-a",
+    "day": 73,
+    "kind": "scheduled",
+    "narrative": {
+      "title": "Counsel: Demon banners on the ridge, under the shadow of the demon marches",
+      "description": "My lord, under the shadow of the demon marches, a matter demands your word. My lord, danger gathers before wave. Pay for defense, take a risky shortcut, or save resources and face later fallout. I will not invent new powers; only these trusted paths remain.",
+      "choices": [
+        {
+          "id": "d8-threat-a-pay",
+          "label": "Brace the defenses before the next assault, under the shadow of the demon marches. I advise this first."
+        },
+        {
+          "id": "d8-threat-a-heal",
+          "label": "Tend the wounded and restore strength, under the shadow of the demon marches. This is the sterner counsel."
+        },
+        {
+          "id": "d8-threat-a-gold",
+          "label": "Take the surplus now, knowing the slight may return, under the shadow of the demon marches. This is the quieter counsel."
+        },
+        {
+          "id": "d8-threat-a-skip",
+          "label": "Let it pass, though trouble may return before the next assault, under the shadow of the demon marches. This is the quieter counsel."
+        }
+      ]
+    }
+  },
+  {
+    "seedKey": "fallback-catalog-v1:d9-threat-a:d83:v01",
+    "packageId": "d9-threat-a",
+    "day": 83,
+    "kind": "scheduled",
+    "narrative": {
+      "title": "Counsel: Dragon smoke on the horizon, as the finale road comes into view",
+      "description": "My lord, as the finale road comes into view, a matter demands your word. My lord, danger gathers before wave. Pay for defense, take a risky shortcut, or save resources and face later fallout. I will not invent new powers; only these trusted paths remain.",
+      "choices": [
+        {
+          "id": "d9-threat-a-pay",
+          "label": "Brace the defenses before the next assault, as the finale road comes into view. I advise this first."
+        },
+        {
+          "id": "d9-threat-a-heal",
+          "label": "Tend the wounded and restore strength, as the finale road comes into view. This is the sterner counsel."
+        },
+        {
+          "id": "d9-threat-a-gold",
+          "label": "Take the surplus now, knowing the slight may return, as the finale road comes into view. This is the quieter counsel."
+        },
+        {
+          "id": "d9-threat-a-skip",
+          "label": "Let it pass, though trouble may return before the next assault, as the finale road comes into view. This is the quieter counsel."
+        }
+      ]
+    }
+  },
+  {
+    "seedKey": "fallback-catalog-v1:d9-market-b:d86:v01",
+    "packageId": "d9-market-b",
+    "day": 86,
+    "kind": "scheduled",
+    "narrative": {
+      "title": "Counsel: Dragon cult emissaries, while the final markets hoard their goods",
+      "description": "My lord, while the final markets hoard their goods, a matter demands your word. Merchants and captains quarrel before wave. Choose carefully; greed may return as a consequence. I will not invent new powers; only these trusted paths remain.",
+      "choices": [
+        {
+          "id": "d9-market-b-discount",
+          "label": "Secure cheaper works until the coming battle, while the final markets hoard their goods. I advise this first."
+        },
+        {
+          "id": "d9-market-b-maxhp",
+          "label": "Raise the city's lasting endurance, while the final markets hoard their goods. This is the sterner counsel."
+        },
+        {
+          "id": "d9-market-b-skip",
+          "label": "Let it pass, though trouble may return before the next assault, while the final markets hoard their goods. This is the quieter counsel."
+        }
+      ]
+    }
+  },
+  {
+    "seedKey": "fallback-catalog-v1:d10-threat-a:d93:v01",
+    "packageId": "d10-threat-a",
+    "day": 93,
+    "kind": "scheduled",
+    "narrative": {
+      "title": "Counsel: Demon King envoys, on the last stretch before the king of demons",
+      "description": "My lord, on the last stretch before the king of demons, a matter demands your word. My lord, danger gathers before wave. Pay for defense, take a risky shortcut, or save resources and face later fallout. I will not invent new powers; only these trusted paths remain.",
+      "choices": [
+        {
+          "id": "d10-threat-a-pay",
+          "label": "Brace the defenses before the next assault, on the last stretch before the king of demons. I advise this first."
+        },
+        {
+          "id": "d10-threat-a-heal",
+          "label": "Tend the wounded and restore strength, on the last stretch before the king of demons. This is the sterner counsel."
+        },
+        {
+          "id": "d10-threat-a-gold",
+          "label": "Take the surplus now, knowing the slight may return, on the last stretch before the king of demons. This is the quieter counsel."
+        },
+        {
+          "id": "d10-threat-a-skip",
+          "label": "Let it pass, though trouble may return before the next assault, on the last stretch before the king of demons. This is the quieter counsel."
+        }
+      ]
+    }
+  },
+  {
+    "seedKey": "fallback-catalog-v1:c-raid-wave1:d5:v01",
+    "packageId": "c-raid-wave1",
+    "day": 5,
+    "kind": "consequence",
+    "narrative": {
+      "title": "Consequence: Night raid fallout, as smoke stains the lower streets",
+      "description": "My lord, as smoke stains the lower streets, a matter demands your word. The scouts you ignored return with raiders. Mitigate the damage or endure it, my lord. I will not invent new powers; only these trusted paths remain.",
+      "choices": [
+        {
+          "id": "c-raid-wave1-pay",
+          "label": "Settle the matter cleanly before it spreads, as smoke stains the lower streets. I advise this first."
+        },
+        {
+          "id": "c-raid-wave1-def",
+          "label": "Brace the defenses before the next assault, as smoke stains the lower streets. This is the sterner counsel."
+        },
+        {
+          "id": "c-raid-wave1-accept",
+          "label": "Endure the harm rather than spend now, as smoke stains the lower streets. This is the quieter counsel."
+        }
+      ]
+    }
+  },
+  {
+    "seedKey": "fallback-catalog-v1:c-raid-wave1:d8:v01",
+    "packageId": "c-raid-wave1",
+    "day": 8,
+    "kind": "consequence",
+    "narrative": {
+      "title": "Consequence: Night raid fallout, after a sleepless night on the walls",
+      "description": "My lord, after a sleepless night on the walls, a matter demands your word. The scouts you ignored return with raiders. Mitigate the damage or endure it, my lord. I will not invent new powers; only these trusted paths remain.",
+      "choices": [
+        {
+          "id": "c-raid-wave1-pay",
+          "label": "Settle the matter cleanly before it spreads, after a sleepless night on the walls. I advise this first."
+        },
+        {
+          "id": "c-raid-wave1-def",
+          "label": "Brace the defenses before the next assault, after a sleepless night on the walls. This is the sterner counsel."
+        },
+        {
+          "id": "c-raid-wave1-accept",
+          "label": "Endure the harm rather than spend now, after a sleepless night on the walls. This is the quieter counsel."
+        }
+      ]
+    }
+  },
+  {
+    "seedKey": "fallback-catalog-v1:c-unrest-wave1:d4:v01",
+    "packageId": "c-unrest-wave1",
+    "day": 4,
+    "kind": "consequence",
+    "narrative": {
+      "title": "Consequence: Market unrest, before the market fully wakes",
+      "description": "My lord, before the market fully wakes, a matter demands your word. Your earlier thrift sparks unrest in the markets. I will not invent new powers; only these trusted paths remain.",
+      "choices": [
+        {
+          "id": "c-unrest-wave1-pay",
+          "label": "Settle the matter cleanly before it spreads, before the market fully wakes. I advise this first."
+        },
+        {
+          "id": "c-unrest-wave1-accept",
+          "label": "Endure the harm rather than spend now, before the market fully wakes. This is the sterner counsel."
+        }
+      ]
+    }
+  },
+  {
+    "seedKey": "fallback-catalog-v1:c-unrest-wave1:d7:v01",
+    "packageId": "c-unrest-wave1",
+    "day": 7,
+    "kind": "consequence",
+    "narrative": {
+      "title": "Consequence: Market unrest, with rumors already at the gate",
+      "description": "My lord, with rumors already at the gate, a matter demands your word. Your earlier thrift sparks unrest in the markets. I will not invent new powers; only these trusted paths remain.",
+      "choices": [
+        {
+          "id": "c-unrest-wave1-pay",
+          "label": "Settle the matter cleanly before it spreads, with rumors already at the gate. I advise this first."
+        },
+        {
+          "id": "c-unrest-wave1-accept",
+          "label": "Endure the harm rather than spend now, with rumors already at the gate. This is the sterner counsel."
+        }
+      ]
+    }
+  },
+  {
+    "seedKey": "fallback-catalog-v1:c-shortage-wave2:d14:v01",
+    "packageId": "c-shortage-wave2",
+    "day": 14,
+    "kind": "consequence",
+    "narrative": {
+      "title": "Consequence: Material shortage, beneath a hard afternoon sun",
+      "description": "My lord, beneath a hard afternoon sun, a matter demands your word. Builders lack materials after the guild snub. I will not invent new powers; only these trusted paths remain.",
+      "choices": [
+        {
+          "id": "c-shortage-wave2-pay",
+          "label": "Settle the matter cleanly before it spreads, beneath a hard afternoon sun. I advise this first."
+        },
+        {
+          "id": "c-shortage-wave2-discount",
+          "label": "Hold your answer and keep the city as it stands, beneath a hard afternoon sun. This is the sterner counsel."
+        },
+        {
+          "id": "c-shortage-wave2-hurt",
+          "label": "Endure the harm rather than spend now, beneath a hard afternoon sun. This is the quieter counsel."
+        }
+      ]
+    }
+  },
+  {
+    "seedKey": "fallback-catalog-v1:c-shortage-wave2:d17:v01",
+    "packageId": "c-shortage-wave2",
+    "day": 17,
+    "kind": "consequence",
+    "narrative": {
+      "title": "Consequence: Material shortage, before dusk closes the gates",
+      "description": "My lord, before dusk closes the gates, a matter demands your word. Builders lack materials after the guild snub. I will not invent new powers; only these trusted paths remain.",
+      "choices": [
+        {
+          "id": "c-shortage-wave2-pay",
+          "label": "Settle the matter cleanly before it spreads, before dusk closes the gates. I advise this first."
+        },
+        {
+          "id": "c-shortage-wave2-discount",
+          "label": "Hold your answer and keep the city as it stands, before dusk closes the gates. This is the sterner counsel."
+        },
+        {
+          "id": "c-shortage-wave2-hurt",
+          "label": "Endure the harm rather than spend now, before dusk closes the gates. This is the quieter counsel."
+        }
+      ]
+    }
+  },
+  {
+    "seedKey": "fallback-catalog-v1:c-raid-wave2:d13:v01",
+    "packageId": "c-raid-wave2",
+    "day": 13,
+    "kind": "consequence",
+    "narrative": {
+      "title": "Consequence: Orc probing raid, while guild banners argue in the square",
+      "description": "My lord, while guild banners argue in the square, a matter demands your word. Thin patrols invite a probing raid before the host arrives. I will not invent new powers; only these trusted paths remain.",
+      "choices": [
+        {
+          "id": "c-raid-wave2-pay",
+          "label": "Settle the matter cleanly before it spreads, while guild banners argue in the square. I advise this first."
+        },
+        {
+          "id": "c-raid-wave2-def",
+          "label": "Brace the defenses before the next assault, while guild banners argue in the square. This is the sterner counsel."
+        },
+        {
+          "id": "c-raid-wave2-accept",
+          "label": "Endure the harm rather than spend now, while guild banners argue in the square. This is the quieter counsel."
+        }
+      ]
+    }
+  },
+  {
+    "seedKey": "fallback-catalog-v1:c-raid-wave2:d16:v01",
+    "packageId": "c-raid-wave2",
+    "day": 16,
+    "kind": "consequence",
+    "narrative": {
+      "title": "Consequence: Orc probing raid, with the second watch changing",
+      "description": "My lord, with the second watch changing, a matter demands your word. Thin patrols invite a probing raid before the host arrives. I will not invent new powers; only these trusted paths remain.",
+      "choices": [
+        {
+          "id": "c-raid-wave2-pay",
+          "label": "Settle the matter cleanly before it spreads, with the second watch changing. I advise this first."
+        },
+        {
+          "id": "c-raid-wave2-def",
+          "label": "Brace the defenses before the next assault, with the second watch changing. This is the sterner counsel."
+        },
+        {
+          "id": "c-raid-wave2-accept",
+          "label": "Endure the harm rather than spend now, with the second watch changing. This is the quieter counsel."
+        }
+      ]
+    }
+  },
+  {
+    "seedKey": "fallback-catalog-v1:c-raid-mid:d35:v01",
+    "packageId": "c-raid-mid",
+    "day": 35,
+    "kind": "consequence",
+    "narrative": {
+      "title": "Consequence: Mid-campaign raid, as raiders probe the outer farms",
+      "description": "My lord, as raiders probe the outer farms, a matter demands your word. Ignored threats return as a sharp raid before the next battle. I will not invent new powers; only these trusted paths remain.",
+      "choices": [
+        {
+          "id": "c-raid-mid-pay",
+          "label": "Settle the matter cleanly before it spreads, as raiders probe the outer farms. I advise this first."
+        },
+        {
+          "id": "c-raid-mid-accept",
+          "label": "Endure the harm rather than spend now, as raiders probe the outer farms. This is the sterner counsel."
+        },
+        {
+          "id": "c-raid-mid-heal-cost",
+          "label": "Tend the wounded and restore strength, as raiders probe the outer farms. This is the quieter counsel."
+        }
+      ]
+    }
+  },
+  {
+    "seedKey": "fallback-catalog-v1:c-raid-mid:d45:v01",
+    "packageId": "c-raid-mid",
+    "day": 45,
+    "kind": "consequence",
+    "narrative": {
+      "title": "Consequence: Mid-campaign raid, while scouts report fresh tracks",
+      "description": "My lord, while scouts report fresh tracks, a matter demands your word. Ignored threats return as a sharp raid before the next battle. I will not invent new powers; only these trusted paths remain.",
+      "choices": [
+        {
+          "id": "c-raid-mid-pay",
+          "label": "Settle the matter cleanly before it spreads, while scouts report fresh tracks. I advise this first."
+        },
+        {
+          "id": "c-raid-mid-accept",
+          "label": "Endure the harm rather than spend now, while scouts report fresh tracks. This is the sterner counsel."
+        },
+        {
+          "id": "c-raid-mid-heal-cost",
+          "label": "Tend the wounded and restore strength, while scouts report fresh tracks. This is the quieter counsel."
+        }
+      ]
+    }
+  },
+  {
+    "seedKey": "fallback-catalog-v1:c-unrest-mid:d34:v01",
+    "packageId": "c-unrest-mid",
+    "day": 34,
+    "kind": "consequence",
+    "narrative": {
+      "title": "Consequence: Mid-campaign unrest, with unrest moving through the stalls",
+      "description": "My lord, with unrest moving through the stalls, a matter demands your word. Greedy earlier choices sour the people. I will not invent new powers; only these trusted paths remain.",
+      "choices": [
+        {
+          "id": "c-unrest-mid-pay",
+          "label": "Settle the matter cleanly before it spreads, with unrest moving through the stalls. I advise this first."
+        },
+        {
+          "id": "c-unrest-mid-accept",
+          "label": "Endure the harm rather than spend now, with unrest moving through the stalls. This is the sterner counsel."
+        }
+      ]
+    }
+  },
+  {
+    "seedKey": "fallback-catalog-v1:c-unrest-mid:d44:v01",
+    "packageId": "c-unrest-mid",
+    "day": 44,
+    "kind": "consequence",
+    "narrative": {
+      "title": "Consequence: Mid-campaign unrest, as the city grumbles under short rations",
+      "description": "My lord, as the city grumbles under short rations, a matter demands your word. Greedy earlier choices sour the people. I will not invent new powers; only these trusted paths remain.",
+      "choices": [
+        {
+          "id": "c-unrest-mid-pay",
+          "label": "Settle the matter cleanly before it spreads, as the city grumbles under short rations. I advise this first."
+        },
+        {
+          "id": "c-unrest-mid-accept",
+          "label": "Endure the harm rather than spend now, as the city grumbles under short rations. This is the sterner counsel."
+        }
+      ]
+    }
+  },
+  {
+    "seedKey": "fallback-catalog-v1:c-raid-late:d65:v01",
+    "packageId": "c-raid-late",
+    "day": 65,
+    "kind": "consequence",
+    "narrative": {
+      "title": "Consequence: Late-war assault, as night raids grow more daring",
+      "description": "My lord, as night raids grow more daring, a matter demands your word. A delayed raid strikes as the endgame nears. I will not invent new powers; only these trusted paths remain.",
+      "choices": [
+        {
+          "id": "c-raid-late-pay",
+          "label": "Settle the matter cleanly before it spreads, as night raids grow more daring. I advise this first."
+        },
+        {
+          "id": "c-raid-late-accept",
+          "label": "Endure the harm rather than spend now, as night raids grow more daring. This is the sterner counsel."
+        },
+        {
+          "id": "c-raid-late-def",
+          "label": "Settle the matter cleanly before it spreads, as night raids grow more daring. This is the quieter counsel."
+        }
+      ]
+    }
+  },
+  {
+    "seedKey": "fallback-catalog-v1:c-raid-late:d75:v01",
+    "packageId": "c-raid-late",
+    "day": 75,
+    "kind": "consequence",
+    "narrative": {
+      "title": "Consequence: Late-war assault, while the outer watch burns low",
+      "description": "My lord, while the outer watch burns low, a matter demands your word. A delayed raid strikes as the endgame nears. I will not invent new powers; only these trusted paths remain.",
+      "choices": [
+        {
+          "id": "c-raid-late-pay",
+          "label": "Settle the matter cleanly before it spreads, while the outer watch burns low. I advise this first."
+        },
+        {
+          "id": "c-raid-late-accept",
+          "label": "Endure the harm rather than spend now, while the outer watch burns low. This is the sterner counsel."
+        },
+        {
+          "id": "c-raid-late-def",
+          "label": "Settle the matter cleanly before it spreads, while the outer watch burns low. This is the quieter counsel."
+        }
+      ]
+    }
+  },
+  {
+    "seedKey": "fallback-catalog-v1:c-unrest-late:d64:v01",
+    "packageId": "c-unrest-late",
+    "day": 64,
+    "kind": "consequence",
+    "narrative": {
+      "title": "Consequence: Late-war unrest, with the streets one insult from riot",
+      "description": "My lord, with the streets one insult from riot, a matter demands your word. The city tires of unpaid promises. I will not invent new powers; only these trusted paths remain.",
+      "choices": [
+        {
+          "id": "c-unrest-late-pay",
+          "label": "Settle the matter cleanly before it spreads, with the streets one insult from riot. I advise this first."
+        },
+        {
+          "id": "c-unrest-late-accept",
+          "label": "Endure the harm rather than spend now, with the streets one insult from riot. This is the sterner counsel."
+        }
+      ]
+    }
+  },
+  {
+    "seedKey": "fallback-catalog-v1:c-unrest-late:d74:v01",
+    "packageId": "c-unrest-late",
+    "day": 74,
+    "kind": "consequence",
+    "narrative": {
+      "title": "Consequence: Late-war unrest, as the last loyal districts grow thin",
+      "description": "My lord, as the last loyal districts grow thin, a matter demands your word. The city tires of unpaid promises. I will not invent new powers; only these trusted paths remain.",
+      "choices": [
+        {
+          "id": "c-unrest-late-pay",
+          "label": "Settle the matter cleanly before it spreads, as the last loyal districts grow thin. I advise this first."
+        },
+        {
+          "id": "c-unrest-late-accept",
+          "label": "Endure the harm rather than spend now, as the last loyal districts grow thin. This is the sterner counsel."
+        }
+      ]
+    }
+  },
+  {
+    "seedKey": "fallback-catalog-v1:c-raid-finale:d85:v01",
+    "packageId": "c-raid-finale",
+    "day": 85,
+    "kind": "consequence",
+    "narrative": {
+      "title": "Consequence: Pre-finale ambush, as the last raiders circle wide",
+      "description": "My lord, as the last raiders circle wide, a matter demands your word. Ignored omens culminate in an ambush before the Demon King. I will not invent new powers; only these trusted paths remain.",
+      "choices": [
+        {
+          "id": "c-raid-finale-pay",
+          "label": "Settle the matter cleanly before it spreads, as the last raiders circle wide. I advise this first."
+        },
+        {
+          "id": "c-raid-finale-accept",
+          "label": "Endure the harm rather than spend now, as the last raiders circle wide. This is the sterner counsel."
+        },
+        {
+          "id": "c-raid-finale-combo",
+          "label": "Tend the wounded and restore strength, as the last raiders circle wide. This is the quieter counsel."
+        }
+      ]
+    }
+  },
+  {
+    "seedKey": "fallback-catalog-v1:c-raid-finale:d95:v01",
+    "packageId": "c-raid-finale",
+    "day": 95,
+    "kind": "consequence",
+    "narrative": {
+      "title": "Consequence: Pre-finale ambush, with the final assault almost upon us",
+      "description": "My lord, with the final assault almost upon us, a matter demands your word. Ignored omens culminate in an ambush before the Demon King. I will not invent new powers; only these trusted paths remain.",
+      "choices": [
+        {
+          "id": "c-raid-finale-pay",
+          "label": "Settle the matter cleanly before it spreads, with the final assault almost upon us. I advise this first."
+        },
+        {
+          "id": "c-raid-finale-accept",
+          "label": "Endure the harm rather than spend now, with the final assault almost upon us. This is the sterner counsel."
+        },
+        {
+          "id": "c-raid-finale-combo",
+          "label": "Tend the wounded and restore strength, with the final assault almost upon us. This is the quieter counsel."
+        }
+      ]
+    }
+  },
+  {
+    "seedKey": "fallback-catalog-v1:c-unrest-finale:d84:v01",
+    "packageId": "c-unrest-finale",
+    "day": 84,
+    "kind": "consequence",
+    "narrative": {
+      "title": "Consequence: Finale unrest, with the city holding its breath",
+      "description": "My lord, with the city holding its breath, a matter demands your word. The people nearly revolt before the final battle. I will not invent new powers; only these trusted paths remain.",
+      "choices": [
+        {
+          "id": "c-unrest-finale-pay",
+          "label": "Settle the matter cleanly before it spreads, with the city holding its breath. I advise this first."
+        },
+        {
+          "id": "c-unrest-finale-accept",
+          "label": "Endure the harm rather than spend now, with the city holding its breath. This is the sterner counsel."
+        }
+      ]
+    }
+  },
+  {
+    "seedKey": "fallback-catalog-v1:c-unrest-finale:d94:v01",
+    "packageId": "c-unrest-finale",
+    "day": 94,
+    "kind": "consequence",
+    "narrative": {
+      "title": "Consequence: Finale unrest, as even loyal voices turn sharp",
+      "description": "My lord, as even loyal voices turn sharp, a matter demands your word. The people nearly revolt before the final battle. I will not invent new powers; only these trusted paths remain.",
+      "choices": [
+        {
+          "id": "c-unrest-finale-pay",
+          "label": "Settle the matter cleanly before it spreads, as even loyal voices turn sharp. I advise this first."
+        },
+        {
+          "id": "c-unrest-finale-accept",
+          "label": "Endure the harm rather than spend now, as even loyal voices turn sharp. This is the sterner counsel."
+        }
+      ]
+    }
+  }
+]

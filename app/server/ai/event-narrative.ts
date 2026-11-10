@@ -16,29 +16,37 @@ export const generatedEventNarrativeSchema = z.object({
   }).strict()).min(2).max(4),
 }).strict();
 
+/**
+ * Gemini structured-output accepts a JSON Schema subset.
+ * Avoid minLength/maxLength/additionalProperties — they cause 400 Bad Request.
+ * Length and strict shape are enforced by Zod after the response.
+ */
 const generatedEventNarrativeJsonSchema = {
   type: "object",
-  additionalProperties: false,
   required: ["title", "description", "choices"],
+  propertyOrdering: ["title", "description", "choices"],
   properties: {
-    title: { type: "string", minLength: 1, maxLength: 120 },
-    description: { type: "string", minLength: 1, maxLength: 1200 },
+    title: { type: "string" },
+    description: { type: "string" },
     choices: {
       type: "array",
       minItems: 2,
       maxItems: 4,
       items: {
         type: "object",
-        additionalProperties: false,
         required: ["id", "label"],
+        propertyOrdering: ["id", "label"],
         properties: {
-          id: { type: "string", minLength: 1 },
-          label: { type: "string", minLength: 1, maxLength: 240 },
+          id: { type: "string" },
+          label: { type: "string" },
         },
       },
     },
   },
 } as const;
+
+/** Gemini rejects manually set deadlines below 10s. */
+const GEMINI_MIN_DEADLINE_MS = 10_000;
 
 export type GeneratedEventNarrative = z.infer<typeof generatedEventNarrativeSchema>;
 export type NarrativeResult = {
@@ -70,7 +78,7 @@ export class GeminiEventNarrativeGenerator implements EventNarrativeGenerator {
     this.client = new GoogleGenAI({
       apiKey: env.GEMINI_API_KEY,
       httpOptions: {
-        timeout: env.AI_TIMEOUT_MS,
+        timeout: Math.max(env.AI_TIMEOUT_MS, GEMINI_MIN_DEADLINE_MS),
         retryOptions: {
           attempts: env.AI_MAX_RETRIES + 1,
           httpStatusCodes: [408, 429, 500, 502, 503, 504],
@@ -170,11 +178,17 @@ export async function generateEventNarrative(
         promptVersion,
       };
     } catch (error) {
+      const status =
+        error && typeof error === "object" && "status" in error
+          ? (error as { status?: unknown }).status
+          : undefined;
       console.warn("Event narrative generation failed; using fallback", {
         eventId: event.eventId,
         provider: generator.provider,
         model: generator.model,
         error: error instanceof Error ? error.name : "UnknownError",
+        status,
+        message: error instanceof Error ? error.message : String(error),
       });
     }
   }
