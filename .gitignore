@@ -1,0 +1,34 @@
+# Dependencies
+node_modules/
+
+# Build / cache
+dist/
+.next/
+out/
+build/
+*.tsbuildinfo
+.vite/
+coverage/
+
+# Env & secrets
+.env
+.env.*
+!.env.example
+
+# Logs & OS
+*.log
+npm-debug.log*
+.DS_Store
+Thumbs.db
+
+# Editor
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# Local / heavy archives (schema sudah di docs/database/)
+docs/database.zip
+
+# Optional local agent scratch dumps (uncomment if you don't want them in git)
+# .scratch/
+# .agents/

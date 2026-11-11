@@ -1,0 +1,813 @@
+import type { EventPackage } from "./types";
+
+/** Pre-battle consequence window hint used by skip/refuse choices. */
+const PRE_BATTLE = { minDelayDays: 1, maxDelayDays: 3 } as const;
+
+function consec(packageId: string) {
+  return { packageId, ...PRE_BATTLE };
+}
+
+/**
+ * Scheduled packages are pooled by decade. Each run picks 2 prep days + packages.
+ * At least one free choice per package. Skip/refuse choices may schedule consequences.
+ */
+export const SCHEDULED_EVENT_PACKAGES: EventPackage[] = [
+  // Decade 1
+  {
+    packageId: "d1-scouts-a",
+    eventId: "d1-scouts-a",
+    decade: 1,
+    title: "Scouts at the gate",
+    description:
+      "My lord, enemy scouts linger beyond the gate. We can harden the walls, pay for quiet rumors, or let them pass.",
+    choices: [
+      {
+        id: "d1-scouts-a-pay-def",
+        label: "Reinforce the gate before the scouts slip through",
+        goldCost: 20,
+        effects: [{ type: "nextWaveDefense", amount: 4, wave: 1 }],
+      },
+      {
+        id: "d1-scouts-a-bribe",
+        label: "Buy the scouts' silence and send them off the road",
+        goldCost: 10,
+        effects: [],
+      },
+      {
+        id: "d1-scouts-a-skip",
+        label: "Let the scouts pass and keep the watch as it is",
+        goldCost: 0,
+        effects: [],
+        consequence: consec("c-raid-wave1"),
+      },
+    ],
+  },
+  {
+    packageId: "d1-envoy-b",
+    eventId: "d1-envoy-b",
+    decade: 1,
+    title: "Nervous border envoy",
+    description:
+      "A border envoy begs escort coin before the first wave. Paying hardens our walls; refusing costs nothing today.",
+    choices: [
+      {
+        id: "d1-envoy-b-pay",
+        label: "Fund an escort and harden the approach",
+        goldCost: 20,
+        effects: [{ type: "nextWaveDefense", amount: 4, wave: 1 }],
+      },
+      {
+        id: "d1-envoy-b-heal",
+        label: "Share the stores with the envoy's party",
+        goldCost: 0,
+        effects: [{ type: "healCity", amount: 10 }],
+      },
+      {
+        id: "d1-envoy-b-skip",
+        label: "Send them away empty-handed.",
+        goldCost: 0,
+        effects: [],
+        consequence: consec("c-raid-wave1"),
+      },
+    ],
+  },
+  {
+    packageId: "d1-supplies-a",
+    eventId: "d1-supplies-a",
+    decade: 1,
+    title: "Supply dilemma",
+    description:
+      "The stores run low. Buy supplies, squeeze the stalls, refuse and take the loss, or wait.",
+    choices: [
+      {
+        id: "d1-supplies-a-pay",
+        label: "Buy the offered stores for the city",
+        goldCost: 15,
+        effects: [],
+      },
+      {
+        id: "d1-supplies-a-gold",
+        label: "Tax the stalls and take their surplus",
+        goldCost: 0,
+        effects: [{ type: "grantGold", amount: 12 }],
+        consequence: consec("c-unrest-wave1"),
+      },
+      {
+        id: "d1-supplies-a-hurt",
+        label: "Refuse the offer and let the stores spoil",
+        goldCost: 0,
+        effects: [{ type: "damageCity", amount: 10 }],
+      },
+      {
+        id: "d1-supplies-a-skip",
+        label: "Delay the decision until the stalls close",
+        goldCost: 0,
+        effects: [],
+      },
+    ],
+  },
+  {
+    packageId: "d1-labor-b",
+    eventId: "d1-labor-b",
+    decade: 1,
+    title: "Exhausted work crews",
+    description: "Labor crews are spent. A wage keeps walls sound; unpaid work strains the city.",
+    choices: [
+      {
+        id: "d1-labor-b-pay",
+        label: "Pay the crews and keep the walls sound",
+        goldCost: 15,
+        effects: [],
+      },
+      {
+        id: "d1-labor-b-discount",
+        label: "Promise the crews cheaper stone on the next works",
+        goldCost: 0,
+        effects: [{ type: "upgradeDiscount", rate: 0.2, untilWave: 1 }],
+        consequence: consec("c-unrest-wave1"),
+      },
+      {
+        id: "d1-labor-b-hurt",
+        label: "Order the crews onward without wages",
+        goldCost: 0,
+        effects: [{ type: "damageCity", amount: 10 }],
+      },
+    ],
+  },
+
+  // Decade 2
+  {
+    packageId: "d2-caravan-a",
+    eventId: "d2-caravan-a",
+    decade: 2,
+    title: "Trade opportunity",
+    description: "A caravan offers gold now or cheaper building until the next wave.",
+    choices: [
+      {
+        id: "d2-caravan-a-gold",
+        label: "Take the caravan's purse and send them on",
+        goldCost: 0,
+        effects: [{ type: "grantGold", amount: 20 }],
+        consequence: consec("c-shortage-wave2"),
+      },
+      {
+        id: "d2-caravan-a-discount",
+        label: "Lock their prices and work the crews through the night",
+        goldCost: 0,
+        effects: [
+          { type: "damageCity", amount: 8 },
+          { type: "upgradeDiscount", rate: 0.25, untilWave: 2 },
+        ],
+      },
+      {
+        id: "d2-caravan-a-skip",
+        label: "Turn the caravan away from the south road",
+        goldCost: 0,
+        effects: [],
+      },
+    ],
+  },
+  {
+    packageId: "d2-guild-b",
+    eventId: "d2-guild-b",
+    decade: 2,
+    title: "Builders' guild charter",
+    description: "The guild wants a fee for preferred rates, or a risky free bargain.",
+    choices: [
+      {
+        id: "d2-guild-b-pay",
+        label: "Pay the guild fee and take their preferred rates",
+        goldCost: 18,
+        effects: [{ type: "upgradeDiscount", rate: 0.25, untilWave: 2 }],
+      },
+      {
+        id: "d2-guild-b-gold",
+        label: "Demand tribute from the guild instead",
+        goldCost: 0,
+        effects: [{ type: "grantGold", amount: 15 }],
+        consequence: consec("c-shortage-wave2"),
+      },
+      {
+        id: "d2-guild-b-skip",
+        label: "Ignore the guild and leave the charter unsigned",
+        goldCost: 0,
+        effects: [],
+      },
+    ],
+  },
+  {
+    packageId: "d2-patrol-a",
+    eventId: "d2-patrol-a",
+    decade: 2,
+    title: "Night patrol request",
+    description: "Captains ask for coin to double patrols before the orcs.",
+    choices: [
+      {
+        id: "d2-patrol-a-pay",
+        label: "Fund a doubled night patrol",
+        goldCost: 22,
+        effects: [{ type: "nextWaveDefense", amount: 5, wave: 2 }],
+      },
+      {
+        id: "d2-patrol-a-heal",
+        label: "Rest the wounded instead of doubling the watch",
+        goldCost: 0,
+        effects: [{ type: "healCity", amount: 15 }],
+      },
+      {
+        id: "d2-patrol-a-skip",
+        label: "Keep the night watch thin.",
+        goldCost: 0,
+        effects: [],
+        consequence: consec("c-raid-wave2"),
+      },
+      {
+        id: "d2-patrol-a-risk",
+        label: "Press civilians into the night service",
+        goldCost: 0,
+        effects: [
+          { type: "grantGold", amount: 10 },
+          { type: "damageCity", amount: 8 },
+        ],
+      },
+    ],
+  },
+  {
+    packageId: "d2-omen-b",
+    eventId: "d2-omen-b",
+    decade: 2,
+    title: "Ill omen at the shrine",
+    description: "Priests warn of a raid unless offerings are made.",
+    choices: [
+      {
+        id: "d2-omen-b-pay",
+        label: "Leave an offering at the shrine",
+        goldCost: 16,
+        effects: [],
+      },
+      {
+        id: "d2-omen-b-maxhp",
+        label: "Let the priests bless the walls",
+        goldCost: 0,
+        effects: [{ type: "maxHpBonus", amount: 15 }],
+        consequence: consec("c-raid-wave2"),
+      },
+      {
+        id: "d2-omen-b-skip",
+        label: "Dismiss the omen and close the shrine",
+        goldCost: 0,
+        effects: [],
+      },
+    ],
+  },
+
+  // Decades 3–10: patterned packages (2 each minimum)
+  ...buildLaterDecades(),
+];
+
+function buildLaterDecades(): EventPackage[] {
+  const rows: Array<{
+    decade: number;
+    wave: number;
+    titleA: string;
+    threatScene: string;
+    foe: string;
+    titleB: string;
+    marketScene: string;
+    bargain: string;
+    shelter: string;
+    refuse: string;
+    consecRaid: string;
+    consecUnrest: string;
+  }> = [
+    {
+      decade: 3,
+      wave: 3,
+      titleA: "Wolf howls beyond the treeline",
+      foe: "the wolves",
+      threatScene:
+        "My lord, wolves are pacing the treeline and the night watch wants orders before they test the palisade.",
+      titleB: "Hunters demand hazard pay",
+      marketScene:
+        "Hunters crowd the west gate and will not range the wolf woods until you answer their terms.",
+      bargain: "Bargain cheaper timber from the hunting camps",
+      shelter: "Raise extra lodges along the palisade",
+      refuse: "Turn the hunters away from the gate",
+      consecRaid: "c-raid-mid",
+      consecUnrest: "c-unrest-mid",
+    },
+    {
+      decade: 4,
+      wave: 4,
+      titleA: "Cyclops tracks in the mud",
+      foe: "the cyclops",
+      threatScene:
+        "My lord, a cyclops has left fresh tracks in the mud beyond the north fields. The farmers will not stay in their houses unless you act.",
+      titleB: "Quarry collapse rumor",
+      marketScene:
+        "Masons from the quarry say a gallery is cracking. They stand in the yard and will not keep cutting stone until you decide.",
+      bargain: "Strike a cheaper stone contract with the masons",
+      shelter: "Shore the quarry sheds and storehouses",
+      refuse: "Send the masons back to the quarry unanswered",
+      consecRaid: "c-raid-mid",
+      consecUnrest: "c-unrest-mid",
+    },
+    {
+      decade: 5,
+      wave: 5,
+      titleA: "Wyvern shadow over the spires",
+      foe: "the wyvern",
+      threatScene:
+        "My lord, a wyvern's shadow crosses the spires. The tower watch is shouting for barricades, bandages, or leave to strip the racks.",
+      titleB: "Alchemists sell fire oil",
+      marketScene:
+        "My lord, alchemists have wheeled casks of fire oil into the east market and will not leave until you speak. The watch is already arguing over the street.",
+      bargain: "Strike a supply bargain for cheaper city works",
+      shelter: "Claim casks to reinforce shelters and storehouses",
+      refuse: "Send the alchemists away empty-handed",
+      consecRaid: "c-raid-mid",
+      consecUnrest: "c-unrest-mid",
+    },
+    {
+      decade: 6,
+      wave: 6,
+      titleA: "Lich whispers in the crypt",
+      foe: "the lich",
+      threatScene:
+        "My lord, a cold voice in the crypt district has the burial crews refusing the night shift. They wait at the stair for your word.",
+      titleB: "Necromancer's bargain",
+      marketScene:
+        "A necromancer's agent waits at the crypt gate with a grim offer. The priests want you to answer before dusk.",
+      bargain: "Accept warded tools that cheapen later works",
+      shelter: "Seal extra crypt vaults into the city's bulk",
+      refuse: "Dismiss the agent from the crypt gate",
+      consecRaid: "c-raid-late",
+      consecUnrest: "c-unrest-late",
+    },
+    {
+      decade: 7,
+      wave: 7,
+      titleA: "Lesser demon sighted",
+      foe: "the lesser demon",
+      threatScene:
+        "My lord, a lesser demon was seen on the ash road. The gate captain will not close the watch without your order.",
+      titleB: "Hellgate cracks",
+      marketScene:
+        "A crack of hellfire has split the old chapel floor. Wardens and masons are in the nave, each demanding a different order.",
+      bargain: "Buy warded stone so later works cost less",
+      shelter: "Brace the chapel into a thicker refuge",
+      refuse: "Leave the cracked chapel to the wardens",
+      consecRaid: "c-raid-late",
+      consecUnrest: "c-unrest-late",
+    },
+    {
+      decade: 8,
+      wave: 8,
+      titleA: "Demon banners on the ridge",
+      foe: "the demon host",
+      threatScene:
+        "My lord, demon banners stand on the ridge. The outer companies are formed in the yard and waiting.",
+      titleB: "Iron levy demand",
+      marketScene:
+        "Armorers block the foundry doors. They will not keep the forges hot unless you answer the levy they demand.",
+      bargain: "Lock a cheaper iron contract for city works",
+      shelter: "Turn spare plate into thicker civic shelters",
+      refuse: "Refuse the armorers and reopen the foundry by order",
+      consecRaid: "c-raid-late",
+      consecUnrest: "c-unrest-late",
+    },
+    {
+      decade: 9,
+      wave: 9,
+      titleA: "Dragon smoke on the horizon",
+      foe: "the dragon",
+      threatScene:
+        "My lord, dragon smoke stains the horizon. The roofs are clearing and the watch wants a decision before the next pass.",
+      titleB: "Dragon cult emissaries",
+      marketScene:
+        "Dragon-cult emissaries have entered the high square with offerings and threats. The crowd will not disperse until you answer.",
+      bargain: "Take their tribute terms for cheaper later works",
+      shelter: "Convert their wagons into extra refuges",
+      refuse: "Drive the emissaries out of the square",
+      consecRaid: "c-raid-finale",
+      consecUnrest: "c-unrest-finale",
+    },
+    {
+      decade: 10,
+      wave: 10,
+      titleA: "Demon King envoys",
+      foe: "the Demon King's envoys",
+      threatScene:
+        "My lord, envoys of the Demon King stand outside the final gate. The household is silent, waiting for your order.",
+      titleB: "Final mustering call",
+      marketScene:
+        "Captains and stewards fill the muster yard. The last levy will not form until you say how the city spends this hour.",
+      bargain: "Promise cheaper works in exchange for their labor",
+      shelter: "Fold the muster wagons into the city's last refuge",
+      refuse: "Dismiss the muster and keep the yard empty",
+      consecRaid: "c-raid-finale",
+      consecUnrest: "c-unrest-finale",
+    },
+  ];
+
+  const packages: EventPackage[] = [];
+  for (const row of rows) {
+    const d = row.decade;
+    const w = row.wave;
+    packages.push({
+      packageId: `d${d}-threat-a`,
+      eventId: `d${d}-threat-a`,
+      decade: d,
+      title: row.titleA,
+      description: row.threatScene,
+      choices: [
+        {
+          id: `d${d}-threat-a-pay`,
+          label: `Raise barricades against ${row.foe}`,
+          goldCost: 18 + d,
+          effects: [{ type: "nextWaveDefense", amount: 3 + Math.floor(d / 3), wave: w }],
+        },
+        {
+          id: `d${d}-threat-a-heal`,
+          label: `Tend the wounded from the latest probes`,
+          goldCost: 0,
+          effects: [{ type: "healCity", amount: 12 + d }],
+        },
+        {
+          id: `d${d}-threat-a-gold`,
+          label: `Strip the spare racks for a quick surplus`,
+          goldCost: 0,
+          effects: [{ type: "grantGold", amount: 14 + d }],
+          consequence: consec(row.consecUnrest),
+        },
+        {
+          id: `d${d}-threat-a-skip`,
+          label: `Leave ${row.foe} unanswered for now`,
+          goldCost: 0,
+          effects: [],
+          consequence: consec(row.consecRaid),
+        },
+      ],
+    });
+    packages.push({
+      packageId: `d${d}-market-b`,
+      eventId: `d${d}-market-b`,
+      decade: d,
+      title: row.titleB,
+      description: row.marketScene,
+      choices: [
+        {
+          id: `d${d}-market-b-discount`,
+          label: row.bargain,
+          goldCost: 15 + d,
+          effects: [{ type: "upgradeDiscount", rate: 0.25, untilWave: w }],
+        },
+        {
+          id: `d${d}-market-b-maxhp`,
+          label: row.shelter,
+          goldCost: 0,
+          effects: [{ type: "maxHpBonus", amount: 15 + Math.floor(d / 2) }],
+          consequence: consec(row.consecUnrest),
+        },
+        {
+          id: `d${d}-market-b-skip`,
+          label: row.refuse,
+          goldCost: 0,
+          effects: [],
+        },
+      ],
+    });
+  }
+  return packages;
+}
+
+/**
+ * Wave a consequence package is written for. Scheduling prefers a prep day
+ * before that wave's battle; see CONSEQUENCE_SUCCESSOR when the window is full.
+ */
+export const CONSEQUENCE_TARGET_WAVE: Readonly<Record<string, number>> = {
+  "c-raid-wave1": 1,
+  "c-unrest-wave1": 1,
+  "c-shortage-wave2": 2,
+  "c-raid-wave2": 2,
+  "c-raid-mid": 5,
+  "c-unrest-mid": 5,
+  "c-raid-late": 8,
+  "c-unrest-late": 8,
+  "c-raid-finale": 10,
+  "c-unrest-finale": 10,
+};
+
+/**
+ * True when `scheduledPackageId` is the origin package or a package reached by
+ * walking `CONSEQUENCE_SUCCESSOR` forward from it. Does not accept unrelated packages.
+ */
+export function isTrustedConsequencePackage(
+  originPackageId: string,
+  scheduledPackageId: string,
+): boolean {
+  if (originPackageId === scheduledPackageId) return true;
+  const seen = new Set<string>();
+  let current = originPackageId;
+  while (!seen.has(current)) {
+    seen.add(current);
+    const next = CONSEQUENCE_SUCCESSOR[current];
+    if (!next) return false;
+    if (next === scheduledPackageId) return true;
+    current = next;
+  }
+  return false;
+}
+
+/** Trusted package to schedule when the original target wave can no longer be reached. */
+export const CONSEQUENCE_SUCCESSOR: Readonly<Record<string, string>> = {
+  "c-raid-wave1": "c-raid-wave2",
+  "c-unrest-wave1": "c-unrest-mid",
+  "c-shortage-wave2": "c-unrest-mid",
+  "c-raid-wave2": "c-raid-mid",
+  "c-raid-mid": "c-raid-late",
+  "c-unrest-mid": "c-unrest-late",
+  "c-raid-late": "c-raid-finale",
+  "c-unrest-late": "c-unrest-finale",
+};
+
+/** Consequence packages resolved later; still 2–4 choices with ≥1 free. */
+export const CONSEQUENCE_PACKAGES: EventPackage[] = [
+  {
+    packageId: "c-raid-wave1",
+    eventId: "c-raid-wave1",
+    decade: 0,
+    title: "Night raid fallout",
+    description:
+      "Raiders are in the lower streets after an earlier refusal left the approach open. Blunt them, brace the barricades, or endure the night, my lord.",
+    choices: [
+      {
+        id: "c-raid-wave1-pay",
+        label: "Hire militia to bar the streets",
+        goldCost: 20,
+        effects: [{ type: "nextWaveDefense", amount: 2, wave: 1 }],
+      },
+      {
+        id: "c-raid-wave1-def",
+        label: "Raise the barricades with the crews you have",
+        goldCost: 12,
+        effects: [
+          { type: "damageCity", amount: 8 },
+          { type: "nextWaveDefense", amount: 2, wave: 1 },
+        ],
+      },
+      {
+        id: "c-raid-wave1-accept",
+        label: "Let the raid through the outer street",
+        goldCost: 0,
+        effects: [{ type: "damageCity", amount: 18 }],
+      },
+    ],
+  },
+  {
+    packageId: "c-unrest-wave1",
+    eventId: "c-unrest-wave1",
+    decade: 0,
+    title: "Market unrest",
+    description: "A crowd from an earlier hard bargain is shouting in the market square.",
+    choices: [
+      {
+        id: "c-unrest-wave1-pay",
+        label: "Pay the crowd to barricade the market",
+        goldCost: 15,
+        effects: [{ type: "nextWaveDefense", amount: 2, wave: 1 }],
+      },
+      {
+        id: "c-unrest-wave1-accept",
+        label: "Let the riot run through the square",
+        goldCost: 0,
+        effects: [{ type: "damageCity", amount: 20 }],
+      },
+    ],
+  },
+  {
+    packageId: "c-shortage-wave2",
+    eventId: "c-shortage-wave2",
+    decade: 0,
+    title: "Material shortage",
+    description: "Builders are short of stone after an earlier caravan or guild was turned aside.",
+    choices: [
+      {
+        id: "c-shortage-wave2-pay",
+        label: "Import stone for the unfinished works",
+        goldCost: 18,
+        effects: [],
+      },
+      {
+        id: "c-shortage-wave2-discount",
+        label: "Work the crews harder for cheaper stone",
+        goldCost: 0,
+        effects: [
+          { type: "damageCity", amount: 10 },
+          { type: "upgradeDiscount", rate: 0.2, untilWave: 2 },
+        ],
+      },
+      {
+        id: "c-shortage-wave2-hurt",
+        label: "Strip scaffolds into barricades",
+        goldCost: 0,
+        effects: [
+          { type: "damageCity", amount: 16 },
+          { type: "nextWaveDefense", amount: 2, wave: 2 },
+        ],
+      },
+    ],
+  },
+  {
+    packageId: "c-raid-wave2",
+    eventId: "c-raid-wave2",
+    decade: 0,
+    title: "Orc probing raid",
+    description: "A probing raid is testing the walls after an earlier lapse in the watch.",
+    choices: [
+      {
+        id: "c-raid-wave2-pay",
+        label: "Pay for a sortie and trenches",
+        goldCost: 22,
+        effects: [{ type: "nextWaveDefense", amount: 2, wave: 2 }],
+      },
+      {
+        id: "c-raid-wave2-def",
+        label: "Dig the trenches without extra pay",
+        goldCost: 0,
+        effects: [
+          { type: "damageCity", amount: 12 },
+          { type: "nextWaveDefense", amount: 2, wave: 2 },
+        ],
+      },
+      {
+        id: "c-raid-wave2-accept",
+        label: "Loot the breach and fall back",
+        goldCost: 0,
+        effects: [
+          { type: "damageCity", amount: 22 },
+          { type: "grantGold", amount: 12 },
+        ],
+      },
+    ],
+  },
+  {
+    packageId: "c-raid-mid",
+    eventId: "c-raid-mid",
+    decade: 0,
+    title: "Mid-campaign raid",
+    description: "Ignored threats return as a sharp raid before the next battle.",
+    choices: [
+      {
+        id: "c-raid-mid-pay",
+        label: "Hire mercenaries to hold the line",
+        goldCost: 28,
+        effects: [{ type: "nextWaveDefense", amount: 3, wave: 5 }],
+      },
+      {
+        id: "c-raid-mid-accept",
+        label: "Hold the line with the city companies",
+        goldCost: 0,
+        effects: [
+          { type: "damageCity", amount: 18 },
+          { type: "nextWaveDefense", amount: 3, wave: 5 },
+        ],
+      },
+      {
+        id: "c-raid-mid-heal-cost",
+        label: "Trade blood for cheaper later works",
+        goldCost: 0,
+        effects: [
+          { type: "damageCity", amount: 14 },
+          { type: "upgradeDiscount", rate: 0.2, untilWave: 5 },
+        ],
+      },
+    ],
+  },
+  {
+    packageId: "c-unrest-mid",
+    eventId: "c-unrest-mid",
+    decade: 0,
+    title: "Mid-campaign unrest",
+    description: "Petitioners fill the square over an earlier refusal or a stripped store.",
+    choices: [
+      {
+        id: "c-unrest-mid-pay",
+        label: "Feed the crowd and man the square",
+        goldCost: 24,
+        effects: [{ type: "nextWaveDefense", amount: 2, wave: 5 }],
+      },
+      {
+        id: "c-unrest-mid-accept",
+        label: "Ignore the petitions in the square",
+        goldCost: 0,
+        effects: [{ type: "damageCity", amount: 26 }],
+      },
+    ],
+  },
+  {
+    packageId: "c-raid-late",
+    eventId: "c-raid-late",
+    decade: 0,
+    title: "Late-war assault",
+    description: "A delayed raid strikes as the endgame nears.",
+    choices: [
+      {
+        id: "c-raid-late-pay",
+        label: "Buy a full levy for the outer streets",
+        goldCost: 35,
+        effects: [{ type: "nextWaveDefense", amount: 3, wave: 8 }],
+      },
+      {
+        id: "c-raid-late-accept",
+        label: "Leave the district exposed",
+        goldCost: 0,
+        effects: [{ type: "damageCity", amount: 30 }],
+      },
+      {
+        id: "c-raid-late-def",
+        label: "Barricade the streets short-handed",
+        goldCost: 20,
+        effects: [
+          { type: "damageCity", amount: 14 },
+          { type: "nextWaveDefense", amount: 2, wave: 8 },
+        ],
+      },
+    ],
+  },
+  {
+    packageId: "c-unrest-late",
+    eventId: "c-unrest-late",
+    decade: 0,
+    title: "Late-war unrest",
+    description: "The city tires of unpaid promises.",
+    choices: [
+      {
+        id: "c-unrest-late-pay",
+        label: "Appease the crowd and arm the square",
+        goldCost: 30,
+        effects: [{ type: "nextWaveDefense", amount: 2, wave: 8 }],
+      },
+      {
+        id: "c-unrest-late-accept",
+        label: "Crack down on the crowd",
+        goldCost: 0,
+        effects: [{ type: "damageCity", amount: 28 }],
+      },
+    ],
+  },
+  {
+    packageId: "c-raid-finale",
+    eventId: "c-raid-finale",
+    decade: 0,
+    title: "Pre-finale ambush",
+    description: "An ambush is forming on the last road, born of a warning you let pass before the Demon King.",
+    choices: [
+      {
+        id: "c-raid-finale-pay",
+        label: "Pay to break the ambush on the last road",
+        goldCost: 40,
+        effects: [{ type: "nextWaveDefense", amount: 4, wave: 10 }],
+      },
+      {
+        id: "c-raid-finale-accept",
+        label: "Loot the ambush and fall back",
+        goldCost: 0,
+        effects: [
+          { type: "damageCity", amount: 35 },
+          { type: "grantGold", amount: 20 },
+        ],
+      },
+      {
+        id: "c-raid-finale-combo",
+        label: "Stand in the road and hold the pass",
+        goldCost: 0,
+        effects: [
+          { type: "damageCity", amount: 22 },
+          { type: "nextWaveDefense", amount: 2, wave: 10 },
+        ],
+      },
+    ],
+  },
+  {
+    packageId: "c-unrest-finale",
+    eventId: "c-unrest-finale",
+    decade: 0,
+    title: "Finale unrest",
+    description: "The people nearly revolt before the final battle.",
+    choices: [
+      {
+        id: "c-unrest-finale-pay",
+        label: "Feast the city and man the last gate",
+        goldCost: 36,
+        effects: [{ type: "nextWaveDefense", amount: 3, wave: 10 }],
+      },
+      {
+        id: "c-unrest-finale-accept",
+        label: "Let them flee the walls",
+        goldCost: 0,
+        effects: [{ type: "damageCity", amount: 34 }],
+      },
+    ],
+  },
+];

@@ -1,0 +1,352 @@
+# Panduan Simulasi Backend untuk Developer Frontend
+
+Terakhir diperbarui: 2026-11-08
+
+Panduan ini digunakan untuk menjalankan backend secara lokal, mencoba smoke test melalui Postman, dan memverifikasi campaign hari 1–20 sebelum integrasi UI frontend.
+
+## 1. Yang perlu diminta dari developer backend
+
+Sebelum mulai, minta informasi berikut melalui jalur komunikasi privat:
+
+- `MONGODB_URI` untuk database development/test;
+- nama database yang boleh digunakan, atau izin membuat database khusus developer;
+- konfirmasi bahwa IP laptop sudah diizinkan pada MongoDB Atlas Network Access.
+
+Jangan mengirim URI, password database, JWT secret, atau API key melalui Git. File `.env` tidak boleh di-commit.
+
+Gemini key tidak diperlukan untuk pengujian ini. Jika `GEMINI_API_KEY` dan `GEMINI_MODEL` kosong, backend memakai narasi fallback terpercaya dan gameplay tetap berjalan.
+
+Game engine v4 dan backend memakai campaign 100 hari, difficulty, `eventPlan` dinamis, consequence event, dan reward per wave. Choice/reward ID wajib dibaca dari response API.
+
+## 2. Prasyarat laptop
+
+- Git dan Git Bash;
+- Node.js serta npm;
+- Postman Desktop;
+- source repository pada branch backend terbaru;
+- akses internet ke MongoDB Atlas.
+
+Cek instalasi dari Git Bash:
+
+```bash
+node --version
+npm --version
+git --version
+```
+
+## 3. Menyiapkan backend dari Git Bash
+
+Buka Git Bash pada root repository, lalu masuk ke folder backend:
+
+```bash
+cd app
+npm ci
+cp .env.example .env
+```
+
+Buka `app/.env` dengan editor dan isi konfigurasi berikut. Ganti nilai bertanda `GANTI_...`; nilai lain dapat digunakan seperti contoh.
+
+```dotenv
+MONGODB_URI=GANTI_DENGAN_URI_ATLAS_DARI_BACKEND
+MONGODB_DB_NAME=GANTI_DENGAN_NAMA_DATABASE_TEST
+MONGODB_CONNECT_TIMEOUT_MS=5000
+
+SESSION_COOKIE_NAME=city_defense_session
+SESSION_TTL_SECONDS=604800
+JWT_SECRET=GANTI_DENGAN_SECRET_ACAK_MINIMAL_32_KARAKTER
+JWT_ISSUER=city-defense-api
+JWT_AUDIENCE=city-defense-web
+BCRYPT_SALT_ROUNDS=12
+APP_ORIGIN=http://localhost:3000
+
+AI_PROVIDER=gemini
+GEMINI_API_KEY=
+GEMINI_MODEL=
+AI_API_KEY=
+AI_MODEL=
+AI_TIMEOUT_MS=10000
+AI_MAX_RETRIES=1
+AI_MAX_OUTPUT_TOKENS=800
+AI_PROMPT_VERSION=event-advisor-en-v1
+
+LOG_LEVEL=info
+```
+
+JWT secret acak dapat dibuat dari Git Bash:
+
+```bash
+node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+```
+
+Salin output perintah tersebut ke `JWT_SECRET`. Jangan menyalin kembali isi `.env` ke chat, screenshot, atau commit.
+
+Siapkan index database:
+
+```bash
+npm run db:indexes
+```
+
+Output yang diharapkan:
+
+```text
+MongoDB indexes are ready for database: <nama-database>
+```
+
+Jalankan server dan biarkan terminal ini tetap terbuka:
+
+```bash
+npm run dev
+```
+
+Server lokal menggunakan `http://localhost:3000`. Dari terminal Git Bash kedua, cek health dan readiness:
+
+```bash
+curl http://localhost:3000/api/health
+curl http://localhost:3000/api/health/readiness
+```
+
+Readiness yang benar mengembalikan status `ready`, database `reachable`, dan AI `fallback-only` bila Gemini tidak dikonfigurasi.
+
+## 4. Mengimpor Postman collection
+
+Di Postman:
+
+1. Klik **Import**.
+2. Impor `app/postman/backend-api.postman_collection.json`.
+3. Impor `app/postman/backend-api.postman_environment.json`.
+4. Pilih environment **Fantasy City Defense - Local** pada environment selector.
+5. Buka environment dan pastikan `baseUrl` adalah `http://localhost:3000`.
+6. Biarkan `username` kosong pada percobaan pertama. Pre-request script akan membuat username unik.
+7. Nilai `password` bawaan `secret123` sudah memenuhi minimum enam karakter.
+
+Postman menyimpan cookie login melalui cookie jar. Jangan menonaktifkan cookie untuk `localhost`.
+
+## 5. Smoke test Postman
+
+Jalankan request satu per satu dalam urutan berikut:
+
+1. `Register` — mengharapkan `201 Created`.
+2. `Login` — mengharapkan `200 OK` dan cookie sesi.
+3. `Current User` — mengharapkan `200 OK`.
+4. `Create Run` — mengharapkan `201 Created`; script menyimpan `runId` dan `revision`.
+5. `Upgrade Wall` — mengharapkan `200 OK`; script memperbarui `revision`.
+6. `Current Run` — mengharapkan `200 OK`.
+7. `Logout` — mengharapkan `200 OK`.
+
+Sesudah logout, `Current User` seharusnya menghasilkan `401 UNAUTHENTICATED` bila dikirim kembali.
+
+Untuk mengulang dari awal, kosongkan `username`, `runId`, dan ubah `revision` menjadi `0` pada environment Postman. Username lama tidak dapat diregistrasikan ulang.
+
+## 6. Simulasi campaign penuh dari Git Bash
+
+Ini adalah cara tercepat untuk memastikan seluruh campaign backend berjalan. Server `npm run dev` harus tetap aktif pada terminal pertama.
+
+Pada terminal Git Bash kedua:
+
+```bash
+cd app
+npm run test:campaign
+```
+
+Runner akan otomatis:
+
+- membuat akun unik dan login;
+- membuat run baru;
+- membaca seluruh scheduled/consequence event dari response, tanpa hard-code hari atau ID;
+- menyelesaikan battle hari 10–100 dan reward setelah wave 1–9;
+- memverifikasi `victory` setelah wave 10;
+- membaca ulang final run dari MongoDB;
+- memastikan save aktif sudah kosong setelah victory;
+- logout dan memastikan sesi tidak lagi berlaku.
+
+Hasil akhir yang diharapkan:
+
+```text
+Campaign passed: runId=<id> actions=<jumlah> events=<jumlah> battles=10
+```
+
+Jika backend dijalankan pada URL atau origin lain:
+
+```bash
+CAMPAIGN_BASE_URL=http://localhost:3000 \
+CAMPAIGN_ORIGIN=http://localhost:3001 \
+npm run test:campaign
+```
+
+`CAMPAIGN_ORIGIN` harus sama persis dengan `APP_ORIGIN` server. Contoh di atas dipakai ketika API berjalan pada port 3000 tetapi frontend/origin yang diizinkan pada `.env` adalah port 3001.
+
+Setiap eksekusi membuat akun dan run test baru. Data tersebut tidak dihapus otomatis karena dipertahankan untuk audit development.
+
+## 7. Simulasi campaign penuh secara manual di Postman
+
+Collection bawaan hanya menyediakan smoke flow. Untuk menjalankan 100 hari secara manual, lakukan `Register`, `Login`, dan `Create Run`, tetapi jangan logout. Payload create-run wajib menyertakan `difficulty` (`easy`, `normal`, atau `hard`).
+
+Duplicate request `Upgrade Wall`, ubah namanya menjadi `Campaign Action`, dan gunakan body dasar berikut:
+
+```json
+{
+  "actionId": "{{$guid}}",
+  "expectedRevision": {{revision}},
+  "type": "endPreparationDay",
+  "payload": {}
+}
+```
+
+Pastikan tab **Tests** atau **Post-response** request tersebut memperbarui revision:
+
+```javascript
+pm.test("action applied", () => pm.expect(pm.response.code).to.eql(200));
+const body = pm.response.json();
+if (body.ok) {
+  pm.environment.set("revision", body.data.game.state.revision);
+}
+```
+
+Pada setiap response, baca `data.game.state.phase` lalu pilih action berikut. Jangan menggunakan ulang `actionId`; dynamic variable `{{$guid}}` membuat ID baru.
+
+| Phase | Action berikut | Sumber payload |
+|---|---|---|
+| `preparation` | opsional satu upgrade/repair, lalu `endPreparationDay` | biaya dan status dari `game.stats`/`game.state` |
+| `event` | `chooseEventOption` | `choiceId` dari `game.eventNarrative.choices` (2–4 pilihan) |
+| `battleReady` | `startBattle` | `{}` |
+| `battleReport` | `continueFromReport` | `{}` |
+| `reward` | `chooseReward` | `rewardId` dari `game.rewardOptions` (3 pilihan) |
+| `victory` / `gameOver` | berhenti | state terminal |
+
+Battle terjadi setiap hari kelipatan 10 sampai hari 100. Scheduled event berjumlah 20, tetapi harinya dinamis dan consequence event tambahan dapat muncul. Karena itu frontend/Postman tidak boleh menebak hari event, choice ID, atau reward ID.
+
+Contoh event action setelah ID disalin:
+
+```json
+{
+  "actionId": "{{$guid}}",
+  "expectedRevision": {{revision}},
+  "type": "chooseEventOption",
+  "payload": {
+    "choiceId": "GANTI_DENGAN_ID_DARI_RESPONSE"
+  }
+}
+```
+
+Setelah setiap response, periksa minimal:
+
+- `data.game.state.revision` naik satu;
+- `data.game.state.day` dan `phase` sesuai tabel;
+- event menyediakan title, description, choices, cost, dan effects;
+- nilai cost/effects berasal dari engine dan tidak bergantung pada teks AI.
+
+Sesudah final action hari 100:
+
+1. Pastikan `data.game.state.phase` adalah `victory` dan revision `42`.
+2. Kirim `GET {{baseUrl}}/api/runs/{{runId}}`; hasil harus `200` dengan state victory.
+3. Kirim `GET {{baseUrl}}/api/runs/current`; hasil harus `404 NO_ACTIVE_SAVE`.
+4. Kirim `Logout`; hasil harus `200`.
+5. Kirim `Current User`; hasil harus `401 UNAUTHENTICATED`.
+
+## 8. Simulasi surrender
+
+Surrender dapat diuji segera setelah `Create Run`; campaign tidak perlu dijalankan sampai hari 100. Pastikan `runId` dan `revision` berasal dari response run aktif, lalu kirim:
+
+```http
+POST {{baseUrl}}/api/runs/{{runId}}/actions
+Content-Type: application/json
+```
+
+```json
+{
+  "actionId": "{{$guid}}",
+  "expectedRevision": {{revision}},
+  "type": "surrender",
+  "payload": {}
+}
+```
+
+Hasil yang wajib diperiksa:
+
+1. Response `200` dan `data.game.state.phase` menjadi `gameOver`.
+2. Revision bertambah tepat satu; field gameplay lain tidak berubah.
+3. `GET {{baseUrl}}/api/runs/{{runId}}` tetap `200` dan menyimpan final state tersebut.
+4. `GET {{baseUrl}}/api/runs/current` menghasilkan `404 NO_ACTIVE_SAVE`.
+5. Surrender baru terhadap run yang sama menghasilkan `409 GAME_ENDED`.
+6. Payload selain `{}`, misalnya `{ "reason": "quit" }`, menghasilkan `400 VALIDATION_ERROR`.
+
+Developer yang ingin menjalankan alur otomatis dari Git Bash dapat memakai:
+
+```bash
+cd app
+SURRENDER_ORIGIN=http://localhost:3001 npm run test:surrender
+```
+
+Ganti nilai `SURRENDER_ORIGIN` agar sama persis dengan `APP_ORIGIN` pada environment lokal. Server backend harus tetap berjalan di terminal lain; bila port backend bukan 3000, tambahkan `SURRENDER_BASE_URL`, misalnya `SURRENDER_BASE_URL=http://localhost:3002`.
+
+## 9. Verifikasi timeline persisten
+
+Setiap response create/load/action sekarang selalu memiliki `data.game.timeline`.
+
+Verifikasi manual yang disarankan:
+
+1. Jalankan `Create Run`; pastikan `data.game.timeline` adalah `[]`.
+2. Simpan satu `actionId`, lalu jalankan action `upgradeWall`; pastikan timeline berisi entry dengan ID `<actionId>:0`.
+3. Kirim ulang request yang persis sama dengan `actionId`, type, payload, dan expected revision awal yang sama; hasil harus `200`, revision tidak bertambah, dan entry timeline tidak terduplikasi.
+4. Gunakan `actionId` yang sama dengan type/payload berbeda; hasil harus `409 ACTION_PAYLOAD_CONFLICT`.
+5. Kirim action yang ditolak engine; GET run kembali dan pastikan timeline tidak berubah.
+6. Refresh atau kirim `GET /api/runs/current`/`GET /api/runs/:runId`; array timeline harus sama dengan response action terakhir.
+
+Timeline disimpan oldest-first. Frontend boleh membalik urutan untuk tampilan, tetapi harus memakai `game.timeline` server sebagai sumber kebenaran dan tidak menambahkan hasil `describeAction` lokal di atas array server.
+
+Runner otomatis dari Git Bash:
+
+```bash
+cd app
+TIMELINE_ORIGIN=http://localhost:3001 npm run test:timeline
+```
+
+Samakan `TIMELINE_ORIGIN` dengan `APP_ORIGIN`. Jika backend tidak berjalan di port 3000, tambahkan `TIMELINE_BASE_URL`.
+
+## 10. Error yang paling umum
+
+### `SERVICE_NOT_READY` atau koneksi MongoDB gagal
+
+- pastikan `MONGODB_URI` benar;
+- pastikan IP laptop sudah masuk Atlas Network Access;
+- pastikan user Atlas memiliki akses ke database test;
+- jalankan kembali `npm run db:indexes`.
+
+### Environment validation gagal saat server mulai
+
+Jangan membiarkan variabel numerik ada dengan value kosong. Isi nilai default seperti contoh pada bagian 3. `JWT_SECRET` harus minimal 32 karakter dan `APP_ORIGIN` harus berupa URL valid.
+
+### `403 ORIGIN_NOT_ALLOWED`
+
+Pastikan `APP_ORIGIN=http://localhost:3000`. Hapus header `Origin` buatan tangan dari Postman, atau samakan nilainya dengan `APP_ORIGIN`.
+
+### `401 UNAUTHENTICATED`
+
+Jalankan `Login` kembali dan pastikan Postman cookie jar aktif. Setelah logout, login ulang memang wajib.
+
+### `409 STALE_REVISION`
+
+Nilai environment `revision` tertinggal. Kirim `GET /api/runs/{{runId}}`, salin `data.game.state.revision` ke environment, lalu ulangi intent dengan `actionId` baru.
+
+### Retry action dengan `actionId` sama
+
+Request identik sekarang menghasilkan replay `200` dan tidak menambah revision/timeline. Jika type atau payload berbeda, backend menghasilkan `409 ACTION_PAYLOAD_CONFLICT`; buat `actionId` baru hanya untuk intent baru.
+
+### Register menghasilkan `409`
+
+Username sudah dipakai. Kosongkan variable `username` agar collection membuat username unik, atau isi username baru secara manual.
+
+### Port 3000 sedang dipakai
+
+Hentikan proses lama dengan `Ctrl+C`. Bila backend dijalankan pada port lain, samakan `baseUrl`, `APP_ORIGIN`, `CAMPAIGN_BASE_URL`, dan `CAMPAIGN_ORIGIN`.
+
+## 11. Informasi yang dikirim ke developer backend bila gagal
+
+Kirim informasi berikut tanpa secret:
+
+- nama request dan urutan action yang gagal;
+- HTTP status dan `error.code`;
+- `requestId` dari response;
+- hari, fase, dan revision terakhir;
+- log terminal yang sudah menghapus URI, password, token, dan cookie;
+- apakah masalah terjadi di Postman, runner campaign, atau keduanya.

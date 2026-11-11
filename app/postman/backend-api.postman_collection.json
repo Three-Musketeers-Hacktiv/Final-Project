@@ -1,0 +1,118 @@
+{
+  "info": {
+    "_postman_id": "18f4c333-f7f0-4bca-8e4c-aa37ed3ef291",
+    "name": "Fantasy City Defense Backend",
+    "description": "Backend smoke flow. Cookies are managed by the Postman cookie jar.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "if (!pm.environment.get('username')) {",
+          "  pm.environment.set('username', `player_${Date.now()}`);",
+          "}"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "Register",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"username\": \"{{username}}\",\n  \"password\": \"{{password}}\",\n  \"confirmPassword\": \"{{password}}\"\n}"
+        },
+        "url": "{{baseUrl}}/api/auth/register"
+      },
+      "event": [{
+        "listen": "test",
+        "script": { "type": "text/javascript", "exec": ["pm.test('registered', () => pm.expect(pm.response.code).to.eql(201));"] }
+      }]
+    },
+    {
+      "name": "Login",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{\n  \"username\": \"{{username}}\",\n  \"password\": \"{{password}}\"\n}" },
+        "url": "{{baseUrl}}/api/auth/login"
+      },
+      "event": [{
+        "listen": "test",
+        "script": { "type": "text/javascript", "exec": ["pm.test('logged in', () => pm.expect(pm.response.code).to.eql(200));"] }
+      }]
+    },
+    {
+      "name": "Current User",
+      "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/api/auth/me" },
+      "event": [{
+        "listen": "test",
+        "script": { "type": "text/javascript", "exec": ["pm.test('authenticated', () => pm.expect(pm.response.code).to.eql(200));"] }
+      }]
+    },
+    {
+      "name": "Create Run",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{\n  \"startRequestId\": \"{{$guid}}\",\n  \"replaceActiveSave\": true,\n  \"difficulty\": \"normal\"\n}" },
+        "url": "{{baseUrl}}/api/runs"
+      },
+      "event": [{
+        "listen": "test",
+        "script": {
+          "type": "text/javascript",
+          "exec": [
+            "pm.test('run created', () => pm.expect(pm.response.code).to.eql(201));",
+            "const body = pm.response.json();",
+            "if (body.ok) { pm.environment.set('runId', body.data.runId); pm.environment.set('revision', body.data.game.state.revision); }",
+            "pm.test('new run has empty timeline', () => pm.expect(body.data.game.timeline).to.eql([]));"
+          ]
+        }
+      }]
+    },
+    {
+      "name": "Upgrade Wall",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{\n  \"actionId\": \"{{$guid}}\",\n  \"expectedRevision\": {{revision}},\n  \"type\": \"upgradeWall\",\n  \"payload\": {}\n}" },
+        "url": "{{baseUrl}}/api/runs/{{runId}}/actions"
+      },
+      "event": [{
+        "listen": "test",
+        "script": {
+          "type": "text/javascript",
+          "exec": [
+            "pm.test('action applied', () => pm.expect(pm.response.code).to.eql(200));",
+            "const body = pm.response.json();",
+            "if (body.ok) pm.environment.set('revision', body.data.game.state.revision);",
+            "pm.test('action returns persisted timeline', () => pm.expect(body.data.game.timeline).to.be.an('array').that.is.not.empty);"
+          ]
+        }
+      }]
+    },
+    {
+      "name": "Current Run",
+      "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/api/runs/current" },
+      "event": [{
+        "listen": "test",
+        "script": { "type": "text/javascript", "exec": ["pm.test('current run loaded', () => pm.expect(pm.response.code).to.eql(200));"] }
+      }]
+    },
+    {
+      "name": "Logout",
+      "request": { "method": "POST", "header": [], "url": "{{baseUrl}}/api/auth/logout" },
+      "event": [{
+        "listen": "test",
+        "script": { "type": "text/javascript", "exec": ["pm.test('logged out', () => pm.expect(pm.response.code).to.eql(200));"] }
+      }]
+    }
+  ]
+}

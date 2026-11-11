@@ -1,0 +1,214 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+/* Game UI palette (used by /play). Values switch with data-theme set by ThemeProvider. */
+@custom-variant day (&:where([data-theme="day"], [data-theme="day"] *));
+
+@theme inline {
+  --color-ink: var(--game-ink);
+  --color-panel: var(--game-panel);
+  --color-panel-head: var(--game-panel-head);
+  --color-frame: var(--game-frame);
+  --color-parchment: var(--game-parchment);
+  --color-muted: var(--game-muted);
+  --color-crimson: var(--game-crimson);
+  --color-gold: var(--game-gold);
+  --color-track: var(--game-track);
+  --color-sky-top: var(--game-sky-top);
+}
+
+:root,
+[data-theme="night"] {
+  --game-ink: #11162a;
+  --game-panel: #181e33;
+  --game-panel-head: #262238;
+  --game-frame: #6b4a55;
+  --game-parchment: #ece1cc;
+  --game-muted: #a69c90;
+  --game-crimson: #9e3346;
+  --game-gold: #e8b94a;
+  --game-track: rgb(255 255 255 / 0.14);
+  --game-sky-top: #0d1530;
+}
+
+[data-theme="day"] {
+  --game-ink: #ece3cf;
+  --game-panel: #f8f2e4;
+  --game-panel-head: #e6d9bf;
+  --game-frame: #a7836b;
+  --game-parchment: #2a2232;
+  --game-muted: #6d6256;
+  --game-crimson: #d98593;
+  --game-gold: #d9a636;
+  --game-track: rgb(42 34 50 / 0.14);
+  --game-sky-top: #7fb6e6;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Battle scene clouds (components/Clouds.tsx). Durations and delays are set per cloud. */
+@keyframes cloud-drift {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(100cqw);
+  }
+}
+
+@keyframes cloud-bob {
+  0%,
+  100% {
+    translate: 0 0;
+  }
+  50% {
+    translate: 0 calc(100cqw / 1534 * 4);
+  }
+}
+
+/* Thins out, vanishes for a while, then reforms. */
+@keyframes cloud-fade {
+  0%,
+  45% {
+    opacity: 1;
+  }
+  60% {
+    opacity: 0.35;
+  }
+  70%,
+  78% {
+    opacity: 0;
+  }
+  92%,
+  100% {
+    opacity: 1;
+  }
+}
+
+.cloud-drift {
+  animation: cloud-drift linear infinite;
+}
+
+.cloud-bob {
+  animation: cloud-bob ease-in-out infinite;
+}
+
+.cloud-bob.cloud-fade {
+  animation-name: cloud-bob, cloud-fade;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cloud-drift,
+  .cloud-bob {
+    animation-play-state: paused;
+  }
+}
+
+/* Thin themed scrollbar: no track background, no arrow buttons. Chrome/Safari/Edge use the
+   ::-webkit-scrollbar rules; Firefox, which lacks them, gets the standard properties instead
+   (Chrome would drop the custom look if those were set for it too). */
+.scrollbar-game::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.scrollbar-game::-webkit-scrollbar-track,
+.scrollbar-game::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+.scrollbar-game::-webkit-scrollbar-thumb {
+  background: var(--game-frame);
+  border-radius: 9999px;
+}
+
+.scrollbar-game::-webkit-scrollbar-thumb:hover {
+  background: var(--game-muted);
+}
+
+.scrollbar-game::-webkit-scrollbar-button {
+  display: none;
+}
+
+@supports not selector(::-webkit-scrollbar) {
+  .scrollbar-game {
+    scrollbar-width: thin;
+    scrollbar-color: var(--game-frame) transparent;
+  }
+}
+
+/* A part of the city whose sprite just moved up a tier: a white band rises through it twice, bottom to
+   top. The element is masked by the sprite's image (set inline), so only the sprite's own pixels light up.
+   Restarted by remounting (CityDefense keys it by the number of tier-ups). */
+@keyframes upgrade-sweep {
+  from {
+    background-position: 0 300%;
+  }
+  to {
+    background-position: 0 -100%;
+  }
+}
+
+.upgrade-sweep {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(to top, transparent, rgb(255 255 255 / 0.9) 50%, transparent) no-repeat;
+  background-size: 100% 50%;
+  background-position: 0 300%;
+  mask-repeat: no-repeat;
+  mask-position: center;
+  -webkit-mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  animation: upgrade-sweep 0.7s ease-in-out 2;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .upgrade-sweep {
+    display: none;
+  }
+}
+
+/* A flying wave bobs gently in the air (BattleScene). */
+@keyframes wave-hover {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-0.8cqw);
+  }
+}
+
+.wave-hover {
+  animation: wave-hover 1.6s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wave-hover {
+    animation: none;
+  }
+}
+
