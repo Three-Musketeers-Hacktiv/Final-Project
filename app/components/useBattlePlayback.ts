@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import type { BattleResult } from "../../src/game";
 import { gameConfig } from "../../src/game/config";
 import { EXPLOSION, HEX_SIGIL, HEX_SIGIL_FLARE_MS, MONSTER_ATTACKS, thrustFrameAt } from "./battleSprites";
+import { playSound, preloadSounds, stopSounds, type Sound } from "./sfx";
 
 /** Length of one attack round at 1× speed: charge, hit, return, short rest. */
 export const ROUND_MS = 1000;
@@ -46,6 +47,53 @@ function progress(ms: number, [from, to]: readonly [number, number]) {
 /** True when this battle beat the final wave: its outro is the Demon King's sealing. */
 function isFinalVictory(result: BattleResult) {
   return result.won && result.wave === gameConfig.waves.length;
+}
+
+// Each wave's attack sound, played on every hit. Waves 1 and 2 have no attack effect, just a punch;
+// wave 7 reuses the soldiers' thrust.
+const ATTACK_SOUNDS: Record<number, Sound> = {
+  1: "punch",
+  2: "punch",
+  3: "claw",
+  4: "hammer-smash",
+  5: "ice-spikes",
+  6: "star-fall",
+  7: "thrust",
+  8: "heavy-cleave",
+  9: "meteor",
+  10: "dark-explosion",
+};
+// When the sigil's ring shatters (frame 45), in ms into the sigil; its sound ends right there.
+const HEX_SIGIL_SHATTER_MS = 2970;
+// Length of hex-sigil.ogg.
+const HEX_SIGIL_SOUND_MS = 3170;
+// A cue missed by more than this (the tab was in the background) is dropped instead of played late.
+const LATE_CUE_MS = 300;
+
+type SoundCue = { at: number; sound: Sound; channel?: string };
+
+/** The replay's sounds, in ms of replay time (the same clock as battleFrame), in order. */
+export function battleSounds(result: BattleResult): SoundCue[] {
+  const cues: SoundCue[] = [];
+  const attackSound = ATTACK_SOUNDS[result.wave];
+  result.rounds.forEach((_, round) => {
+    const impact = (round + IMPACT_AT) * ROUND_MS;
+    cues.push({ at: impact - THRUST_LEAD_MS, sound: "thrust", channel: "troops" });
+    if (attackSound) cues.push({ at: impact, sound: attackSound, channel: "wave" });
+  });
+  const { lastHitAt } = battleTiming(result);
+  if (isFinalVictory(result)) {
+    cues.push({
+      at: lastHitAt + EXPLODE_AT + HEX_SIGIL_SHATTER_MS - HEX_SIGIL_SOUND_MS,
+      sound: "hex-sigil",
+      channel: "outro",
+    });
+  } else if (result.won) {
+    cues.push({ at: lastHitAt, sound: "wave-death", channel: "outro" });
+  } else {
+    cues.push({ at: lastHitAt + EXPLODE_AT, sound: "defeat", channel: "outro" });
+  }
+  return cues.sort((a, b) => a.at - b.at);
 }
 
 /** When the last hit lands and when the replay ends, in ms of replay time (see useBattlePlayback). */
@@ -212,12 +260,18 @@ export function useBattlePlayback({
     if (!result) return;
     if (elapsedRef.current.result !== result) elapsedRef.current = { result, ms: 0 };
     const { lastHitAt, endAt } = battleTiming(result);
+    const cues = battleSounds(result);
     let frame = 0;
     let last = performance.now();
 
     const tick = (now: number) => {
+      const before = elapsedRef.current.ms;
       elapsedRef.current.ms += (now - last) * (elapsedRef.current.ms < lastHitAt ? speed : 1);
       last = now;
+      const ms = elapsedRef.current.ms;
+      for (const cue of cues) {
+        if (cue.at > before && cue.at <= ms && cue.at > ms - LATE_CUE_MS) playSound(cue.sound, cue);
+      }
       setElapsed({ result, ms: elapsedRef.current.ms });
       if (elapsedRef.current.ms >= endAt) {
         onDoneRef.current();
@@ -228,6 +282,13 @@ export function useBattlePlayback({
     frame = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(frame);
   }, [result, speed]);
+
+  // Load this battle's sounds before its first hit; a replay that ends (or is skipped) silences them.
+  useEffect(() => {
+    if (!result) return;
+    preloadSounds(battleSounds(result).map((cue) => cue.sound));
+    return stopSounds;
+  }, [result]);
 
   if (!result) return null;
   return battleFrame(result, elapsed.result === result ? elapsed.ms : 0);

@@ -66,6 +66,7 @@ export default function EventDialog({ event, cause, pending, onChoose }: EventDi
           <button
             key={choice.id}
             type="button"
+            data-sfx="button"
             disabled={pending}
             onClick={() => onChoose(choice.id)}
             className="flex flex-col gap-2 rounded-sm border-2 border-gold/60 bg-panel-head p-3 text-left transition-colors hover:border-gold hover:bg-track disabled:cursor-wait disabled:opacity-60"

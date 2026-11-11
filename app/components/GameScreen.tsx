@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { BattleResult } from "../../src/game";
 import { mockRun } from "@/app/(game)/play/mockData";
 import { gameConfig } from "../../src/game/config";
@@ -13,6 +13,7 @@ import { PlayMusic } from "./MusicProvider";
 import PhaseDialogs from "./PhaseDialogs";
 import { useGame } from "./GameProvider";
 import SettingsDialog, { SETTINGS_DIALOG } from "./SettingsDialog";
+import { playSound, preloadSounds, useButtonSounds } from "./sfx";
 import ThisWave from "./ThisWave";
 import Timeline from "./Timeline";
 import TopBar from "./TopBar";
@@ -60,6 +61,16 @@ export default function GameScreen({ lord }: { lord: string }) {
     setTutorialSeen(true);
     setTutorialRequested(false);
   }
+  // Game buttons click; the reward screen opens with a fanfare, once per battle won (not on a page
+  // loaded straight onto it).
+  useButtonSounds();
+  const phaseBefore = useRef(state.phase);
+  useEffect(() => preloadSounds(["reward"]), []);
+  useEffect(() => {
+    if (state.phase === "reward" && phaseBefore.current !== "reward") playSound("reward");
+    phaseBefore.current = state.phase;
+  }, [state.phase]);
+
   // Start Battle moves the phase from battleReady to the result. Catch that change while rendering
   // and replay the saved rounds; a page loaded on the report (a refresh) goes straight to it.
   const [lastPhase, setLastPhase] = useState(state.phase);

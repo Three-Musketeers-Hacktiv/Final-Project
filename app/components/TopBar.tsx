@@ -2,6 +2,7 @@ import Image from "next/image";
 import titleLogo from "./assets/logo/title_logo.png";
 import ControlButton from "./ControlButton";
 import MusicToggle from "./MusicToggle";
+import SfxToggle from "./SfxToggle";
 import ThemeToggle from "./ThemeToggle";
 import { SPEEDS, type Speed } from "./useDayTimer";
 
@@ -108,7 +109,7 @@ export default function TopBar({
             <MusicToggle />
           </div>
           <div className="overflow-hidden rounded-sm border-2 border-frame">
-            <ControlButton>SFX</ControlButton>
+            <SfxToggle />
           </div>
           <div data-tutorial="settings" className="overflow-hidden rounded-sm border-2 border-frame">
             <ControlButton label="Settings" onClick={onOpenSettings}>

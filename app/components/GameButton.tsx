@@ -47,6 +47,7 @@ export default function GameButton({
   return (
     <button
       type={type}
+      data-sfx="button"
       popoverTarget={popoverTarget}
       popoverTargetAction={popoverTargetAction}
       onClick={onClick}

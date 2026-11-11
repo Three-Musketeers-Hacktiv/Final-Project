@@ -68,6 +68,7 @@ export default function Actions({
           <button
             key={action.id}
             type="button"
+            data-sfx="button"
             disabled={!preparing || actionUsedToday || pending}
             onClick={() => onAction(action.id)}
             className="flex items-center gap-3 rounded-sm border-2 border-gold/60 bg-panel-head px-3 py-2 text-left leading-tight text-parchment transition-colors hover:border-gold hover:bg-track disabled:pointer-events-none disabled:opacity-45"
