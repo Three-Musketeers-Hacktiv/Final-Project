@@ -49,6 +49,8 @@ export type MonsterAttack = {
   /** Melee strikes: sprite pixels per sheet pixel. Sized so a typical frame's solid part is about as
    *  tall as the monster on screen. */
   scale?: number;
+  /** Melee strikes: widen the frame by this much on top of `scale`, keeping its height. */
+  stretchX?: number;
   /** Spells on the town: mirror them (they are drawn travelling right; these fall from the right). */
   flip?: boolean;
   /** Draw scaled-up pixels crisp rather than smoothed. */
@@ -62,7 +64,7 @@ export const MONSTER_ATTACKS: Record<number, MonsterAttack> = {
   5: { sheet: spriteSheet(iceSheet, iceData), target: "troops", impactMs: 264 },
   6: { sheet: spriteSheet(starSheet, starData), target: "town", impactMs: 462, flip: true },
   7: { sheet: THRUST, target: "troops", impactMs: 66 },
-  8: { sheet: spriteSheet(cleaveSheet, cleaveData), target: "troops", impactMs: 363, scale: 2.9 },
+  8: { sheet: spriteSheet(cleaveSheet, cleaveData), target: "troops", impactMs: 363, scale: 2.9, stretchX: 1.6 },
   9: { sheet: spriteSheet(meteorSheet, meteorData), target: "town", impactMs: 660, flip: true },
   // Repacked at full size and lossless (a 75% lossy repack looked blurry when drawn over the town).
   10: { sheet: spriteSheet(darkSheet, darkData), target: "town", impactMs: 528, pixelated: true },

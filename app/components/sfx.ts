@@ -22,6 +22,10 @@ export type Sound =
   | "reward";
 
 const VOLUME = 0.6;
+// Sounds that stand out from the rest, scaled to sit with them. Thrust plays every round and was about
+// 7 dB above the wave attacks; hammer-smash sounded too quiet (its file peaks at -3 dB, so this is
+// still below full scale after the master volume).
+const LEVEL: Partial<Record<Sound, number>> = { thrust: 0.35, "hammer-smash": 1.6 };
 
 // The on/off choice is saved like the music's (see MusicProvider); on by default.
 const STORAGE_KEY = "game-sfx";
@@ -112,7 +116,14 @@ export function playSound(sound: Sound, { channel }: { channel?: string } = {}) 
     if (!buffer || !readEnabled()) return;
     const source = context.createBufferSource();
     source.buffer = buffer;
-    source.connect(output);
+    const level = LEVEL[sound];
+    if (level === undefined) {
+      source.connect(output);
+    } else {
+      const gain = context.createGain();
+      gain.gain.value = level;
+      source.connect(gain).connect(output);
+    }
     source.onended = () => {
       playing.delete(source);
       if (channel && channels.get(channel) === source) channels.delete(channel);
