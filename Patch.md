@@ -148,7 +148,7 @@ Engine-only fix (save `version: 4` unchanged). Details for FE/BE: [FOR_FRONTEND.
 | Calendar API | `enterCalendarDay` is **engine-internal only** (not exported from `src/game`). Advance only via `endPreparationDay` / `chooseReward`. |
 | Event gold | Package config keeps **base** `goldCost` and `{goldCost}` in paid labels. Activation fills the label with the **effective** cost. Charge uses the same scale from the trusted package (once). Free stays `0`. An AI label that names a different gold amount is discarded. |
 | Consequence wave | Prefer a prep day before `CONSEQUENCE_TARGET_WAVE`. If that window is full, schedule `CONSEQUENCE_SUCCESSOR`. Apply-time clamp sends stale defense/discount to the upcoming wave. |
-| Late-game balance | Normal wave table is 150/22 through 600/64; hard monster HP 1.08 / ATK 1.06, upgrade 1.08, income 0.95, repair 1.05. Wall defense +3 and city MaxHP +35. Save `version` stays 4; suggested ruleset id `campaign-v4-100-day-v2`. |
+| Late-game balance | Normal wave table is 150/22 through 600/64; hard monster HP 1.05 / ATK 1.03, upgrade 1.08, income 0.95, repair 1.05. Wall defense +3 and city MaxHP +35. Save `version` stays 4; suggested ruleset id `campaign-v4-100-day-v2`. |
 
 ---
 

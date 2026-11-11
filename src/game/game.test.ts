@@ -218,7 +218,7 @@ describe("difficulty", () => {
     const normal = createInitialState({ runId: "diff-normal-cost", difficulty: "normal" });
     const hard = createInitialState({ runId: "diff-hard", difficulty: "hard" });
     expect(getWavePreview(easy)!.hp).toBe(Math.max(1, Math.round(150 * 0.75)));
-    expect(getWavePreview(hard)!.hp).toBe(Math.max(1, Math.round(150 * 1.08)));
+    expect(getWavePreview(hard)!.hp).toBe(Math.max(1, Math.round(150 * 1.05)));
     expect(getUpgradeCost(easy, "wall")).toBeLessThan(getUpgradeCost(normal, "wall"));
     expect(getUpgradeCost(hard, "wall")).toBeGreaterThanOrEqual(getUpgradeCost(normal, "wall"));
     expect(getRepairCost(easy)).toBeLessThan(getRepairCost(normal));

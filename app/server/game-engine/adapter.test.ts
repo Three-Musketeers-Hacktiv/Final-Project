@@ -49,7 +49,7 @@ describe("game engine adapter", () => {
     expect(readEffectiveStats(normal).repairCost).toBe(25);
     expect(readEffectiveStats(hard).repairCost).toBe(27);
     expect(readWavePreview(normal)).toMatchObject({ wave: 1, hp: 150, attack: 22 });
-    expect(readWavePreview(hard)).toMatchObject({ wave: 1, hp: 162, attack: 23 });
+    expect(readWavePreview(hard)).toMatchObject({ wave: 1, hp: 158, attack: 23 });
     expect(readWavePreview({ ...normal, wavesCleared: 9 })).toMatchObject({
       wave: 10,
       hp: 600,

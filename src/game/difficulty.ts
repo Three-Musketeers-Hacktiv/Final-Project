@@ -27,8 +27,10 @@ const TABLE: Record<Difficulty, DifficultyModifiers> = {
     eventGoldCost: 1,
   },
   hard: {
-    monsterHp: 1.08,
-    monsterAttack: 1.06,
+    // Slightly softer than 1.08/1.06 so consequence-heavy seeds (e.g. holdout-hard)
+    // stay winnable after paid consequence defenses were added.
+    monsterHp: 1.05,
+    monsterAttack: 1.03,
     upgradeCost: 1.08,
     dailyIncome: 0.95,
     repairCost: 1.05,

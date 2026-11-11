@@ -309,7 +309,7 @@ Save tetap `version: 4`. Normal adalah tabel dasar; hard hanya mengalikan tabel 
 | Repair | 25 gold / 60 HP |
 | Wave 1–10 HP | 150, 200, 240, 290, 340, 390, 440, 490, 540, 600 |
 | Wave 1–10 ATK | 22, 28, 34, 36, 40, 44, 48, 54, 58, 64 |
-| Hard HP / ATK | 1.08 / 1.06 |
+| Hard HP / ATK | 1.05 / 1.03 |
 | Hard upgrade / income / repair / event gold | 1.08 / 0.95 / 1.05 / 1.08 |
 
 Ruleset publik yang disarankan untuk BE: `campaign-v4-100-day-v2`. Jangan timpa fingerprint `campaign-v4-100-day-v1`.

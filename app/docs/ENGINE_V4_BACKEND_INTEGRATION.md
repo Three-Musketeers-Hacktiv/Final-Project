@@ -24,7 +24,7 @@ This document records the backend changes required by game-engine patch v4. Back
 
 ## Latest patch delta (2026-11-09)
 
-- Latest balancing uses repair `25 gold / 60 HP`; normal wave HP/attack from `150/22` through `600/64`; and hard multipliers HP `1.08`, attack `1.06`, upgrade `1.08`, income `0.95`, repair `1.05`, and event gold `1.08`. Backend obtains all runtime values and its fingerprint from engine config.
+- Latest balancing uses repair `25 gold / 60 HP`; normal wave HP/attack from `150/22` through `600/64`; and hard multipliers HP `1.05`, attack `1.03`, upgrade `1.08`, income `0.95`, repair `1.05`, and event gold `1.08`. Backend obtains all runtime values and its fingerprint from engine config.
 - `activeEvent.choices[].goldCost` is already difficulty-scaled. It is the effective cost; backend and frontend must not scale it again.
 - AI choice labels may not mention supported currency terms (`gold`, `coin(s)`, `treasury`, `gp`), even without an amount. Backend supplies effective costs as prompt context, but labels are accepted only through the engine trusted-label policy. Descriptions remain narrative-only and are not scanned.
 - A consequence may move to a trusted successor package when its original window is occupied. Backend uses `isTrustedConsequencePackage`, not strict package equality.

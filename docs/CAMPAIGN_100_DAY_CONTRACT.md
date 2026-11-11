@@ -103,8 +103,8 @@ type GameStateV4 = {
 
 | Modifier | Easy | Normal | Hard |
 |---|---:|---:|---:|
-| Monster HP | 0.75 | 1.0 | 1.08 |
-| Monster attack | 0.80 | 1.0 | 1.06 |
+| Monster HP | 0.75 | 1.0 | 1.05 |
+| Monster attack | 0.80 | 1.0 | 1.03 |
 | Upgrade cost | 0.85 | 1.0 | 1.08 |
 | Daily income | 1.15 | 1.0 | 0.95 |
 | Repair cost | 0.90 | 1.0 | 1.05 |
