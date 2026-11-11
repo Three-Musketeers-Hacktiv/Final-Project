@@ -13,7 +13,7 @@ vi.mock("@google/genai", () => ({
   },
 }));
 
-import { createInitialState, endPreparationDay } from "../../../src/game";
+import { createInitialState, endPreparationDay, resolveIncomingConsequencePolicy } from "../../../src/game";
 import { resetServerEnv } from "@/server/config/env";
 import { packageSchemaProbes, probeFollowUp } from "./event-package.probes";
 import {
@@ -28,6 +28,8 @@ import {
   PACKAGE_FALLBACK_REASONS,
   PackageGenerationError,
   buildPackageGenerationInput,
+  overlayPackageNarrative,
+  packageSystemInstruction,
   parseGeminiPackageText,
   preferCommittedSnapshot,
   type EventPackageGenerator,
@@ -408,7 +410,7 @@ describe("provider failure classes", () => {
     expect(logged).toContain("provider-invalid-argument");
     expect(logged).toContain("\"httpStatus\":400");
     expect(logged).toContain("test-model");
-    expect(logged).toContain("event-package-en-v2");
+    expect(logged).toContain("event-package-en-v3");
     expect(logged).not.toContain("test-key");
     expect(logged).not.toContain(PACKAGE_SYSTEM_INSTRUCTION_MARKER);
     expect(logged).not.toContain("\"hp\"");
@@ -468,8 +470,9 @@ describe("provider failure classes", () => {
     expect(JSON.stringify(state)).toBe(before);
   });
 
-  it("accepts a valid package as ai without applying cost or effects", async () => {
-    const state = openedState();
+  it("accepts a required package that includes one schedulable consequence", async () => {
+    const state = withCatalogBaseline(openedState());
+    expect(resolveIncomingConsequencePolicy(state, state.activeEvent!)).toBe("required");
     const before = JSON.stringify(state);
     const result = await generateEventPackage(state, state.activeEvent!, {
       provider: "gemini",
@@ -478,7 +481,110 @@ describe("provider failure classes", () => {
     });
     expect(result.source).toBe("ai");
     expect(result.pkg?.choices.some((choice) => choice.goldCost === 0)).toBe(true);
+    expect(result.pkg?.choices.some((choice) => choice.consequence?.fallbackPackage)).toBe(true);
+    expect(result.pkg?.choices.filter((choice) => choice.consequence)).toHaveLength(1);
     expect(JSON.stringify(state)).toBe(before);
+  });
+});
+
+function withCatalogBaseline(state: ReturnType<typeof openedState>) {
+  const event = state.activeEvent!;
+  return {
+    ...state,
+    eventPlan: state.eventPlan.map((entry) =>
+      entry.eventId === event.eventId ? { ...entry, packageId: "d1-scouts-a" } : entry,
+    ),
+  };
+}
+
+function lastPrepDay(state: ReturnType<typeof openedState>) {
+  const event = state.activeEvent!;
+  return {
+    ...withCatalogBaseline(state),
+    day: 99,
+    activeEvent: { ...event, day: 99 },
+    eventPlan: withCatalogBaseline(state).eventPlan.map((entry) =>
+      entry.eventId === event.eventId ? { ...entry, day: 99 } : entry,
+    ),
+  };
+}
+
+describe("consequence policy", () => {
+  const generator = (value: GeneratedEventPackageDraft): EventPackageGenerator => ({
+    provider: "gemini",
+    model: "test",
+    generate: async () => value,
+  });
+
+  it("accepts an optional package with no consequence", async () => {
+    const state = openedState();
+    const event = { ...state.activeEvent!, isConsequence: true };
+    expect(resolveIncomingConsequencePolicy(state, event)).toBe("optional");
+    const result = await generateEventPackage(state, event, generator(withoutConsequence() as GeneratedEventPackageDraft));
+    expect(result.source).toBe("ai");
+    expect(result.pkg?.choices.every((choice) => !choice.consequence)).toBe(true);
+  });
+
+  it("rejects a required package that omits every consequence", async () => {
+    const state = withCatalogBaseline(openedState());
+    const event = state.activeEvent!;
+    expect(resolveIncomingConsequencePolicy(state, event)).toBe("required");
+    expect(packageSystemInstruction("required")).toContain("at least one choice must include a complete depth-1 consequence");
+    const result = await generateEventPackage(state, event, generator(withoutConsequence() as GeneratedEventPackageDraft));
+    expect(result.source).toBe("fallback");
+    expect(result.pkg).toBeNull();
+    expect(result.fallbackReason).toBe(PACKAGE_FALLBACK_REASONS.consequencePolicyFailed);
+  });
+
+  it("keeps consequence optional on the provider schema", () => {
+    const choice = generatedEventPackageJsonSchema.properties.choices.items;
+    expect(choice.required).not.toContain("consequence");
+    expect(packageSystemInstruction("optional")).toContain("A consequence is optional");
+  });
+
+  it("does not accept an unschedulable consequence on the last prep day", async () => {
+    const state = lastPrepDay(openedState());
+    const event = state.activeEvent!;
+    expect(resolveIncomingConsequencePolicy(state, event)).toBe("optional");
+    const bare = {
+      ...draft,
+      choices: draft.choices.map((choice) => {
+        if (!("consequence" in choice) || !choice.consequence) return choice;
+        const { targetWave: _wave, ...consequence } = choice.consequence;
+        return { ...choice, consequence };
+      }),
+    };
+    const rejected = await generateEventPackage(state, event, generator(bare as GeneratedEventPackageDraft));
+    expect(rejected.source).toBe("fallback");
+    expect(rejected.fallbackReason).toBe(PACKAGE_FALLBACK_REASONS.consequencePolicyFailed);
+    const accepted = await generateEventPackage(state, event, generator(withoutConsequence() as GeneratedEventPackageDraft));
+    expect(accepted.source).toBe("ai");
+    expect(accepted.pkg?.choices.every((choice) => !choice.consequence)).toBe(true);
+  });
+
+  it("keeps consequence metadata through canonicalize and narrative overlay", () => {
+    const state = openedState();
+    const event = state.activeEvent!;
+    const pkg = canonicalizeEventPackage(generatedEventPackageSchema.parse(draft), {
+      eventId: event.eventId,
+      day: event.day,
+      isConsequence: false,
+    });
+    const follow = pkg.choices.find((choice) => choice.consequence);
+    expect(follow?.consequence?.minDelayDays).toBe(1);
+    expect(follow?.consequence?.maxDelayDays).toBe(2);
+    expect(follow?.consequence?.fallbackPackage?.packageId).toBe(follow?.consequence?.packageId);
+    const overlay = overlayPackageNarrative(pkg, {
+      title: "The yard is still burning",
+      description: "The carriers are back at the gate.",
+      choices: [{ id: follow!.id, label: "Hear the carriers" }],
+    });
+    const overlaid = overlay.choices.find((choice) => choice.id === follow!.id);
+    expect(overlaid?.label).toBe("Hear the carriers");
+    expect(overlaid?.goldCost).toBe(follow?.goldCost);
+    expect(overlaid?.effects).toEqual(follow?.effects);
+    expect(overlaid?.consequence).toEqual(follow?.consequence);
+    expect(fingerprintPackage(pkg)).toBe(fingerprintPackage(pkg));
   });
 });
 

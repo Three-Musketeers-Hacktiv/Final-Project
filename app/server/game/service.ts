@@ -2,16 +2,24 @@ import { MongoServerError, ObjectId } from "mongodb";
 
 import {
   decorateActiveEvent,
+  generateEventNarrative,
   restoreEventNarrative,
   type NarrativeResult,
 } from "@/server/ai/event-narrative";
 import {
   generateEventPackage,
+  overlayPackageNarrative,
   PACKAGE_PROMPT_VERSION,
   packageSnapshotFrom,
   preferCommittedSnapshot,
 } from "@/server/ai/event-package";
-import { eventPackageById, installCommittedPackage, type EventPackage } from "../../../src/game";
+import {
+  eventPackageById,
+  installCommittedPackage,
+  packageHasConsequenceChoice,
+  resolveIncomingConsequencePolicy,
+  type EventPackage,
+} from "../../../src/game";
 import type { UserDocument } from "@/server/auth/types";
 import {
   applyGameAction,
@@ -164,6 +172,77 @@ function runEventDocument(
   };
 }
 
+async function commitStoredFollowUp(
+  run: GameRunDocument,
+  state: GameRunDocument["state"],
+  event: ActiveEvent,
+  now: Date,
+): Promise<{ state: GameRunDocument["state"]; write: GeneratedEventWrite | null }> {
+  const mechanical = state.eventPackageStore?.[event.packageId] ?? eventPackageById(event.packageId);
+  const narrativeEvent: ActiveEvent = mechanical
+    ? {
+        ...event,
+        packageId: mechanical.packageId,
+        title: mechanical.title,
+        description: mechanical.description,
+        choices: mechanical.choices,
+      }
+    : event;
+  const narrative = await generateEventNarrative(narrativeEvent);
+  console.info("Event follow-up activated", {
+    eventId: event.eventId,
+    day: event.day,
+    packageId: narrativeEvent.packageId,
+    narrativeSource: narrative.source,
+    usedFallback: narrative.source !== "ai",
+  });
+  if (!mechanical) {
+    console.warn("Event follow-up missing stored package", {
+      eventId: event.eventId,
+      day: event.day,
+      packageId: event.packageId,
+    });
+    return { state: decorateActiveEvent(state, narrative), write: null };
+  }
+  const overlay = overlayPackageNarrative(mechanical, narrative.narrative);
+  const installed = installCommittedPackage(state, overlay, "fallback");
+  const nextState = installed.ok ? installed.state : state;
+  const active = nextState.activeEvent ?? event;
+  const eventDataId = new ObjectId();
+  return {
+    state: nextState,
+    write: {
+      eventData: {
+        _id: eventDataId,
+        gameRulesetId: run.gameRulesetId,
+        packageId: mechanical.packageId,
+        day: toEventDay(event.day),
+        narrative: narrative.narrative,
+        source: toPersistedNarrativeSource(narrative.source),
+        ...(narrative.provider ? { provider: narrative.provider } : {}),
+        ...(narrative.model ? { model: narrative.model } : {}),
+        promptVersion: narrative.promptVersion,
+        schemaVersion: 1,
+        validationStatus: "valid",
+        createdAt: now,
+      },
+      runEvent: runEventDocument(
+        run,
+        active,
+        narrative,
+        eventDataId,
+        now,
+        packageSnapshotFrom(overlay, {
+          source: "fallback",
+          provider: narrative.provider,
+          model: narrative.model,
+          promptVersion: narrative.promptVersion,
+        }),
+      ),
+    },
+  };
+}
+
 function narrativeFromPackage(pkg: EventPackage, source: NarrativeResult["source"]): NarrativeResult {
   return {
     narrative: {
@@ -204,6 +283,10 @@ async function resolveCommittedEvent(
       })),
       write: null,
     };
+  }
+
+  if (event.isConsequence) {
+    return commitStoredFollowUp(run, state, event, now);
   }
 
   const recent = await findRecentResolvedRunEvents(run._id, 3);
@@ -300,9 +383,17 @@ async function resolveCommittedEvent(
     })),
   };
   const installed = base
-    ? installCommittedPackage(state, overlay, "fallback")
+    ? installCommittedPackage(state, overlay, "fallback", { sanitizeConsequences: true })
     : { ok: false as const };
   const nextState = installed.ok ? installed.state : decorateActiveEvent(state, selected.result);
+  console.info("Event package fallback committed", {
+    eventId: event.eventId,
+    day: event.day,
+    policy: resolveIncomingConsequencePolicy(state, event),
+    fallbackReason: generated.fallbackReason ?? "package-rejected",
+    consequenceChoiceCount: nextState.activeEvent?.choices.filter((choice) => choice.consequence).length ?? 0,
+    packageHadConsequence: base ? packageHasConsequenceChoice(base) : false,
+  });
   const active = nextState.activeEvent ?? event;
   const stored = nextState.eventPackageStore?.[active.packageId] ?? overlay;
   const eventDataId = new ObjectId();
@@ -403,7 +494,39 @@ export async function submitGameAction(
     if (prepared.write) generatedEvents.push(prepared.write);
   }
   const result = applyGameAction(actionRun.state, toEngineAction(input));
-  if (!result.ok) throw new ApiError(422, result.error.code, result.error.message);
+  if (!result.ok) {
+    if (input.type === "chooseEventOption") {
+      console.warn("Event choice rejected", {
+        eventId: actionRun.state.activeEvent?.eventId ?? null,
+        day: actionRun.state.day,
+        code: result.error.code,
+        schedulingFailed: result.error.message === "No free day available to schedule consequence",
+      });
+    }
+    throw new ApiError(422, result.error.code, result.error.message);
+  }
+  if (input.type === "chooseEventOption" && actionRun.state.activeEvent) {
+    const selected = actionRun.state.activeEvent.choices.find((choice) => choice.id === input.payload.choiceId);
+    const added = result.state.pendingConsequences.filter(
+      (pending) => !actionRun.state.pendingConsequences.some((previous) => previous.id === pending.id),
+    );
+    console.info("Event choice consequence", {
+      eventId: actionRun.state.activeEvent.eventId,
+      day: actionRun.state.day,
+      isConsequence: Boolean(actionRun.state.activeEvent.isConsequence),
+      choiceHasConsequence: Boolean(selected?.consequence),
+      scheduled: added.length === 1,
+      triggerDay: added[0]?.triggerDay ?? null,
+      pendingCount: result.state.pendingConsequences.length,
+    });
+    if (actionRun.state.activeEvent.isConsequence) {
+      console.info("Event follow-up resolved", {
+        eventId: actionRun.state.activeEvent.eventId,
+        day: actionRun.state.day,
+        pendingCount: result.state.pendingConsequences.length,
+      });
+    }
+  }
   if (result.state.revision !== currentRun.state.revision + 1) {
     throw new Error("Engine action did not advance exactly one revision");
   }

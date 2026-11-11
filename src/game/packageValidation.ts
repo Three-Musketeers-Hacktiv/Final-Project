@@ -24,7 +24,18 @@ export type PackageValidationContext = {
   enforceWaveTiming?: boolean;
   /** When false, decade is only range-checked. Shifted slots may outlive the original decade. */
   enforceDecade?: boolean;
+  /**
+   * Slot policy, not a per-choice schema rule. When true, at least one choice
+   * must carry a complete consequence. Other choices may omit it.
+   */
+  requireAtLeastOneConsequence?: boolean;
 };
+
+export const CONSEQUENCE_REQUIRED_MESSAGE = "Event package must include at least one consequence";
+
+export function packageHasConsequenceChoice(pkg: { choices: Array<{ consequence?: unknown }> }): boolean {
+  return pkg.choices.some((choice) => choice.consequence != null);
+}
 
 export type PackageValidationResult =
   | { ok: true; pkg: EventPackage }
@@ -140,6 +151,7 @@ function validateConsequence(
   const nested = validateEventPackage(value.fallbackPackage, {
     ...ctx,
     allowConsequence: false,
+    requireAtLeastOneConsequence: false,
     checkDominance: ctx.checkDominance,
   });
   if (!nested.ok) return nested;
@@ -247,6 +259,9 @@ export function validateEventPackage(
   }
   if (ctx.checkDominance && hasDominatedChoice(choices)) {
     return { ok: false, message: "A paid choice is strictly dominated by a cheaper choice" };
+  }
+  if (ctx.requireAtLeastOneConsequence && !packageHasConsequenceChoice({ choices })) {
+    return { ok: false, message: CONSEQUENCE_REQUIRED_MESSAGE };
   }
   return {
     ok: true,

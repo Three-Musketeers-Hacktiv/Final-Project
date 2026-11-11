@@ -56,4 +56,29 @@ describe("game view timeline", () => {
     run.state = { ...run.state, phase: "preparation" };
     expect(toGameView(run).rewardOptions).toEqual([]);
   });
+
+  it("keeps eventNarrative as the active event, with consequence still optional", () => {
+    const run = runDocument();
+    expect(toGameView(run).eventNarrative).toBeNull();
+    run.state = {
+      ...run.state,
+      phase: "event",
+      activeEvent: {
+        eventId: "day-1",
+        packageId: "day-1",
+        day: run.state.day,
+        title: "Gate",
+        description: "Someone is at the gate.",
+        source: "fallback",
+        choices: [
+          { id: "wait", label: "Wait", goldCost: 0, effects: [] },
+          { id: "pay", label: "Pay", goldCost: 10, effects: [{ type: "grantGold", amount: 1 }] },
+        ],
+      },
+    };
+    const view = toGameView(run);
+    expect(view.eventNarrative).toBe(run.state.activeEvent);
+    expect(view.eventNarrative?.choices.map((choice) => choice.id)).toEqual(["wait", "pay"]);
+    expect(view.eventNarrative?.choices.every((choice) => !("consequence" in choice && choice.consequence))).toBe(true);
+  });
 });

@@ -14,7 +14,7 @@ The default path asks the backend to generate one complete event package for an 
 - 2–4 concrete choices.
 - Base `goldCost` (before difficulty scaling).
 - Effects from the engine union.
-- Optional depth-1 incoming consequence, including an executable fallback package.
+- Depth-1 incoming consequence when the slot policy is `required`, including an executable fallback package. `optional` slots may omit it.
 
 The game engine stays pure. It validates the package and applies cost and effects only when the player picks a choice. It does not call a provider, read environment variables, or touch the database.
 
@@ -34,7 +34,7 @@ Google Gemini remains the only implemented provider. Domain code depends on `Eve
 | `AI_TIMEOUT_MS` | No | `10000` | One provider-call timeout. Gemini's client floor is 10 seconds. |
 | `AI_MAX_RETRIES` | No | `1` | Retries for HTTP 408, 429, and 5xx only. HTTP 400, invalid JSON, schema mismatch, truncation, and safety blocks are not retried. |
 | `AI_MAX_OUTPUT_TOKENS` | No | `2500` | Room for one full package. Hard cap 4000. |
-| `AI_PROMPT_VERSION` | No | `event-advisor-en-v1` | Advisor/scene audit id. Package generation stores it beside `event-package-en-v2`. |
+| `AI_PROMPT_VERSION` | No | `event-advisor-en-v1` | Advisor/scene audit id. Package generation stores it beside `event-package-en-v3`. |
 
 Missing key or model means fallback-only. Secrets never use a `NEXT_PUBLIC_` prefix.
 
@@ -89,9 +89,24 @@ A paid choice may cost more gold than the city currently has, as long as one cho
 
 ## 6. Consequences
 
+Policy is chosen before the provider is called. It is not inferred from the model response.
+
+| Policy | When |
+|---|---|
+| `optional` | The slot is itself a consequence, the catalog package for that plan entry has no consequence, or `hasConsequenceScheduleWindow` finds no later preparation day. |
+| `required` | The catalog baseline has at least one consequence and a preparation day can still be scheduled. |
+
+`required` means at least one choice on the new package has a complete, schedulable depth-1 consequence. It does not mean every choice has one, and it does not mean every player sees a follow-up. The follow-up is scheduled only when the player picks a choice that has `consequence`.
+
+The provider schema still leaves `consequence` optional on each choice. `validateEventPackage` enforces `requireAtLeastOneConsequence` only for a `required` slot. Every consequence that is present must also pass `canScheduleConsequence`, the same day search `scheduleConsequence` uses. A package that fails that check is not accepted as `ai`.
+
 Catalog consequences still use `packageId` plus `CONSEQUENCE_TARGET_WAVE` / `CONSEQUENCE_SUCCESSOR`.
 
-Dynamic consequences carry `fallbackPackage`. The engine schedules that package without the successor map. If `targetWave` is already past, the origin package is rejected at accept time. If no prep day remains, scheduling fails and the choice is not applied. Fallback packages cannot schedule another consequence. When the follow-up day arrives, backend may generate a new package for that slot; if generation fails, the stored fallback package still runs.
+Dynamic consequences carry `fallbackPackage`. The engine schedules that package without the successor map. If `targetWave` is already past, the origin package is rejected at accept time. If no prep day remains, the slot policy is `optional` before generation, and a consequence that cannot be scheduled is rejected instead of being shown. Fallback packages cannot schedule another consequence.
+
+On the follow-up day the stored `fallbackPackage` is the mechanical authority. Backend may ask the narrative generator for a new title, description, and labels. It does not install a new AI package over that follow-up, so gold costs, effects, and choice ids stay as scheduled. If narrative generation fails, the stored package still runs. A committed `packageSnapshot` is not rewritten.
+
+A local fallback for a newly opened scheduled slot may drop consequences that cannot be scheduled (`sanitizeConsequences`) before the player sees them. That does not rewrite an already committed snapshot. Refresh uses the stored package.
 
 ## 7. Fallback and sources
 
@@ -107,9 +122,10 @@ Fallback is mandatory. `fallbackReason` is one of:
 | `safety-block` | `promptFeedback.blockReason` or a safety/policy finish reason |
 | `provider-invalid-argument` | Provider HTTP 400 or a status-less `INVALID_ARGUMENT` message. Not retried. |
 | `provider-error` | Network, timeout, HTTP 429, 5xx, or another adapter exception |
-| `package-rejected` | Draft parsed, but `validateEventPackage` rejected it |
+| `package-rejected` | Draft parsed, but `validateEventPackage` rejected it for a reason other than the consequence policy |
+| `consequence-policy-failed` | A `required` slot had no consequence, or a consequence cannot be scheduled. Not retried. The local catalog is used instead |
 
-Logs include the event id, provider, model, prompt version, HTTP status when the SDK provides one, fallback reason, error name, and a short provider message. They do not include the API key, the prompt, or the player state. Token budget stays at the configured `AI_MAX_OUTPUT_TOKENS`. A 400 is an invalid request, not truncation, so it is not fixed by raising the token budget. Invalid JSON, schema mismatch, truncation, safety blocks, and HTTP 400 are not retried.
+Logs include the event id, day, whether the slot is a consequence, the required/optional policy, provider, model, prompt version, HTTP status when the SDK provides one, fallback reason, error name, and a short provider message. Choice handling logs whether the picked choice had a consequence, whether one pending row was scheduled, and its trigger day. They do not include the API key, the prompt, or the player state. Token budget stays at the configured `AI_MAX_OUTPUT_TOKENS`. A 400 is an invalid request, not truncation, so it is not fixed by raising the token budget. Invalid JSON, schema mismatch, truncation, safety blocks, and HTTP 400 are not retried.
 
 Persistent source values remain `"ai" | "fallback" | "mock"`. A local catalog package is never labeled `ai` because an earlier narrative used Gemini. Engine `activeEvent.source === "local"` is only the pre-commit value.
 
@@ -143,7 +159,7 @@ Live smoke is opt-in and makes one Gemini call. It does not write a database. A 
 LIVE_GEMINI_SMOKE=1 GEMINI_API_KEY=... GEMINI_MODEL=... npx vitest run server/ai/event-package.live.test.ts
 ```
 
-Older snapshots and notes may still say `event-package-en-v1`. New package generation records `event-package-en-v2`.
+Older snapshots and notes may still say `event-package-en-v1` or `event-package-en-v2`. New package generation records `event-package-en-v3`. Already committed snapshots keep the package the player saw, including ones that have no consequence. The policy applies to generation that has not been committed yet.
 
 ## 10. Acceptance criteria
 

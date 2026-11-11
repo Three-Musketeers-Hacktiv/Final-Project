@@ -19,7 +19,7 @@ import {
 } from "./activeEvent";
 import { trustedChoiceLabel } from "./narrative";
 import { cloneEventPackage, resolvePackageById, resolveScheduledPackage } from "./packageStore";
-import { validateEventPackage } from "./packageValidation";
+import { packageHasConsequenceChoice, PACKAGE_LIMITS, validateEventPackage } from "./packageValidation";
 import { fail, isEnded, ok } from "./result";
 import type {
   ActiveEvent,
@@ -354,6 +354,67 @@ function scheduleConsequence(
   };
 }
 
+export type IncomingConsequencePolicy = "required" | "optional";
+
+export const UNSCHEDULABLE_CONSEQUENCE_MESSAGE = "Consequence cannot be scheduled on a preparation day";
+
+/** True when the same day search used at choice time still has a prep day. */
+export function hasConsequenceScheduleWindow(
+  state: GameState,
+  delays: { minDelayDays?: number; maxDelayDays?: number } = {},
+): boolean {
+  const minDelayDays = delays.minDelayDays ?? PACKAGE_LIMITS.minDelayDays;
+  const maxDelayDays = delays.maxDelayDays ?? PACKAGE_LIMITS.maxDelayDays;
+  if (minDelayDays > maxDelayDays) return false;
+  return candidateConsequenceDays(state, state.day, minDelayDays, maxDelayDays).length > 0;
+}
+
+/** Mirrors scheduleConsequence's candidate check without writing pending state. */
+export function canScheduleConsequence(state: GameState, consequence: ChoiceConsequence): boolean {
+  const inline = consequence.fallbackPackage;
+  if (inline) {
+    if (inline.packageId !== consequence.packageId) return false;
+    return dynamicConsequenceDays(state, consequence) != null;
+  }
+  return (
+    resolveConsequencePackage(
+      state,
+      consequence.packageId,
+      consequence.minDelayDays,
+      consequence.maxDelayDays,
+    ) != null
+  );
+}
+
+/**
+ * Catalog baseline plus a real prep-day window. Consequence slots stay optional
+ * so a follow-up cannot require another follow-up. Decided before generation.
+ */
+export function resolveIncomingConsequencePolicy(
+  state: GameState,
+  event: { isConsequence?: boolean; day: number },
+): IncomingConsequencePolicy {
+  if (event.isConsequence) return "optional";
+  const entry = planEntryForDay(state.eventPlan, event.day);
+  const baseline = entry ? eventPackageById(entry.packageId) : undefined;
+  if (!baseline || !packageHasConsequenceChoice(baseline)) return "optional";
+  if (!hasConsequenceScheduleWindow(state)) return "optional";
+  return "required";
+}
+
+/** Drop consequences that would fail at choice time. Choice costs and effects stay. */
+export function stripUnschedulableConsequences(state: GameState, pkg: EventPackage): EventPackage {
+  let removed = false;
+  const choices = pkg.choices.map((choice) => {
+    if (!choice.consequence || canScheduleConsequence(state, choice.consequence)) return choice;
+    removed = true;
+    const { consequence: _ignored, ...rest } = choice;
+    return rest;
+  });
+  if (!removed) return pkg;
+  return { ...pkg, choices };
+}
+
 /**
  * After resolving an event, activate the next mandatory consequence/scheduled event
  * for the current day so callers never need a recovery helper mid-day.
@@ -422,7 +483,7 @@ export function installCommittedPackage(
   state: GameState,
   rawPackage: EventPackage,
   source: ActiveEvent["source"],
-  options?: { restore?: boolean },
+  options?: { restore?: boolean; sanitizeConsequences?: boolean },
 ): ActionResult {
   const event = state.activeEvent;
   if (!event || state.phase !== "event" || event.day !== state.day) {
@@ -433,8 +494,19 @@ export function installCommittedPackage(
     const entry = planEntryForDay(state.eventPlan, state.day);
     const catalogId = event.isConsequence ? event.packageId : entry?.packageId;
     const catalog = catalogId ? eventPackageById(catalogId) : undefined;
-    const base = catalog ?? resolvePackageById(state, event.packageId);
-    if (!base || !validateChoiceList(base)) {
+    const storedPkg = catalogId ? state.eventPackageStore?.[catalogId] : undefined;
+    const preferStored = Boolean(
+      options?.restore && storedPkg && storedPkg.packageId === catalogId && validateChoiceList(storedPkg),
+    );
+    const resolved = preferStored ? storedPkg : (catalog ?? resolvePackageById(state, event.packageId));
+    if (!resolved || !validateChoiceList(resolved)) {
+      return fail("INVALID_CHOICE", "Event package is not trusted");
+    }
+    const base =
+      options?.sanitizeConsequences && !event.isConsequence
+        ? stripUnschedulableConsequences(state, resolved)
+        : resolved;
+    if (!validateChoiceList(base)) {
       return fail("INVALID_CHOICE", "Event package is not trusted");
     }
     const choices = scaleChoicesForDifficulty(base.choices, state.difficulty).map((choice) => {

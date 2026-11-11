@@ -35,8 +35,26 @@ export {
 } from "./stats";
 export { upgradeWall, upgradeTroops, upgradeCity, repairCity } from "./economy";
 export { endPreparationDay, startBattle, continueFromReport, surrender } from "./transitions";
-export { attachActiveEvent, chooseEventOption, ensureLocalEvent, installCommittedPackage, toActiveEvent } from "./events";
-export { validateEventPackage, validateEffect, PACKAGE_LIMITS } from "./packageValidation";
+export {
+  attachActiveEvent,
+  canScheduleConsequence,
+  chooseEventOption,
+  ensureLocalEvent,
+  hasConsequenceScheduleWindow,
+  installCommittedPackage,
+  resolveIncomingConsequencePolicy,
+  stripUnschedulableConsequences,
+  toActiveEvent,
+  UNSCHEDULABLE_CONSEQUENCE_MESSAGE,
+} from "./events";
+export type { IncomingConsequencePolicy } from "./events";
+export {
+  validateEventPackage,
+  validateEffect,
+  packageHasConsequenceChoice,
+  PACKAGE_LIMITS,
+  CONSEQUENCE_REQUIRED_MESSAGE,
+} from "./packageValidation";
 export type { PackageValidationContext, PackageValidationResult } from "./packageValidation";
 export {
   choiceLabelRespectsGoldCost,

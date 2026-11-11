@@ -9,12 +9,18 @@ Engine helpers (import from `src/game`):
 ```ts
 import {
   CONSEQUENCE_SUCCESSOR,
+  canScheduleConsequence,
   decorateActiveEvent,
+  hasConsequenceScheduleWindow,
   isTrustedConsequencePackage,
   labelStatesCurrencyAmount,
+  resolveIncomingConsequencePolicy,
+  stripUnschedulableConsequences,
   trustedChoiceLabel,
 } from "../src/game";
 ```
+
+`resolveIncomingConsequencePolicy(state, event)` is `required` only for a scheduled slot whose catalog baseline has a consequence and `hasConsequenceScheduleWindow(state)` is true. `canScheduleConsequence` is the accept-time probe. `stripUnschedulableConsequences` is for a new local fallback, not for a committed snapshot.
 
 ## Why equality is wrong
 

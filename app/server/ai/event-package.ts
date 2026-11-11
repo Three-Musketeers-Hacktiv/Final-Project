@@ -6,17 +6,22 @@ import { z } from "zod";
 import { getServerEnv } from "@/server/config/env";
 import type { PackageSnapshotDocument } from "@/server/game/types";
 import {
+  canScheduleConsequence,
+  CONSEQUENCE_REQUIRED_MESSAGE,
   gameConfig,
   getEffectiveStats,
   nextBattleDay,
+  resolveIncomingConsequencePolicy,
+  UNSCHEDULABLE_CONSEQUENCE_MESSAGE,
   validateEventPackage,
   type ActiveEvent,
   type Effect,
   type EventPackage,
   type GameState,
+  type IncomingConsequencePolicy,
 } from "../../../src/game";
 
-export const PACKAGE_PROMPT_VERSION = "event-package-en-v2";
+export const PACKAGE_PROMPT_VERSION = "event-package-en-v3";
 const GEMINI_MIN_DEADLINE_MS = 10_000;
 
 /** HTTP 400 is not listed. Identical invalid-argument requests must not be retried. */
@@ -33,6 +38,7 @@ export const PACKAGE_FALLBACK_REASONS = {
   providerError: "provider-error",
   providerUnconfigured: "provider-unconfigured",
   packageRejected: "package-rejected",
+  consequencePolicyFailed: "consequence-policy-failed",
 } as const;
 
 export type PackageFallbackReason = (typeof PACKAGE_FALLBACK_REASONS)[keyof typeof PACKAGE_FALLBACK_REASONS];
@@ -194,20 +200,40 @@ export const generatedEventPackageJsonSchema = {
   },
 };
 
-export const PACKAGE_SYSTEM_INSTRUCTION = [
+const PACKAGE_SYSTEM_RULES = [
   "You create one playable city-defense event package as JSON.",
   "Write a scene that is happening now. Each choice is a concrete action in that scene.",
   "goldCost is the base cost before difficulty scaling. Use 0 for at least one choice.",
   "Effects may only use grantGold, damageCity, healCity, maxHpBonus, nextWaveDefense, or upgradeDiscount.",
   "A paid choice must not duplicate a cheaper choice with the same effects.",
-  "A consequence is optional and depth-1: its fallbackPackage has 2-4 choices, one free, and no further consequence.",
-  "If there is no consequence, omit the consequence field. Never return null or an empty object.",
-  "If present, consequence must include integer minDelayDays and maxDelayDays (1 <= minDelayDays <= maxDelayDays <= 30) and a complete fallbackPackage with title, description, and choices. targetWave is an optional integer.",
   "Each effect needs type and its fields: grantGold/damageCity/healCity/maxHpBonus use amount; nextWaveDefense uses amount and wave; upgradeDiscount uses rate and untilWave. Omit numeric fields that do not belong to that type. Never send null.",
   "Do not invent mechanics outside the effect list. Do not emit code, expressions, or state patches.",
   "Do not set the run id, calendar day, or canonical event id. Choice ids must be unique.",
   "Address the lord in English. Do not mention gold, coin, coins, treasury, or gp in choice labels.",
-].join(" ");
+];
+
+function consequenceInstruction(policy: IncomingConsequencePolicy): string {
+  if (policy === "required") {
+    return [
+      "This slot requires a consequence: at least one choice must include a complete depth-1 consequence whose follow-up clearly continues that choice.",
+      "Other choices may omit consequence. Do not add a consequence to every choice.",
+      "If present, consequence must include integer minDelayDays and maxDelayDays (1 <= minDelayDays <= maxDelayDays <= 30) and a complete fallbackPackage with title, description, and choices, including one free choice and no further consequence.",
+      "targetWave is an optional integer. If a choice has no consequence, omit the field. Never return null or an empty object.",
+    ].join(" ");
+  }
+  return [
+    "A consequence is optional and depth-1: its fallbackPackage has 2-4 choices, one free, and no further consequence.",
+    "If there is no consequence, omit the consequence field. Never return null or an empty object.",
+    "If present, consequence must include integer minDelayDays and maxDelayDays (1 <= minDelayDays <= maxDelayDays <= 30) and a complete fallbackPackage with title, description, and choices. targetWave is an optional integer.",
+  ].join(" ");
+}
+
+export function packageSystemInstruction(policy: IncomingConsequencePolicy = "optional"): string {
+  return [...PACKAGE_SYSTEM_RULES, consequenceInstruction(policy)].join(" ");
+}
+
+/** Optional-policy instruction. Required slots use packageSystemInstruction. */
+export const PACKAGE_SYSTEM_INSTRUCTION = packageSystemInstruction("optional");
 
 export type PackageGenerationInput = {
   locale: "en-US";
@@ -238,6 +264,7 @@ export type PackageGenerationInput = {
     choiceCount: "2-4";
     requireFreeChoice: true;
     goldCostMeaning: "base-before-difficulty";
+    consequencePolicy: IncomingConsequencePolicy;
     consequenceDepth: 1;
   };
 };
@@ -277,7 +304,7 @@ export class GeminiEventPackageGenerator implements EventPackageGenerator {
       model: this.model,
       contents: JSON.stringify(input),
       config: {
-        systemInstruction: PACKAGE_SYSTEM_INSTRUCTION,
+        systemInstruction: packageSystemInstruction(input.rules.consequencePolicy),
         responseMimeType: "application/json",
         responseJsonSchema: generatedEventPackageJsonSchema,
         maxOutputTokens: env.AI_MAX_OUTPUT_TOKENS,
@@ -395,8 +422,24 @@ export function buildPackageGenerationInput(
       choiceCount: "2-4",
       requireFreeChoice: true,
       goldCostMeaning: "base-before-difficulty",
+      consequencePolicy: resolveIncomingConsequencePolicy(state, event),
       consequenceDepth: 1,
     },
+  };
+}
+
+export function overlayPackageNarrative(
+  base: EventPackage,
+  narrative: { title: string; description: string; choices: Array<{ id: string; label: string }> },
+): EventPackage {
+  return {
+    ...base,
+    title: narrative.title,
+    description: narrative.description,
+    choices: base.choices.map((choice) => ({
+      ...choice,
+      label: narrative.choices.find((entry) => entry.id === choice.id)?.label ?? choice.label,
+    })),
   };
 }
 
@@ -490,6 +533,14 @@ export async function generateEventPackage(
   recentDecisions: PackageGenerationInput["recentDecisions"] = [],
 ): Promise<PackageGenerationResult> {
   const promptVersion = packagePromptVersion();
+  const input = buildPackageGenerationInput(state, event, recentDecisions);
+  const policy = input.rules.consequencePolicy;
+  console.info("Event package consequence policy", {
+    eventId: event.eventId,
+    day: event.day,
+    isConsequence: Boolean(event.isConsequence),
+    policy,
+  });
   if (!generator) {
     return {
       source: "fallback",
@@ -501,9 +552,7 @@ export async function generateEventPackage(
     };
   }
   try {
-    const draft = generatedEventPackageSchema.parse(
-      await generator.generate(buildPackageGenerationInput(state, event, recentDecisions)),
-    );
+    const draft = generatedEventPackageSchema.parse(await generator.generate(input));
     const canonical = canonicalizeEventPackage(draft, {
       eventId: event.eventId,
       day: event.day,
@@ -516,10 +565,32 @@ export async function generateEventPackage(
       checkDominance: true,
       enforceWaveTiming: true,
       enforceDecade: true,
+      requireAtLeastOneConsequence: policy === "required",
     });
     if (!validated.ok) {
-      throw new PackageGenerationError(PACKAGE_FALLBACK_REASONS.packageRejected, validated.message);
+      const policyFailure = validated.message === CONSEQUENCE_REQUIRED_MESSAGE;
+      throw new PackageGenerationError(
+        policyFailure ? PACKAGE_FALLBACK_REASONS.consequencePolicyFailed : PACKAGE_FALLBACK_REASONS.packageRejected,
+        validated.message,
+      );
     }
+    const unschedulable = validated.pkg.choices.some(
+      (choice) => choice.consequence != null && !canScheduleConsequence(state, choice.consequence),
+    );
+    if (unschedulable) {
+      throw new PackageGenerationError(
+        PACKAGE_FALLBACK_REASONS.consequencePolicyFailed,
+        UNSCHEDULABLE_CONSEQUENCE_MESSAGE,
+      );
+    }
+    console.info("Event package accepted", {
+      eventId: event.eventId,
+      day: event.day,
+      isConsequence: Boolean(event.isConsequence),
+      policy,
+      consequenceChoiceCount: validated.pkg.choices.filter((choice) => choice.consequence).length,
+      source: "ai",
+    });
     return {
       source: "ai",
       pkg: validated.pkg,
@@ -532,6 +603,9 @@ export async function generateEventPackage(
     const httpStatus = providerHttpStatus(error);
     console.warn("Event package generation failed; using local package", {
       eventId: event.eventId,
+      day: event.day,
+      isConsequence: Boolean(event.isConsequence),
+      policy,
       provider: generator.provider,
       model: generator.model,
       promptVersion,
