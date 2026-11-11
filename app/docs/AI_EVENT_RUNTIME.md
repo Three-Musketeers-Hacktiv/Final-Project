@@ -11,7 +11,7 @@ The AI runtime decorates a trusted engine event when an action first enters an e
 - The game engine owns `eventPlan`, event/choice IDs, costs, effects, rules, damage, and state transitions.
 - Backend sends trusted event copy to a provider, validates the response, and persists the decorated narrative with the action.
 - AI may change only the title, description, and choice labels.
-- Provider failure must not fail a valid gameplay action; backend first checks the shared valid AI catalog, then uses the trusted engine copy as fallback.
+- Provider failure must not fail a valid gameplay action; backend first checks the seeded fallback catalog, then uses the trusted engine copy as fallback.
 - Frontend displays the backend response and never calls Gemini directly.
 
 The active backend runtime uses the official Google Gen AI SDK. The former OpenAI dependency and hardcoded runtime path have been removed.
@@ -22,7 +22,7 @@ Google Gemini is the default provider. The adapter is selected only by server en
 
 | Variable | Required | Recommended/default | Purpose |
 |---|---:|---|---|
-| `AI_PROVIDER` | Yes | `gemini` | Selects a supported backend adapter. |
+| `AI_PROVIDER` | No | `gemini` | Selects a supported backend adapter. |
 | `GEMINI_API_KEY` | For Gemini runtime | none | Server-only Gemini credential. |
 | `GEMINI_MODEL` | For Gemini runtime | chosen during deployment | Gemini model with JSON/schema output support. |
 | `AI_TIMEOUT_MS` | No | `10000` | One provider-call timeout. |
@@ -138,7 +138,7 @@ Final values are verified in Vercel Preview and remain configurable through the 
 - Reordered valid choices merge by ID.
 - Missing, duplicate, invented, or dynamic-ID mismatch falls back.
 - Missing key, timeout, network error, refusal, and invalid schema fall back.
-- Provider failure reuses a valid shared AI catalog entry before local fallback.
+- Provider failure reuses a valid seeded fallback entry before local fallback.
 - Stored narrative IDs are revalidated and labels mentioning supported currency terms fall back to trusted engine labels.
 - Same-day successor events and missing-active-event recovery do not duplicate effects or revision increments.
 - Fallback and AI responses expose the same API shape.

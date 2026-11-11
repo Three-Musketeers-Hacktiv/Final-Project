@@ -1,5 +1,7 @@
 # PRD perbaikan — Developer 1 (Game Engine)
 
+> Arsip proyek. Target, contoh dan hasil pemeriksaan di bawah mengikuti tahap pekerjaan saat dicatat. Untuk aturan kampanye yang berjalan sekarang, lihat [PRD](../../PRD.md).
+
 **Status:** Draft playtest follow-up  
 **Baseline dibanding:** `development` @ `d84f600`  
 **Owner:** Game engine  

@@ -1,6 +1,6 @@
 # Engine V4 Backend Integration
 
-Status: **Backend synchronized; frontend build handoff remains**
+Status: **Integration record for engine v4**
 Owner: Backend  
 Engine source: `../../src/game` and `../../docs/FOR_BACKEND.md` (read-only)  
 Last updated: 2026-11-09
@@ -29,8 +29,8 @@ This document records the backend changes required by game-engine patch v4. Back
 - AI choice labels may not mention supported currency terms (`gold`, `coin(s)`, `treasury`, `gp`), even without an amount. Backend supplies effective costs as prompt context, but labels are accepted only through the engine trusted-label policy. Descriptions remain narrative-only and are not scanned.
 - A consequence may move to a trusted successor package when its original window is occupied. Backend uses `isTrustedConsequencePackage`, not strict package equality.
 - Choosing an event can immediately activate another consequence on the same day. The response must decorate that new active event.
-- Narrative recovery order is: same run/event, configured Gemini generation, shared valid AI narrative for the ruleset/package/day after generation failure, then trusted local fallback.
-- The backend immutable ruleset ID is `campaign-v4-100-day-v3`. Engine documentation suggests v2 relative to its baseline, but this backend already used v2 for the preceding balance fingerprint. Reusing v2 would conflict with immutable Atlas metadata. Existing v1/v2 runs remain audit records and are not silently migrated.
+- Narrative recovery order is: same run/event, configured Gemini generation, valid seeded fallback narrative for the ruleset/package/day after generation failure, then trusted local fallback.
+- The backend immutable ruleset ID is `campaign-v4-100-day-v3`. The backend already used v2 for the preceding balance fingerprint. Reusing v2 would conflict with immutable Atlas metadata. Existing v1/v2 runs remain audit records and are not silently migrated.
 
 ## Latest patch implementation tickets
 
@@ -54,7 +54,7 @@ This document records the backend changes required by game-engine patch v4. Back
 
 The latest balance keeps `GameState.version === 4` but changes the config fingerprint. New runs use backend ruleset `campaign-v4-100-day-v3`. Existing runs tied to older ruleset documents remain stored for audit but cannot be resumed under the new engine. A product migration, if desired later, requires a separately reviewed migration design.
 
-## Verification gates
+## Historical verification results (2026-11-09)
 
 - Backend-focused typecheck is clean.
 - Backend unit/contract tests pass, including dynamic days, 2–4 choices, trusted successor consequences, stored narrative validation, and missing-event recovery.

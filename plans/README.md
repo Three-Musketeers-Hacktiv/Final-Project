@@ -1,5 +1,7 @@
 # Plans
 
+> Arsip proyek. Target, contoh dan hasil pemeriksaan di bawah mengikuti tahap pekerjaan saat dicatat. Untuk aturan kampanye yang berjalan sekarang, lihat [PRD](../PRD.md).
+
 Rencana desain sebelum / selama implementasi.
 
 | File | Isi |

@@ -1,5 +1,7 @@
 # Diff summary — playtest iteration vs `development`
 
+> Arsip proyek. Target, contoh dan hasil pemeriksaan di bawah mengikuti tahap pekerjaan saat dicatat. Untuk aturan kampanye yang berjalan sekarang, lihat [PRD](../../PRD.md).
+
 **Baseline:** `origin/development` @ `d84f600`  
 **Compared:** local working tree (modified + untracked)  
 **Rough size:** ~33 tracked files changed (+1224 / −356) + ~10 untracked files (~980 LOC baru)

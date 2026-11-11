@@ -1,5 +1,7 @@
 # 01: Engine — perketat validasi event terhadap eventPlan
 
+> Arsip proyek. Target, contoh dan hasil pemeriksaan di bawah mengikuti tahap pekerjaan saat dicatat. Untuk aturan kampanye yang berjalan sekarang, lihat [PRD](../../../PRD.md).
+
 **What to build:** Perketat `attachActiveEvent` dan `chooseEventOption` agar identitas event hanya diterima jika cocok `eventPlan` run, hari, dan fase yang sah; cegah double-apply efek dan penggantian event aktif oleh respons terlambat.
 
 **Assignee:** Game engine (Developer 1)

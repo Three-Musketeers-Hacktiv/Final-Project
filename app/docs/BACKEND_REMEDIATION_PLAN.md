@@ -1,5 +1,7 @@
 # Backend Remediation Plan — Engine Patch Alignment
 
+> Arsip proyek. Target, contoh dan hasil pemeriksaan di bawah mengikuti tahap pekerjaan saat dicatat. Untuk aturan kampanye yang berjalan sekarang, lihat [PRD](../../PRD.md).
+
 Status: **Implemented and verified**
 Owner: Backend (Dev 3)
 Updated: 2026-11-08

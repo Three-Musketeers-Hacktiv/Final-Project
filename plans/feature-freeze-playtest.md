@@ -1,5 +1,7 @@
 # Feature freeze sampai playtest pertama
 
+> Arsip proyek. Target, contoh dan hasil pemeriksaan di bawah mengikuti tahap pekerjaan saat dicatat. Untuk aturan kampanye yang berjalan sekarang, lihat [PRD](../PRD.md).
+
 ## Keputusan terkunci (grill)
 
 - Alasan ingin fitur baru: **belum playtest** (bukan pain point terukur, bukan rubrik).

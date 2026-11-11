@@ -1,5 +1,7 @@
 # Playtest handoff — diff & PRD perbaikan
 
+> Arsip proyek. Target, contoh dan hasil pemeriksaan di bawah mengikuti tahap pekerjaan saat dicatat. Untuk aturan kampanye yang berjalan sekarang, lihat [PRD](../../PRD.md).
+
 Dokumen ini membandingkan **working tree saat ini** dengan **`origin/development` @ `d84f600`** (sebelum perubahan playtest lokal yang belum di-commit), lalu memecah pekerjaan lanjutan per developer.
 
 | Dokumen | Audience |

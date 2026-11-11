@@ -1,5 +1,7 @@
 # 02: Engine — perketat validasi BattleSnapshot
 
+> Arsip proyek. Target, contoh dan hasil pemeriksaan di bawah mengikuti tahap pekerjaan saat dicatat. Untuk aturan kampanye yang berjalan sekarang, lihat [PRD](../../../PRD.md).
+
 **What to build:** Validasi semua field numerik `BattleSnapshot` dengan `Number.isFinite` dan rentang kontrak sebelum loop damage di `resolveBattle`, agar `NaN`/`Infinity` tidak menghasilkan HP laporan rusak.
 
 **Assignee:** Game engine (Developer 1)

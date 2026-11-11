@@ -1,5 +1,7 @@
 # 06: Reward wave 1 ke hari 11
 
+> Arsip proyek. Target, contoh dan hasil pemeriksaan di bawah mengikuti tahap pekerjaan saat dicatat. Untuk aturan kampanye yang berjalan sekarang, lihat [PRD](../../../PRD.md).
+
 **What to build:** Setelah laporan wave 1 menang, pemain wajib memilih tepat satu dari tiga reward; pilihan diterapkan sekali bersama masuk hari 11 sehingga bonus berlaku sebelum income hari 11.
 
 **Blocked by:** 05 Battle deterministik dan laporan

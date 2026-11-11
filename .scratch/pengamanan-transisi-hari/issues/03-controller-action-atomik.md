@@ -1,5 +1,7 @@
 # 03: Cegah klik ganda dan action dari state lama
 
+> Arsip proyek. Target, contoh dan hasil pemeriksaan di bawah mengikuti tahap pekerjaan saat dicatat. Untuk aturan kampanye yang berjalan sekarang, lihat [PRD](../../../PRD.md).
+
 **What to build:** Pemanggil memakai controller minimal yang memiliki state terbaru. Dua permintaan dari tampilan yang sama hanya boleh menghasilkan satu perubahan, sementara action baru setelah tampilan diperbarui tetap bekerja normal. Reset permainan menolak semua permintaan dari run lama.
 
 **Blocked by:** 01 — Amankan pergantian hari dan pemasukan; 02 — Kunci alur battle, laporan, dan reward.

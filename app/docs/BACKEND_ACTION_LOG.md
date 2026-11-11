@@ -1,5 +1,7 @@
 # Backend Action Log
 
+> Arsip proyek. Target, contoh dan hasil pemeriksaan di bawah mengikuti tahap pekerjaan saat dicatat. Untuk aturan kampanye yang berjalan sekarang, lihat [PRD](../../PRD.md).
+
 Dokumen ini mencatat tindakan material pada pekerjaan backend Fantasy City Defense. Waktu menggunakan zona Asia/Jakarta. Secret, credential, connection string, password, dan token tidak boleh ditulis di sini.
 
 ## Format entri

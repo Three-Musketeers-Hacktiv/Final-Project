@@ -1,5 +1,7 @@
 # 03: Kalender lanjut hari persiapan
 
+> Arsip proyek. Target, contoh dan hasil pemeriksaan di bawah mengikuti tahap pekerjaan saat dicatat. Untuk aturan kampanye yang berjalan sekarang, lihat [PRD](../../../PRD.md).
+
 **What to build:** Pemain memajukan kalender hanya lewat `endPreparationDay` (tepat satu hari), menerima income sekali per hari persiapan baru, dan memasuki hari battle tanpa income atau belanja.
 
 **Blocked by:** 01 Fondasi state dan state awal

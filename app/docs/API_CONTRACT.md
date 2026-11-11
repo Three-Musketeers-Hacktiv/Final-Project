@@ -9,7 +9,7 @@ Auth: JWT dalam cookie session `HttpOnly`
 Dokumen terkait:
 
 - [Backend implementation plan](./BACKEND_IMPLEMENTATION_PLAN.md)
-- [Database schema v3](./DATABASE_SCHEMA_V3.md)
+- [Database schema (engine v4)](./DATABASE_SCHEMA_V3.md)
 - [Auth and session specification](./AUTH_SESSION_SPEC.md)
 - [AI event runtime](./AI_EVENT_RUNTIME.md)
 - [Game engine contract](../../docs/DEV1_CONTRACT.md)

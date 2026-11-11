@@ -1,5 +1,7 @@
 # Developer 1 — Sistem Game Fantasy City Defense
 
+> Acuan kampanye saat ini adalah [PRD](PRD.md), [kontrak engine v4](docs/DEV1_CONTRACT.md) dan [panduan UI uji](docs/HARNESS.md). Angka prototipe 20 hari dan spesifikasi mock HTTP di bawah adalah rancangan awal. Engine sekarang menjalankan 100 hari, 10 wave, dan batas level 18 per jalur.
+
 ## Tujuan
 
 Implementasikan sistem permainan TypeScript untuk prototipe web single-player bertema lord yang mempertahankan kota fantasy dari monster. Target prototipe 20 hari, dengan pertempuran pada hari 10 dan 20. Deadline proyek: 13 November 2026.

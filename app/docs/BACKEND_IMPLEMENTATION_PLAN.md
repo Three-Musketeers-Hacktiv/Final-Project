@@ -1,5 +1,7 @@
 # Backend Implementation Plan — Fantasy City Defense
 
+> Arsip proyek. Target, contoh dan hasil pemeriksaan di bawah mengikuti tahap pekerjaan saat dicatat. Untuk aturan kampanye yang berjalan sekarang, lihat [PRD](../../PRD.md).
+
 Status: **Backend engine v4 synchronization implemented; frontend/victory gates pending**
 Target: campaign 100 hari / 10 wave
 Backend: Next.js Route Handlers + MongoDB  

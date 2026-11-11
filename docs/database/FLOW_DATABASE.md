@@ -1,5 +1,7 @@
 # Alur proses database
 
+> Arsip proyek. Target, contoh dan hasil pemeriksaan di bawah mengikuti tahap pekerjaan saat dicatat. Untuk aturan kampanye yang berjalan sekarang, lihat [PRD](../../PRD.md).
+
 Dokumen ini menjelaskan rancangan penyimpanan untuk game single-player. Nama koleksi mengikuti [schema_new.completed.drawio](schema_new.completed.drawio). Detail field ada di [Database_proposal.md](Database_proposal.md). Diagram yang dapat diedit: [database_flow.drawio](database_flow.drawio).
 
 Alur ini adalah rancangan integrasi Next.js, mesin permainan, dan MongoDB. Backend penyimpanannya belum diimplementasikan. Tidak ada seeding data dalam dokumen ini.

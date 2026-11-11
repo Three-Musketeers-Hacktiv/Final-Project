@@ -1,5 +1,7 @@
 # 01: Auto Run frontend dengan engine berbasis input
 
+> Arsip proyek. Target, contoh dan hasil pemeriksaan di bawah mengikuti tahap pekerjaan saat dicatat. Untuk aturan kampanye yang berjalan sekarang, lihat [PRD](../../../PRD.md).
+
 **What to build:** Pada kampanye prototipe 20 hari, pemain dapat menyalakan Auto di frontend sehingga Lanjut hari dikirim tiap lima detik lewat handler yang sama dengan tombol manual, tanpa timer di engine.
 
 **Blocked by:** None (can start immediately).

@@ -1,5 +1,7 @@
 # 02: Jeda lifecycle dan pembatalan input otomatis lama
 
+> Arsip proyek. Target, contoh dan hasil pemeriksaan di bawah mengikuti tahap pekerjaan saat dicatat. Untuk aturan kampanye yang berjalan sekarang, lihat [PRD](../../../PRD.md).
+
 **What to build:** Auto tetap aman saat tab disembunyikan, refresh/load, ganti run, dan tick yang sudah usang—tanpa catch-up multi-hari dan tanpa mencampur run.
 
 **Blocked by:** 01 Auto Run frontend

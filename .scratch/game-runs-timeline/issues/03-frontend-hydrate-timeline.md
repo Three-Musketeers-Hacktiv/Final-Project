@@ -1,5 +1,7 @@
 # 03: Frontend hydrate timeline dari GameView
 
+> Arsip proyek. Target, contoh dan hasil pemeriksaan di bawah mengikuti tahap pekerjaan saat dicatat. Untuk aturan kampanye yang berjalan sekarang, lihat [PRD](../../../PRD.md).
+
 **What to build:** Panel Timeline diisi dari `game.timeline` yang dikirim server (load awal dan setelah setiap action sukses), sehingga refresh atau muat ulang save aktif menampilkan history yang sama tanpa mengandalkan append-only memori lokal.
 
 **Blocked by:** 02 — Backend append timeline saat action sukses.

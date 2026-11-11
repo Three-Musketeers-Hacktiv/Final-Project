@@ -1,5 +1,7 @@
 # 02: Try UI dan auto-run tiga jalur
 
+> Arsip proyek. Target, contoh dan hasil pemeriksaan di bawah mengikuti tahap pekerjaan saat dicatat. Untuk aturan kampanye yang berjalan sekarang, lihat [PRD](../../../PRD.md).
+
 **What to build:** Di try UI, pemain melihat dan menekan tiga tombol upgrade (plus repair) dengan level/biaya per jalur; auto-upgrade opsional memilih pasukan → tembok → kota paling banyak sekali per hari.
 
 **Blocked by:** 01: Engine tiga jalur upgrade.

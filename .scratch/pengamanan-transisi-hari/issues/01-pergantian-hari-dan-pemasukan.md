@@ -1,5 +1,7 @@
 # 01: Amankan pergantian hari dan pemasukan
 
+> Arsip proyek. Target, contoh dan hasil pemeriksaan di bawah mengikuti tahap pekerjaan saat dicatat. Untuk aturan kampanye yang berjalan sekarang, lihat [PRD](../../../PRD.md).
+
 **What to build:** Pemain hanya berpindah ke hari berikutnya melalui action resmi, menerima pemasukan tepat sekali per hari persiapan, dan memperoleh maksimal satu aksi ekonomi berhasil per hari. Event wajib tidak dapat dilewati melalui state dengan fase yang tidak konsisten.
 
 **Blocked by:** None (can start immediately).

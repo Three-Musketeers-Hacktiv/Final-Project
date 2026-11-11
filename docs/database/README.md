@@ -1,29 +1,7 @@
-# Dokumentasi database Fantasy City Defense
+# Database Bastionfall
 
-Diagram yang dipakai: [schema_new.completed.drawio](schema_new.completed.drawio).
+Backend menyimpan state v4 di `game_runs`, aksi di `game_actions`, statistik di `game_properties`, event run di `runs_event`, dan laporan battle di `game_reports`. Metadata aturan tersimpan di `game_rulesets`. Lihat [schema backend](../../app/docs/DATABASE_SCHEMA_V3.md) dan [indeks MongoDB](../../app/server/db/indexes.ts).
 
-File schema dan diagram alternatif sudah dihapus agar hanya ada satu diagram acuan. Script MongoDB dan SQL sebelumnya juga sudah dihapus; folder ini tidak menyediakan script setup atau seeding database.
+Dari folder `app/`, gunakan `npm run db:indexes` untuk menyiapkan indeks. [Panduan aplikasi](../../app/README.md) menjelaskan konfigurasi dan pengisian katalog.
 
-Penjelasan setiap koleksi dan alur penyimpanannya ada di [Database_proposal.md](Database_proposal.md).
-
-## Isi folder
-
-- schema_new.completed.drawio: diagram koleksi, field, dan relasi yang bisa diedit di draw.io.
-- Database_proposal.md: bahan presentasi kepada instruktur.
-- FLOW_DATABASE.md: alur mulai permainan, aksi, kejadian, pertempuran dan koneksi terputus dalam bahasa Indonesia.
-- database_flow.drawio: enam halaman flowchart proses yang dapat diedit; diagram proses, bukan schema alternatif.
-- README.md: petunjuk dokumentasi.
-
-Pembersihan file tidak mengubah struktur koleksi pada diagram dan tidak menghapus data di server database. Integrasi backend serta pengujian database nyata belum dilakukan.
-
-Pembahasan penghapusan game_ruleset dan penyederhanaan packageId belum diterapkan pada diagram. Ringkasan keputusan terkunci ada di bagian atas [Database_proposal.md](Database_proposal.md).
-
-Inti schema:
-- `GameState version: 3` (wall / troops / city)
-- Kampanye panjang (~100 hari): banyak `runs_event` dan banyak `game_report`
-- `game_report.gameRunId` → `game_runs`; di diagram hanya disandingkan visual dengan `runs_event`
-- Auth: `bcrypt` + JWT (`jsonwebtoken`); `actionId` dibuat client untuk dedupe
-
-Alur proses: [FLOW_DATABASE.md](FLOW_DATABASE.md) dan [database_flow.drawio](database_flow.drawio).
-
-Alur Mulai Game: katalog `event_data` → AI jika perlu → tautkan lewat `runs_event`. Efek pilihan masuk `game_runs.state`, bukan `game_report`.
+[Diagram schema](schema_new.completed.drawio), [diagram proses](database_flow.drawio), [proposal](Database_proposal.md) dan [alur awal](FLOW_DATABASE.md) mendokumentasikan rancangan database proyek.

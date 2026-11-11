@@ -1,5 +1,7 @@
 # Pengamanan Transisi Hari
 
+> Arsip proyek. Target, contoh dan hasil pemeriksaan di bawah mengikuti tahap pekerjaan saat dicatat. Untuk aturan kampanye yang berjalan sekarang, lihat [PRD](../../PRD.md).
+
 Status: ready-for-agent
 
 ## Problem Statement

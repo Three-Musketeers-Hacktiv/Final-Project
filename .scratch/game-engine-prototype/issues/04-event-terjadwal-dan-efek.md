@@ -1,5 +1,7 @@
 # 04: Event terjadwal dan efek
 
+> Arsip proyek. Target, contoh dan hasil pemeriksaan di bawah mengikuti tahap pekerjaan saat dicatat. Untuk aturan kampanye yang berjalan sekarang, lihat [PRD](../../../PRD.md).
+
 **What to build:** Pada hari 3/7/13/17 pemain menghadapi event dua pilihan dari paket terpercaya; pilihan menerapkan biaya/efek sekali; event belum selesai memblokir belanja dan lanjut hari.
 
 **Blocked by:** 01 Fondasi state dan state awal; 03 Kalender lanjut hari persiapan

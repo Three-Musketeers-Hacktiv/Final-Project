@@ -1,5 +1,7 @@
 # Daftar Modul Game Engine
 
+> Arsip proyek. Target, contoh dan hasil pemeriksaan di bawah mengikuti tahap pekerjaan saat dicatat. Untuk aturan kampanye yang berjalan sekarang, lihat [PRD](../PRD.md).
+
 Versi diskusi · Keputusan terkunci 6 Nov 2026 · Belum implementasi kode
 
 ## Keputusan terkunci

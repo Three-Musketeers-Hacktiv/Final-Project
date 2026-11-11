@@ -1,5 +1,7 @@
 # 02: Kunci alur battle, laporan, dan reward
 
+> Arsip proyek. Target, contoh dan hasil pemeriksaan di bawah mengikuti tahap pekerjaan saat dicatat. Untuk aturan kampanye yang berjalan sekarang, lihat [PRD](../../../PRD.md).
+
 **What to build:** Pemain harus menyelesaikan battle dan laporan sebelum memilih reward atau menang. Reward pertama hanya dipilih sekali dan diterapkan sebelum pemasukan hari 11; permainan yang berakhir tidak menerima action permainan lanjutan.
 
 **Blocked by:** 01 — Amankan pergantian hari dan pemasukan.

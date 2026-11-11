@@ -1,5 +1,7 @@
 # 02: Ekonomi upgrade dan repair
 
+> Arsip proyek. Target, contoh dan hasil pemeriksaan di bawah mengikuti tahap pekerjaan saat dicatat. Untuk aturan kampanye yang berjalan sekarang, lihat [PRD](../../../PRD.md).
+
 **What to build:** Pada hari persiapan, pemain dapat upgrade kota (ATK+DEF) atau repair HP dengan maksimal satu aksi ekonomi sukses per hari; aksi invalid ditolak dengan error code tanpa mengubah state atau menghabiskan jatah.
 
 **Blocked by:** 01 Fondasi state dan state awal

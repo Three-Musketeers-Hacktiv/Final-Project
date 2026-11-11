@@ -312,7 +312,7 @@ Save tetap `version: 4`. Normal adalah tabel dasar; hard hanya mengalikan tabel 
 | Hard HP / ATK | 1.05 / 1.03 |
 | Hard upgrade / income / repair / event gold | 1.08 / 0.95 / 1.05 / 1.08 |
 
-Ruleset publik yang disarankan untuk BE: `campaign-v4-100-day-v2`. Jangan timpa fingerprint `campaign-v4-100-day-v1`.
+Ruleset yang digunakan backend: `campaign-v4-100-day-v3`. Jangan timpa fingerprint `campaign-v4-100-day-v1`.
 
 Simulasi aksi publik (4 strategi × 6 seed), bukan inject state:
 

@@ -1,5 +1,7 @@
 # 01: Fondasi state dan state awal
 
+> Arsip proyek. Target, contoh dan hasil pemeriksaan di bawah mengikuti tahap pekerjaan saat dicatat. Untuk aturan kampanye yang berjalan sekarang, lihat [PRD](../../../PRD.md).
+
 **What to build:** Run baru dapat dibuat dengan `GameState` versi 2 yang JSON-serializable, income hari 1 diterapkan tepat sekali, dan selector menampilkan attack/defense efektif dari base + level upgrade (tanpa menyimpan total turunan di state).
 
 **Blocked by:** None (can start immediately).

@@ -1,5 +1,7 @@
 # Pisah Upgrade: Tembok / Pasukan / Kota
 
+> Arsip proyek. Target, contoh dan hasil pemeriksaan di bawah mengikuti tahap pekerjaan saat dicatat. Untuk aturan kampanye yang berjalan sekarang, lihat [PRD](../PRD.md).
+
 Keputusan terkunci · 6 Nov 2026 · Spek: [`.scratch/split-three-upgrades/`](../.scratch/split-three-upgrades/)
 
 ## Ringkasan

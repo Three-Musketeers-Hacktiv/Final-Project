@@ -1,5 +1,7 @@
 # 03: Integrasi 20 hari dan kontrak D2/D3
 
+> Arsip proyek. Target, contoh dan hasil pemeriksaan di bawah mengikuti tahap pekerjaan saat dicatat. Untuk aturan kampanye yang berjalan sekarang, lihat [PRD](../../../PRD.md).
+
 **What to build:** Kampanye 20 hari tetap bisa diselesaikan lewat aksi publik dengan upgrade terpisah, dan dokumen kontrak memberitahu Developer 2/3 bahwa `upgradeLevel` tunggal diganti tiga jalur pada version 3.
 
 **Blocked by:** 01: Engine tiga jalur upgrade.

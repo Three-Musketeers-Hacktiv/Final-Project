@@ -1,5 +1,7 @@
 # 05: Battle deterministik dan laporan
 
+> Arsip proyek. Target, contoh dan hasil pemeriksaan di bawah mengikuti tahap pekerjaan saat dicatat. Untuk aturan kampanye yang berjalan sekarang, lihat [PRD](../../../PRD.md).
+
 **What to build:** Pada hari battle, pemain memulai wave sekali; engine menghitung hasil simultan, menyimpan log di state, dan menolak perhitungan ulang; kota kalah jika HP 0 (termasuk mutual KO).
 
 **Blocked by:** 01 Fondasi state dan state awal; 03 Kalender lanjut hari persiapan

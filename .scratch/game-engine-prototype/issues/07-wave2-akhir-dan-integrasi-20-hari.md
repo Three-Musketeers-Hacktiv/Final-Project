@@ -1,5 +1,7 @@
 # 07: Wave 2, akhir permainan, dan integrasi 20 hari
 
+> Arsip proyek. Target, contoh dan hasil pemeriksaan di bawah mengikuti tahap pekerjaan saat dicatat. Untuk aturan kampanye yang berjalan sekarang, lihat [PRD](../../../PRD.md).
+
 **What to build:** Kampanye prototipe dapat diselesaikan end-to-end: wave 2 menang → victory tanpa reward ekstra; kekalahan → gameOver menolak aksi lanjut; satu tes integrasi 20 hari memakai hanya aksi API publik yang berhasil di-assert.
 
 **Blocked by:** 02 Ekonomi upgrade dan repair; 04 Event terjadwal dan efek; 05 Battle deterministik dan laporan; 06 Reward wave 1 ke hari 11

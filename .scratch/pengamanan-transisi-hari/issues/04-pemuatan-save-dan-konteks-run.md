@@ -1,5 +1,7 @@
 # 04: Amankan pemuatan save dan pergantian konteks run
 
+> Arsip proyek. Target, contoh dan hasil pemeriksaan di bawah mengikuti tahap pekerjaan saat dicatat. Untuk aturan kampanye yang berjalan sekarang, lihat [PRD](../../../PRD.md).
+
 **What to build:** Pemanggil dapat menyerahkan snapshot save yang didukung kepada controller untuk melanjutkan progres tanpa mengulang pemasukan, biaya, damage, atau reward. Load mengganti konteks permintaan sehingga action dari sesi sebelum load tidak dapat diterapkan, termasuk ketika runId dan revision kebetulan sama.
 
 **Blocked by:** 03 — Cegah klik ganda dan action dari state lama.

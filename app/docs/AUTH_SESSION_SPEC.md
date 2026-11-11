@@ -153,7 +153,7 @@ Nilai awal yang direkomendasikan dan perlu dibuktikan melalui test:
 - reset counter atau kurangi penalti setelah login sukses;
 - respons `429 RATE_LIMITED` menyertakan `Retry-After`.
 
-Implementasi dapat memakai collection `auth_rate_limits` di MongoDB untuk MVP atau layanan rate limit yang kompatibel dengan Vercel. IP sebaiknya di-hash dengan secret server-side sebelum persistensi dan memiliki TTL pendek.
+Backend menyimpan penghitung di `auth_rate_limits` dengan jendela 15 menit. Kunci memakai HMAC dari jenis aksi, IP, dan username bila tersedia. Batas register adalah 5 dan login 10 per kunci.
 
 ## 10. Error dan logging
 

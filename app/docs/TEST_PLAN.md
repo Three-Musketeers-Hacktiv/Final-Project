@@ -71,7 +71,7 @@ Dokumen ini mendefinisikan bukti yang harus tersedia sebelum fitur backend diang
 | Pilihan event 2-4 | Unit/Integration | Semua label didekorasi, ID/cost/effect tetap trusted |
 | Campaign v4 | API smoke | Action normal mencapai victory pada hari 100 setelah 10 battle |
 | Ruleset ID dengan fingerprint berbeda | Integration | Ditolak; metadata lama tidak ditimpa |
-| Ruleset v3 balance terbaru | Adapter/Integration | Repair normal 25/60, hard repair cost 27, wave 1 hard 162/23, wave 10 normal 600/64 berasal dari selector engine |
+| Ruleset v3 balance terbaru | Adapter/Integration | Repair normal 25/60, hard repair cost 27, wave 1 hard 158/23, wave 10 normal 600/64 berasal dari selector engine |
 | Save ruleset v1/v2 | Integration | Ditolak sebagai incompatible; fingerprint dan reference lama tidak ditimpa |
 | Pointer run/revision tidak cocok | Integration | `SAVE_POINTER_MISMATCH` tanpa write |
 | Resume setelah logout/login | API | Current run user yang sama dikembalikan |
@@ -140,7 +140,7 @@ Backend menyediakan contoh request/response dan koleksi API yang mengikuti [API_
 - biaya event efektif tidak diskalakan ulang dan label AI yang menyebut istilah mata uang, dengan atau tanpa angka, memakai label engine;
 - consequence successor package sah diterima, sedangkan package asing dan ID rusak ditolak;
 - same-day event queue mengembalikan event berikutnya dan recovery active-event yang hilang tidak menggandakan revision/effect;
-- provider failure mencoba katalog AI valid sebelum fallback, dan stored narrative dengan choice ID asing ditolak.
+- provider failure mencoba katalog fallback seeded yang valid sebelum fallback, dan stored narrative dengan choice ID asing ditolak.
 
 Postman CLI yang tersedia dapat digunakan untuk menjalankan collection pada local atau Preview URL. Collection dan environment file yang aman boleh disimpan di area backend; secret environment lokal tidak boleh di-commit.
 

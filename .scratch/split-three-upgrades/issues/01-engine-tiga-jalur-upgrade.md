@@ -1,5 +1,7 @@
 # 01: Engine tiga jalur upgrade
 
+> Arsip proyek. Target, contoh dan hasil pemeriksaan di bawah mengikuti tahap pekerjaan saat dicatat. Untuk aturan kampanye yang berjalan sekarang, lihat [PRD](../../../PRD.md).
+
 **What to build:** Pemain dapat membeli upgrade tembok (DEF), pasukan (ATK), atau kota (MaxHP + income) lewat API publik engine, dengan satu slot aksi ekonomi sukses per hari bersama repair; state format version 3 menyimpan tiga level terpisah.
 
 **Blocked by:** None (can start immediately).

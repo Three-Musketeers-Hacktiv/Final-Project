@@ -129,7 +129,7 @@ Normal uses the base wave table below (multiplier 1). Easy and hard scale HP and
 
 ## Ruleset fingerprint
 
-Save `version` stays **4**. This balance changes repair, the wave table, and hard multipliers, so the config fingerprint changes. Backend must store a new immutable ruleset id — suggested `campaign-v4-100-day-v2` — and reject an older id whose stored fingerprint does not match the engine. Do not overwrite the previous fingerprint in place. The adapter still owns the id; the engine does not persist it.
+Save `version` stays **4**. This balance changes repair, the wave table, and hard multipliers, so the config fingerprint changes. Backend must store a new immutable ruleset id — suggested `campaign-v4-100-day-v3` — and reject an older id whose stored fingerprint does not match the engine. Do not overwrite the previous fingerprint in place. The adapter still owns the id; the engine does not persist it.
 
 ## BE checklist (wiring later)
 

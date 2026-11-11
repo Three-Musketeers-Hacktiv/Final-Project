@@ -1,5 +1,7 @@
 # Roadmap hasil diskusi (selain feature freeze)
 
+> Arsip proyek. Target, contoh dan hasil pemeriksaan di bawah mengikuti tahap pekerjaan saat dicatat. Untuk aturan kampanye yang berjalan sekarang, lihat [PRD](../PRD.md).
+
 Versi diskusi · November 2026
 
 Freeze fitur spekulatif: [feature-freeze-playtest.md](feature-freeze-playtest.md).  

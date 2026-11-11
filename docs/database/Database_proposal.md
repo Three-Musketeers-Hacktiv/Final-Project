@@ -1,5 +1,7 @@
 # Penjelasan database Fantasy City Defense
 
+> Arsip proyek. Target, contoh dan hasil pemeriksaan di bawah mengikuti tahap pekerjaan saat dicatat. Untuk aturan kampanye yang berjalan sekarang, lihat [PRD](../../PRD.md).
+
 Kami merancang database game ini menggunakan MongoDB. Prototipe engine saat ini 20 hari (battle hari 10 dan 20). **Schema sudah disiapkan untuk kampanye panjang (~100 hari)** sehingga jumlah event dan wave tidak dikunci di struktur koleksi.
 
 Data yang perlu kami simpan mulai dari identitas pemain sampai kondisi kota setelah diserang. Ada delapan koleksi: User, game_ruleset, game_runs, game_actions, runs_event, game_properties, game_report, dan event_data.

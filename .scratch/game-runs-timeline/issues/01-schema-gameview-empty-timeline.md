@@ -1,5 +1,7 @@
 # 01: Schema + GameView kosong untuk timeline
 
+> Arsip proyek. Target, contoh dan hasil pemeriksaan di bawah mengikuti tahap pekerjaan saat dicatat. Untuk aturan kampanye yang berjalan sekarang, lihat [PRD](../../../PRD.md).
+
 **What to build:** Run baru dan load run mengembalikan `game.timeline` sebagai array kosong yang terdokumentasi di schema serta kontrak API, sehingga FE punya field stabil sebelum append diisi.
 
 **Blocked by:** None (can start immediately).

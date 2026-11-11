@@ -1,5 +1,7 @@
 # 01: Backend — daftarkan aksi `surrender` ke game engine
 
+> Arsip proyek. Target, contoh dan hasil pemeriksaan di bawah mengikuti tahap pekerjaan saat dicatat. Untuk aturan kampanye yang berjalan sekarang, lihat [PRD](../../../PRD.md).
+
 **What to build:** Ekspos aksi `surrender` lewat adapter dan API produk agar `POST /api/runs/:runId/actions` memanggil `surrender` dari `src/game` dan menutup run sebagai `gameOver`.
 
 **Assignee:** Backend (Developer 2)

@@ -1,5 +1,7 @@
 # Patch validasi event dan battle (engine)
 
+> Arsip proyek. Target, contoh dan hasil pemeriksaan di bawah mengikuti tahap pekerjaan saat dicatat. Untuk aturan kampanye yang berjalan sekarang, lihat [PRD](../../PRD.md).
+
 Status: ready-for-agent
 
 **Implementation status:** done (2026-11-08) — perubahan di `src/game/events.ts`, `src/game/battle.ts`, `src/game/game.test.ts`.  

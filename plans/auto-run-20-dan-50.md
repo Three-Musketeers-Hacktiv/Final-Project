@@ -1,5 +1,7 @@
 # Auto Run (20 hari dulu, 50 hari kemudian)
 
+> Arsip proyek. Target, contoh dan hasil pemeriksaan di bawah mengikuti tahap pekerjaan saat dicatat. Untuk aturan kampanye yang berjalan sekarang, lihat [PRD](../PRD.md).
+
 ## Jawaban singkat
 
 **Masukkan Auto di prototipe 20 hari** supaya FE menyesuaikan desain sekarang. Perilaku Auto tidak tergantung panjang kampanye; ia hanya memanggil `endPreparationDay`. Ruleset 50 hari belakangan memakai UI Auto yang sama.

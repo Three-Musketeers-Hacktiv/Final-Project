@@ -1,5 +1,7 @@
 # 03: Kontrol UI Auto dan indikator aksi tersisa
 
+> Arsip proyek. Target, contoh dan hasil pemeriksaan di bawah mengikuti tahap pekerjaan saat dicatat. Untuk aturan kampanye yang berjalan sekarang, lihat [PRD](../../../PRD.md).
+
 **What to build:** UI (uji atau produk) menampilkan toggle Manual/Auto, countdown, status Dijeda + alasan, Lanjutkan auto, dan peringatan bahwa aksi ekonomi hari itu masih tersedia—tanpa menyalin rumus engine.
 
 **Blocked by:** 01 Auto Run frontend; 02 Jeda lifecycle

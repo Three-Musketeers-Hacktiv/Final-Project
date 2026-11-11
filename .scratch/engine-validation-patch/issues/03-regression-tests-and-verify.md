@@ -1,5 +1,7 @@
 # 03: Engine — regression test + verifikasi
 
+> Arsip proyek. Target, contoh dan hasil pemeriksaan di bawah mengikuti tahap pekerjaan saat dicatat. Untuk aturan kampanye yang berjalan sekarang, lihat [PRD](../../../PRD.md).
+
 **What to build:** Tambah/sesuaikan tes di `src/game/game.test.ts` untuk celah event & battle, pastikan campaign 20 hari tetap hijau, jalankan typecheck + vitest, laporkan hasil aktual.
 
 **Assignee:** Game engine (Developer 1)
