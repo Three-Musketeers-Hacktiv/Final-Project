@@ -44,6 +44,7 @@ export default function RewardDialog({ wave, rewards, pending, onChoose, onHide 
           <button
             key={reward.id}
             type="button"
+            data-sfx="button"
             disabled={pending}
             onClick={() => onChoose(reward.id)}
             className="flex flex-col items-center gap-2 rounded-sm border-2 border-gold/60 bg-panel-head p-4 text-center transition-colors hover:border-gold hover:bg-track disabled:cursor-wait disabled:opacity-60"

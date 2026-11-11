@@ -1,10 +1,11 @@
 "use client";
 
 import Image, { type StaticImageData } from "next/image";
-import { useState, type CSSProperties } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
 import { EXPLOSION, HIT_FILTER, THRUST, type MonsterAttack } from "./battleSprites";
 import { citySprites, spriteTier, towerSprites, troopSprites, wallSprites } from "./citySprites";
 import SheetFrame from "./SheetFrame";
+import { playSound, preloadSounds } from "./sfx";
 
 type CityDefenseProps = {
   cityLevel: number;
@@ -185,6 +186,14 @@ export default function CityDefense({
   const wallUps = useTierUps(spriteTier(wallLevel));
   const cityUps = useTierUps(spriteTier(cityLevel));
   const troopUps = useTierUps(spriteTier(troopLevel));
+  // Each tier-up sweep has its sound: one for the city and wall, one for the troops.
+  useEffect(() => preloadSounds(["city-wall-up-tier", "troop-up-tier"]), []);
+  useEffect(() => {
+    if (wallUps + cityUps > 0) playSound("city-wall-up-tier", { channel: "tier-up" });
+  }, [wallUps, cityUps]);
+  useEffect(() => {
+    if (troopUps > 0) playSound("troop-up-tier", { channel: "tier-up" });
+  }, [troopUps]);
   // Both soldiers lunge together during a battle replay.
   const lungeStyle =
     lunge > 0

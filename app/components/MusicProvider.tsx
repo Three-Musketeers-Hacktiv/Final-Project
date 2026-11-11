@@ -6,11 +6,22 @@ import { createContext, useCallback, useContext, useEffect, useRef, useState, us
 const TRACKS = {
   idle: "/audio/idle_town.ogg",
   battle: "/audio/battle.ogg",
+  // The end screens: "Lively Meadow" and "Death Is Just Another Path".
+  victory: "/audio/victory.ogg",
+  defeat: "/audio/defeat.ogg",
 };
 
 export type MusicTrack = keyof typeof TRACKS;
 
-const VOLUME = 0.5;
+// Each song's playback volume, matched to its measured loudness (the end songs were mastered
+// much quieter, and can't be boosted in the file without clipping their peaks). 1 is the most a browser
+// allows.
+const VOLUME: Record<MusicTrack, number> = {
+  idle: 0.5,
+  battle: 0.4,
+  victory: 0.9,
+  defeat: 1,
+};
 const FADE_MS = 500;
 
 type MusicContextValue = {
@@ -116,7 +127,7 @@ export default function MusicProvider({ children }: { children: ReactNode }) {
       starting.play().then(
         () => {
           setBlocked(false);
-          if (target.current === wanted) fade(starting, VOLUME);
+          if (target.current === wanted) fade(starting, VOLUME[wanted]);
           else starting.pause();
         },
         (error: unknown) => {
@@ -125,7 +136,7 @@ export default function MusicProvider({ children }: { children: ReactNode }) {
         },
       );
     } else {
-      fade(audio, VOLUME);
+      fade(audio, VOLUME[wanted]);
     }
     lastTrack.current = wanted;
   }, [enabled, track, fade]);

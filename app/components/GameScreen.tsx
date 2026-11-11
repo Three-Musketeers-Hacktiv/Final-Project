@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { BattleResult } from "../../src/game";
 import { mockRun } from "@/app/(game)/play/mockData";
 import { gameConfig } from "../../src/game/config";
@@ -9,10 +9,11 @@ import BattleScene from "./BattleScene";
 import CityRecord from "./CityRecord";
 import CityStatus from "./CityStatus";
 import GameToast from "./GameToast";
-import { PlayMusic } from "./MusicProvider";
+import { PlayMusic, type MusicTrack } from "./MusicProvider";
 import PhaseDialogs from "./PhaseDialogs";
 import { useGame } from "./GameProvider";
 import SettingsDialog, { SETTINGS_DIALOG } from "./SettingsDialog";
+import { playSound, preloadSounds, useButtonSounds } from "./sfx";
 import ThisWave from "./ThisWave";
 import Timeline from "./Timeline";
 import TopBar from "./TopBar";
@@ -60,6 +61,16 @@ export default function GameScreen({ lord }: { lord: string }) {
     setTutorialSeen(true);
     setTutorialRequested(false);
   }
+  // Game buttons click; the reward screen opens with a fanfare, once per battle won (not on a page
+  // loaded straight onto it).
+  useButtonSounds();
+  const phaseBefore = useRef(state.phase);
+  useEffect(() => preloadSounds(["reward"]), []);
+  useEffect(() => {
+    if (state.phase === "reward" && phaseBefore.current !== "reward") playSound("reward");
+    phaseBefore.current = state.phase;
+  }, [state.phase]);
+
   // Start Battle moves the phase from battleReady to the result. Catch that change while rendering
   // and replay the saved rounds; a page loaded on the report (a refresh) goes straight to it.
   const [lastPhase, setLastPhase] = useState(state.phase);
@@ -73,6 +84,17 @@ export default function GameScreen({ lord }: { lord: string }) {
   const frame = useBattlePlayback({ result: replaying, speed, onDone: stopReplay });
 
   const fighting = replaying !== null || state.phase === "battleReady" || state.phase === "battleReport";
+  // The run's end has its own song, which takes over once the victory or defeat screen opens (after the
+  // battle's cutscene, if there is one).
+  const endScreenShown =
+    (state.phase === "victory" || state.phase === "gameOver") && (replaying === null || frame?.showResult);
+  const musicTrack: MusicTrack = endScreenShown
+    ? state.phase === "victory"
+      ? "victory"
+      : "defeat"
+    : fighting
+      ? "battle"
+      : "idle";
   const cityHp = frame?.cityHp ?? state.cityHp;
   // A won battle already counts as cleared, so wavePreview jumps to the next wave. This Wave keeps
   // the wave fought today and moves on to the next one when the following day starts.
@@ -106,7 +128,7 @@ export default function GameScreen({ lord }: { lord: string }) {
 
   return (
     <>
-      <PlayMusic track={fighting ? "battle" : "idle"} />
+      <PlayMusic track={musicTrack} />
       <TopBar
         day={state.day}
         lastDay={gameConfig.lastDay}
