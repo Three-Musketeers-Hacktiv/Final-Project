@@ -9,7 +9,7 @@ import BattleScene from "./BattleScene";
 import CityRecord from "./CityRecord";
 import CityStatus from "./CityStatus";
 import GameToast from "./GameToast";
-import { PlayMusic } from "./MusicProvider";
+import { PlayMusic, type MusicTrack } from "./MusicProvider";
 import PhaseDialogs from "./PhaseDialogs";
 import { useGame } from "./GameProvider";
 import SettingsDialog, { SETTINGS_DIALOG } from "./SettingsDialog";
@@ -84,6 +84,17 @@ export default function GameScreen({ lord }: { lord: string }) {
   const frame = useBattlePlayback({ result: replaying, speed, onDone: stopReplay });
 
   const fighting = replaying !== null || state.phase === "battleReady" || state.phase === "battleReport";
+  // The run's end has its own song, which takes over once the victory or defeat screen opens (after the
+  // battle's cutscene, if there is one).
+  const endScreenShown =
+    (state.phase === "victory" || state.phase === "gameOver") && (replaying === null || frame?.showResult);
+  const musicTrack: MusicTrack = endScreenShown
+    ? state.phase === "victory"
+      ? "victory"
+      : "defeat"
+    : fighting
+      ? "battle"
+      : "idle";
   const cityHp = frame?.cityHp ?? state.cityHp;
   // A won battle already counts as cleared, so wavePreview jumps to the next wave. This Wave keeps
   // the wave fought today and moves on to the next one when the following day starts.
@@ -117,7 +128,7 @@ export default function GameScreen({ lord }: { lord: string }) {
 
   return (
     <>
-      <PlayMusic track={fighting ? "battle" : "idle"} />
+      <PlayMusic track={musicTrack} />
       <TopBar
         day={state.day}
         lastDay={gameConfig.lastDay}
