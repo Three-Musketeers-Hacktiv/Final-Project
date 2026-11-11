@@ -285,15 +285,17 @@ export default function CityDefense({
             on the group's front edge. */}
         {monsterAttack?.attack.target === "troops" &&
           monsterAttack.frames.map((frame, i) => {
-            const { w } = monsterAttack.attack.sheet.frames[frame];
+            const { w, h } = monsterAttack.attack.sheet.frames[frame];
+            const stretchX = monsterAttack.attack.stretchX ?? 1;
             return (
               <SheetFrame
                 key={i}
                 sheet={monsterAttack.attack.sheet}
                 frame={frame}
-                width={units(w * (monsterAttack.attack.scale ?? MELEE_SCALE))}
+                width={units(w * stretchX * (monsterAttack.attack.scale ?? MELEE_SCALE))}
                 flip
                 className="bottom-0 left-full z-20"
+                style={stretchX === 1 ? undefined : { aspectRatio: `${w * stretchX} / ${h}` }}
               />
             );
           })}
