@@ -9,6 +9,8 @@ type ModalProps = {
   accent?: boolean;
   /** Clicking outside, Esc or × closes it. Turn off for screens the player must answer. */
   dismissible?: boolean;
+  /** Adds a Hide button: the screen goes away for a look at the game, but stays unanswered. */
+  onHide?: () => void;
   size?: "sm" | "md" | "lg";
   children: ReactNode;
 };
@@ -26,6 +28,7 @@ export default function Modal({
   icon,
   accent = false,
   dismissible = true,
+  onHide,
   size = "md",
   children,
 }: ModalProps) {
@@ -41,16 +44,26 @@ export default function Modal({
         icon={icon}
         accent={accent}
         aside={
-          dismissible && (
+          onHide ? (
             <button
               type="button"
-              popoverTarget={id}
-              popoverTargetAction="hide"
-              aria-label="Close"
-              className="px-1 text-2xl leading-none text-muted hover:text-parchment"
+              onClick={onHide}
+              className="rounded-sm border border-frame/60 px-2 py-0.5 text-sm text-muted hover:border-gold hover:text-parchment"
             >
-              ×
+              Hide
             </button>
+          ) : (
+            dismissible && (
+              <button
+                type="button"
+                popoverTarget={id}
+                popoverTargetAction="hide"
+                aria-label="Close"
+                className="px-1 text-2xl leading-none text-muted hover:text-parchment"
+              >
+                ×
+              </button>
+            )
           )
         }
       >

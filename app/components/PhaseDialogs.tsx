@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import type { ActiveEvent, GamePhase, GameState } from "../../src/game";
 import { EVENT_PACKAGES, rewardsForWave } from "../../src/game/config";
 import { useGame } from "./GameProvider";
@@ -20,6 +20,16 @@ const DIALOG_FOR_PHASE: Partial<Record<GamePhase, string>> = {
   gameOver: GAME_OVER_DIALOG,
 };
 
+// What the bar says while the player has hidden the screen they still have to answer.
+const PENDING_LABEL: Partial<Record<GamePhase, string>> = {
+  event: "An event awaits your decision",
+  battleReady: "The wave is at the gates",
+  battleReport: "The battle report is waiting",
+  reward: "Choose your reward",
+  victory: "Victory!",
+  gameOver: "Your city has fallen",
+};
+
 /**
  * For a consequence event: the earlier choice that caused it, by its trusted engine label, and the day
  * it was made (from the run's event plan; a follow-up of a follow-up has no plan entry, so no day).
@@ -32,11 +42,19 @@ function consequenceCause(event: ActiveEvent, state: GameState) {
   return { label: choice.label, day };
 }
 
-/** Opens the screen the current `state.phase` asks for. The player can't close it without answering. */
+/**
+ * Opens the screen the current `state.phase` asks for. The player can hide it for a look at the game,
+ * but can't move on without answering it: the game only acts on preparation days.
+ */
 export default function PhaseDialogs({ hidden = false }: { hidden?: boolean }) {
   const { game, pending, act } = useGame();
   const { state, wavePreview, eventNarrative, report } = game;
-  const dialogId = hidden ? undefined : DIALOG_FOR_PHASE[state.phase];
+  // Hidden by the player, for this screen only: the next one (a new phase or day) opens as usual.
+  const screen = `${state.phase}:${state.day}`;
+  const [hiddenScreen, setHiddenScreen] = useState<string | null>(null);
+  const playerHid = hiddenScreen === screen;
+  const hide = () => setHiddenScreen(screen);
+  const dialogId = hidden || playerHid ? undefined : DIALOG_FOR_PHASE[state.phase];
 
   useEffect(() => {
     const dialog = dialogId ? document.getElementById(dialogId) : null;
@@ -47,6 +65,22 @@ export default function PhaseDialogs({ hidden = false }: { hidden?: boolean }) {
   }, [dialogId]);
 
   if (hidden) return null;
+  if (playerHid) {
+    return (
+      <div className="fixed inset-x-0 bottom-4 z-40 flex justify-center px-4">
+        <div className="flex items-center gap-4 rounded-sm border-2 border-gold bg-panel px-4 py-2 text-parchment shadow-lg">
+          <span className="font-semibold">{PENDING_LABEL[state.phase]}</span>
+          <button
+            type="button"
+            onClick={() => setHiddenScreen(null)}
+            className="rounded-sm border-2 border-gold bg-gold/85 px-3 py-1 font-bold text-zinc-900 hover:bg-gold"
+          >
+            Show
+          </button>
+        </div>
+      </div>
+    );
+  }
   switch (state.phase) {
     case "event":
       return (
@@ -56,6 +90,7 @@ export default function PhaseDialogs({ hidden = false }: { hidden?: boolean }) {
             cause={consequenceCause(eventNarrative, state)}
             pending={pending}
             onChoose={(choiceId) => act("chooseEventOption", { choiceId })}
+            onHide={hide}
           />
         )
       );
@@ -68,6 +103,7 @@ export default function PhaseDialogs({ hidden = false }: { hidden?: boolean }) {
             cityMaxHp={state.cityMaxHp}
             pending={pending}
             onStart={() => act("startBattle", {})}
+            onHide={hide}
           />
         )
       );
@@ -78,6 +114,7 @@ export default function PhaseDialogs({ hidden = false }: { hidden?: boolean }) {
             result={report.battleResult}
             pending={pending}
             onContinue={() => act("continueFromReport", {})}
+            onHide={hide}
           />
         )
       );
@@ -89,6 +126,7 @@ export default function PhaseDialogs({ hidden = false }: { hidden?: boolean }) {
           rewards={rewardsForWave(state.wavesCleared)?.options ?? []}
           pending={pending}
           onChoose={(rewardId) => act("chooseReward", { rewardId })}
+          onHide={hide}
         />
       );
     case "victory":
@@ -101,6 +139,7 @@ export default function PhaseDialogs({ hidden = false }: { hidden?: boolean }) {
           cityHp={state.cityHp}
           cityMaxHp={state.cityMaxHp}
           gold={state.gold}
+          onHide={hide}
         />
       );
     default:

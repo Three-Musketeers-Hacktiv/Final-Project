@@ -14,10 +14,19 @@ type BattleReadyDialogProps = {
   cityMaxHp: number;
   pending: boolean;
   onStart: () => void;
+  /** Hides the screen for a look at the game; it comes back from the bar at the bottom. */
+  onHide: () => void;
 };
 
 /** phase "battleReady": the wave is at the gates; the player starts the battle. */
-export default function BattleReadyDialog({ wave, cityHp, cityMaxHp, pending, onStart }: BattleReadyDialogProps) {
+export default function BattleReadyDialog({
+  wave,
+  cityHp,
+  cityMaxHp,
+  pending,
+  onStart,
+  onHide,
+}: BattleReadyDialogProps) {
   const { art } = waveInfo(wave.wave, wave.name);
   const sides: { title: string; rows: { label: string; icon: IconName; value: number | string }[] }[] = [
     {
@@ -45,6 +54,7 @@ export default function BattleReadyDialog({ wave, cityHp, cityMaxHp, pending, on
       icon={<Icon name="thisWave" className="size-6" />}
       accent
       dismissible={false}
+      onHide={onHide}
     >
       <div className="flex justify-center">
         {art && <Image src={art} alt={wave.name} sizes="16rem" className="h-auto w-64" />}

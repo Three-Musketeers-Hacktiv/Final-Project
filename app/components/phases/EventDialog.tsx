@@ -28,13 +28,15 @@ type EventDialogProps = {
   cause: { label: string; day: number | null } | null;
   pending: boolean;
   onChoose: (choiceId: string) => void;
+  /** Hides the screen for a look at the game; it comes back from the bar at the bottom. */
+  onHide: () => void;
 };
 
 /**
  * phase "event": the player must pick one of the choices (2–4) before the day goes on. A choice can
  * open a follow-up event on the same day; the phase stays "event" and this dialog simply shows it.
  */
-export default function EventDialog({ event, cause, pending, onChoose }: EventDialogProps) {
+export default function EventDialog({ event, cause, pending, onChoose, onHide }: EventDialogProps) {
   return (
     <Modal
       id={EVENT_DIALOG}
@@ -44,6 +46,7 @@ export default function EventDialog({ event, cause, pending, onChoose }: EventDi
       // A consequence is a payback for an earlier choice: the red header marks it at a glance.
       accent={event.isConsequence}
       dismissible={false}
+      onHide={onHide}
     >
       {/* Ties the payback to the decision that caused it. */}
       {event.isConsequence && (

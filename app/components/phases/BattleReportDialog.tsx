@@ -9,13 +9,15 @@ type BattleReportDialogProps = {
   result: BattleResult;
   pending: boolean;
   onContinue: () => void;
+  /** Hides the screen for a look at the game; it comes back from the bar at the bottom. */
+  onHide: () => void;
 };
 
 /**
  * phase "battleReport": the result the engine already resolved, round by round.
  * Later the rounds also play back in the battle scene; nothing here is recalculated.
  */
-export default function BattleReportDialog({ result, pending, onContinue }: BattleReportDialogProps) {
+export default function BattleReportDialog({ result, pending, onContinue, onHide }: BattleReportDialogProps) {
   const summary = [
     { label: "City HP", value: `${result.cityHpBefore} → ${result.cityHpAfter}`, note: `−${result.cityHpLost}` },
     { label: "Wave HP", value: `${result.monsterHpBefore} → ${result.monsterHpAfter}`, note: `−${result.monsterHpLost}` },
@@ -30,6 +32,7 @@ export default function BattleReportDialog({ result, pending, onContinue }: Batt
       accent={!result.won}
       size="lg"
       dismissible={false}
+      onHide={onHide}
     >
       <p className="text-lg">
         {result.won ? "The wave was driven back from the walls." : "The wave survived the assault."}
