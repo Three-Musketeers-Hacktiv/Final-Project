@@ -21,10 +21,12 @@ type RewardDialogProps = {
   rewards: readonly RewardOption[];
   pending: boolean;
   onChoose: (rewardId: string) => void;
+  /** Hides the screen for a look at the game; it comes back from the bar at the bottom. */
+  onHide: () => void;
 };
 
 /** phase "reward": after waves 1–9 the player picks one of that wave's three rewards. */
-export default function RewardDialog({ wave, rewards, pending, onChoose }: RewardDialogProps) {
+export default function RewardDialog({ wave, rewards, pending, onChoose, onHide }: RewardDialogProps) {
   return (
     <Modal
       id={REWARD_DIALOG}
@@ -33,6 +35,7 @@ export default function RewardDialog({ wave, rewards, pending, onChoose }: Rewar
       icon={<Icon name="plus" className="size-6" />}
       size="lg"
       dismissible={false}
+      onHide={onHide}
     >
       <p className="text-lg">The city survived the wave. The people offer their thanks.</p>
 

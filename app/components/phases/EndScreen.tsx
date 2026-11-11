@@ -16,10 +16,12 @@ type EndScreenProps = {
   cityHp: number;
   cityMaxHp: number;
   gold: number;
+  /** Hides the screen for a look at the game; it comes back from the bar at the bottom. */
+  onHide: () => void;
 };
 
 /** phase "victory" / "gameOver": the run is over and can no longer take actions. */
-export default function EndScreen({ outcome, day, wavesCleared, cityHp, cityMaxHp, gold }: EndScreenProps) {
+export default function EndScreen({ outcome, day, wavesCleared, cityHp, cityMaxHp, gold, onHide }: EndScreenProps) {
   const won = outcome === "victory";
   // Game over with the city still standing means the player surrendered.
   const surrendered = !won && cityHp > 0;
@@ -36,6 +38,7 @@ export default function EndScreen({ outcome, day, wavesCleared, cityHp, cityMaxH
       title={won ? "Victory" : "Game Over"}
       accent={!won}
       dismissible={false}
+      onHide={onHide}
     >
       <div className="flex flex-col items-center gap-3 text-center">
         <Image
